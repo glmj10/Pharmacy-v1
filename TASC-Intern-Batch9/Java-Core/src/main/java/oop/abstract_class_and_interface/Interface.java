@@ -13,7 +13,6 @@ public class Interface{
 
         Movable m = circle;
         m.move(20, 30);
-        m.method();
     }
 
 
@@ -22,12 +21,10 @@ public class Interface{
 
 interface Drawable {
     void draw();
-    double method();
 }
 
 interface Movable {
     void move(int x, int y);
-    int method();
 }
 
 class Circle implements Drawable, Movable {
@@ -36,12 +33,6 @@ class Circle implements Drawable, Movable {
     @Override
     public void draw() {
         System.out.println("Drawing a Circle at (" + x + "," + y + ")");
-    }
-
-    @Override
-    public int method() {
-        System.out.println("X");
-        return 0;
     }
 
     @Override
