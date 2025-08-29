@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -41,7 +43,6 @@ public class Test {
         System.out.println(finalElement);
 
         System.out.println(new Log(line, timeStamp, LogLevelEnum.valueOf(secondElement.toUpperCase()), thirdElement, finalElement));
-
     }
 
 
