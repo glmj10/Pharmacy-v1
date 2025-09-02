@@ -12,44 +12,23 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 public class LogSearcher {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
     private static final String LOG_FILE_PATH = "logs.txt";
 
-    private final List<Log> allLogs;
-    private final Stream<Log> logs;
     private List<Log> result = new ArrayList<>();
     private final Scanner scanner;
     private final List<Path> chunkfiles;
 
-
     public LogSearcher() throws IOException {
-        this.allLogs = new ArrayList<>();
         this.scanner = new Scanner(System.in);
-        this.logs = streamLogs();
         this.chunkfiles = splitFile(LOG_FILE_PATH, 50000);
-//        loadLogsFromFile();
     }
 
     public static void main(String[] args) throws IOException {
         LogSearcher searcher = new LogSearcher();
         searcher.showMenu();
-
-    }
-
-    private void loadLogsFromFile() {
-        System.out.println("--Load log from file--");
-//        try(BufferedReader bufferedReader = new BufferedReader(Files.newBufferedReader(Path.of(LOG_FILE_PATH)))) {
-//            String line;
-//            while ((line = bufferedReader.readLine()) != null) {
-//                allLogs.add(parseLogLine(line));
-//            }
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }
-
     }
 
     private List<Path> splitFile(String inputFile, int linePerChunk) {
@@ -90,11 +69,6 @@ public class LogSearcher {
             Files.delete(path);
         }
         return Files.createFile(path);
-    }
-
-    private Stream<Log> streamLogs() throws IOException {
-        return Files.lines(Path.of(LOG_FILE_PATH))
-                .map(this::parseLogLine);
     }
 
     private void processChunksAndPrint(List<Path> chunkFiles,

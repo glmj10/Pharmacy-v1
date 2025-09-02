@@ -13,7 +13,6 @@ public class Log {
     private String message;
 
     public Log() {
-
     }
 
     public Log(String fullLog, LocalDateTime dateTime, LogLevelEnum level, String service, String message) {
