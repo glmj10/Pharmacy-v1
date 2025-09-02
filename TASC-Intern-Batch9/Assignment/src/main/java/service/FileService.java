@@ -1,5 +1,9 @@
 package service;
 
+import dto.Log;
+
+import java.util.List;
+
 public interface FileService {
-    void exportFile();
+    void exportFile(List<Log> logList);
 }

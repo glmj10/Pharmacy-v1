@@ -1,11 +1,13 @@
 package controller;
 
-import config.Config;
+import config.AppConfig;
 import dto.Log;
 import dto.LogSearchCriteria;
 import enums.LogLevelEnum;
 import exceptions.InvalidInputException;
+import service.FileService;
 import service.LogService;
+import service.impl.FileServiceImpl;
 import service.impl.LogServiceImpl;
 
 import java.io.IOException;
@@ -17,13 +19,15 @@ import java.util.Scanner;
 public class LogController {
     private final LogService logService;
     private final Scanner scanner;
-    private final DateTimeFormatter FORMATTER = Config.getDateTimeFormatter();
+    private final DateTimeFormatter FORMATTER = AppConfig.getDateTimeFormatter();
+    private final FileService fileService;
     private List<Log> res;
 
 
     public LogController() {
         this.scanner = new Scanner(System.in);
         this.logService = new LogServiceImpl();
+        this.fileService = new FileServiceImpl();
     }
 
     public void showMenu() {
@@ -144,7 +148,7 @@ public class LogController {
     }
 
     private void exportResults() {
-
+        fileService.exportFile(res);
     }
 
 }

@@ -1,6 +1,6 @@
 package repository.impl;
 
-import config.Config;
+import config.AppConfig;
 import dto.Log;
 import enums.LogLevelEnum;
 import exceptions.FileException;
@@ -18,12 +18,12 @@ import java.util.List;
 
 public class LogRepositoryImpl implements LogRepository {
 
-    private static final DateTimeFormatter FORMATTER = Config.getDateTimeFormatter();
+    private static final DateTimeFormatter FORMATTER = AppConfig.getDateTimeFormatter();
 
     private final String filePath;
 
     public LogRepositoryImpl() {
-        this.filePath = Config.getFilePath();
+        this.filePath = AppConfig.getFilePath();
     }
 
     @Override
