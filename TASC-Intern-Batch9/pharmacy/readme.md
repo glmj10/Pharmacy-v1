@@ -1,6 +1,7 @@
 🚀 Project: Pharmacy
 Dự án này được phát triển theo từng giai đoạn rõ ràng, tập trung vào việc xây dựng một ứng dụng web hoàn chỉnh với các tính năng từ cơ bản đến nâng cao.
 📅 Timeline & Giai Đoạn Phát Triển
+
 Giai đoạn 1: Khởi Tạo Dự Án & Cấu Hình Cơ Bản (Ngày 1)
 Thiết lập môi trường phát triển và cấu trúc dự án ban đầu.
 ✅ Cài đặt Java Development Kit (JDK) phiên bản 17.
@@ -34,3 +35,4 @@ Triển khai chức năng giỏ hàng và các phương thức thanh toán.
 🛒 Xây dựng module Cart (Giỏ hàng).
 💳 Tích hợp các cổng thanh toán như VNPAY và phương thức Thanh toán khi nhận hàng (COD).
 📦 Xây dựng module Order (Đơn hàng).
+
