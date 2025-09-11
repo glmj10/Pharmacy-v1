@@ -24,6 +24,9 @@ public class Order  extends BaseEntity {
     @Column(name = "customer_phone_number")
     String customerPhoneNumber;
 
+    @Column(name = "customer_address")
+    String customerAddress;
+
     Double totalPrice;
 
     @Column(name = "payment_method")

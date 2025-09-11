@@ -2,6 +2,7 @@ package com.project.pharmacy.entity;
 
 import com.project.pharmacy.entity.base.BaseEntity;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -15,7 +16,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class InvalidateToken extends BaseEntity {
-    String token;
+public class InvalidatedToken {
+    @Id
+    String id;
     LocalDateTime expiryTime;
 }

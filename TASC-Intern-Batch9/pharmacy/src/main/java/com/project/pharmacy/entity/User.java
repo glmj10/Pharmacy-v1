@@ -7,10 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "users")
@@ -19,14 +16,18 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @NoArgsConstructor
 @AllArgsConstructor
-public class User extends BaseEntity implements UserDetails {
+public class User extends BaseEntity {
     @Column(nullable = false)
     String email;
 
     @Column(nullable = false)
     String username;
+
     @Column(nullable = false)
     String password;
+
+    @Column(name = "token_version")
+    Integer tokenVersion = 0;
 
     @Column(name = "is_active_email")
     Boolean isActiveEmail = false;
@@ -39,28 +40,14 @@ public class User extends BaseEntity implements UserDetails {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     Set<Role> roles = new HashSet<>();
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    List<VerificationToken> verificationTokens = new ArrayList<>();
+
+    public void setStatusEmail(Boolean statusEmail) {
+        isActiveEmail = statusEmail;
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
+    public boolean isVerified() {
+        return isActiveEmail;
     }
 }

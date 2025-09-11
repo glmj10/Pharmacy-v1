@@ -7,6 +7,7 @@ public enum ErrorCode {
     USER_NOT_FOUND("Người dùng không tồn tại"),
     INVALID_USER_ROLE("Vai trò người dùng không hợp lệ"),
     USER_ALREADY_EXISTS("Người dùng đã tồn tại"),
+    USER_ALREADY_VERIFIED("Người dùng đã được xác thực"),
 
     INVALID_CREDENTIALS("Thông tin đăng nhập không hợp lệ"),
     PRODUCT_NOT_FOUND("Sản phẩm không tồn tại"),
@@ -14,7 +15,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND("Đơn hàng không tồn tại"),
     PAYMENT_FAILED("Thanh toán không thành công"),
 
-    UNAUTHORIZED("Truy cập không được phép"),
+    UNAUTHORIZED("Không có quyền truy cập"),
     FORBIDDEN("Quyền truy cập bị từ chối"),
     INVALID_TOKEN("Phiên đăng nhập không hợp lệ hoặc đã hết hạn"),
 

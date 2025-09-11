@@ -1,7 +1,5 @@
 package com.project.pharmacy.entity;
 
-
-import com.project.pharmacy.entity.base.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;

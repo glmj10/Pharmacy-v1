@@ -1,5 +1,12 @@
 package com.project.pharmacy.repository;
 
 
-public interface RoleRepository {
+import com.project.pharmacy.entity.Role;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface RoleRepository extends JpaRepository<Role, Long> {
+    Optional<Role> findByCode(String code);
+    boolean existsByName(String name);
 }
