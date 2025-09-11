@@ -1,0 +1,66 @@
+package com.project.pharmacy.entity;
+
+
+import com.project.pharmacy.entity.base.BaseModifyEntity;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Entity
+@Table(name = "products")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class Product extends BaseModifyEntity {
+    String title;
+    @Column(name = "active_ingredient")
+    String activeIngredient;
+    @Column(name = "dosage_form")
+    String dosageForm;
+    @Column(columnDefinition = "TEXT")
+    String description;
+
+    String indication;
+    String manufacturer;
+    @Column(name = "price_old")
+    Integer priceOld;
+    @Column(name = "price_new")
+    Integer priceNew;
+    @Column(name = "import_price")
+    Integer importPrice;
+    Integer priority = 0;
+    Integer quantity;
+
+    @Column(name = "registration_number")
+    String registrationNumber;
+    String slug;
+    String thumbnail;
+
+    @Column(name = "number_of_likes")
+    Integer numberOfLikes = 0;
+
+    Boolean active = true;
+
+    @OneToMany(mappedBy = "product",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    List<ProductImage> productImages;
+
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinTable(name = "product_categories", joinColumns = @JoinColumn(name = "product_id"),
+                                            inverseJoinColumns = @JoinColumn(name = "category_id"))
+    List<Category> categories;
+
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<Wishlist> wishlists;
+
+    @ManyToOne
+    @JoinColumn(name = "brand_id")
+    Brand brand;
+
+    @Column(name = "product_type")
+    String productType;
+
+}
