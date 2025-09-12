@@ -51,7 +51,6 @@ public class JWTAuthenticationProvider {
     static final String ISSUER = "Pharmacy";
 
     private final InvalidatedTokenRepository invalidatedTokenRepository;
-    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -165,6 +164,11 @@ public class JWTAuthenticationProvider {
         } catch (ParseException e) {
             throw new CustomException(ErrorCode.INVALID_TOKEN, "Token không hợp lệ");
         }
+    }
+
+    public String getUserEmail(String token) throws ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        return signedJWT.getJWTClaimsSet().getStringClaim("email");
     }
 
 }

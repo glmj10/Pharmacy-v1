@@ -9,6 +9,13 @@ public enum ErrorCode {
     USER_ALREADY_EXISTS("Người dùng đã tồn tại"),
     USER_ALREADY_VERIFIED("Người dùng đã được xác thực"),
 
+    PROFILE_NOT_FOUND("Thông tin cá nhân không tồn tại"),
+    PROFILE_ALREADY_EXISTS("Thông tin cá nhân đã tồn tại"),
+
+    INVALID_ROLE("Vai trò không hợp lệ"),
+    ROLE_NOT_FOUND("Vai trò không tồn tại"),
+    ROLE_ALREADY_EXISTS("Vai trò đã tồn tại"),
+
     INVALID_CREDENTIALS("Thông tin đăng nhập không hợp lệ"),
     PRODUCT_NOT_FOUND("Sản phẩm không tồn tại"),
     INSUFFICIENT_STOCK("Số lượng trong kho không đủ"),

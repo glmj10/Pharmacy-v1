@@ -44,6 +44,10 @@ public class Order  extends BaseEntity {
     List<OrderDetail> orderDetails;
 
     @ManyToOne
+    @JoinColumn(name = "cart_id", referencedColumnName = "id")
+    Cart cart;
+
+    @ManyToOne
     @JoinColumn(name = "profile_id")
     Profile profile;
 }

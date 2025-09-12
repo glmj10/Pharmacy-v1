@@ -1,0 +1,15 @@
+package com.project.pharmacy.dto.response;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfileResponse {
+    private Long id;
+    private String phone;
+    private String fullName;
+    private String address;
+}

@@ -1,12 +1,15 @@
 package com.project.pharmacy.controller;
 
+import com.nimbusds.jose.JOSEException;
 import com.project.pharmacy.dto.request.AuthRequest;
 import com.project.pharmacy.dto.request.ChangePasswordRequest;
 import com.project.pharmacy.dto.request.RegistrationRequest;
+import com.project.pharmacy.dto.request.ResetPasswordRequest;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.AuthResponse;
 import com.project.pharmacy.service.AuthService;
 import com.project.pharmacy.service.EmailService;
+import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 
 @Controller
@@ -50,7 +54,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String bearerToken) throws ParseException {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String bearerToken)
+            throws ParseException {
         ApiResponse<Void> response = authService.logout(bearerToken);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
@@ -58,6 +63,27 @@ public class AuthController {
     @PutMapping("/change-password")
     public ResponseEntity<ApiResponse<String>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         ApiResponse<String> response = authService.changePassword(request);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<AuthResponse>> refreshToken(@RequestHeader("Authorization") String token)
+            throws ParseException, JOSEException {
+        ApiResponse<AuthResponse> response = authService.refreshToken(token);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<String>> sendResetPasswordEmail(@RequestParam String email)
+            throws MessagingException, UnsupportedEncodingException {
+        ApiResponse<String> response = authService.forgotPassword(email, true);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PutMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request)
+            throws ParseException {
+        ApiResponse<String> response = authService.resetPassword(request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

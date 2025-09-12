@@ -8,11 +8,11 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Table(name = "customer_cares")
+@Table(name = "contacts")
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class CustomerCare extends BaseEntity {
+public class Contact extends BaseEntity {
     String email;
     String address;
     Boolean active = false;

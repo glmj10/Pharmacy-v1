@@ -27,10 +27,10 @@ public class User extends BaseEntity {
     String password;
 
     @Column(name = "token_version")
-    Integer tokenVersion = 0;
+    int tokenVersion;
 
     @Column(name = "is_active_email")
-    Boolean isActiveEmail = false;
+    boolean isActiveEmail = false;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "user")
     List<Profile> profileList;
@@ -43,7 +43,7 @@ public class User extends BaseEntity {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     List<VerificationToken> verificationTokens = new ArrayList<>();
 
-    public void setStatusEmail(Boolean statusEmail) {
+    public void setStatusEmail(boolean statusEmail) {
         isActiveEmail = statusEmail;
     }
 
