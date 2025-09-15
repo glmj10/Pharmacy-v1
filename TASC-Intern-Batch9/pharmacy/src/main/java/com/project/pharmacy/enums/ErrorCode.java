@@ -56,7 +56,10 @@ public enum ErrorCode {
     BAD_REQUEST("Yêu cầu không hợp lệ"),
 
     TYPE_NOT_FOUND("Loại danh mục không tồn tại"),
-    TYPE_ALREADY_EXISTS("Loại danh mục đã tồn tại")
+    TYPE_ALREADY_EXISTS("Loại danh mục đã tồn tại"),
+
+    BRAND_NOT_FOUND("Thương hiệu không tồn tại"),
+    BRAND_ALREADY_EXISTS("Thương hiệu đã tồn tại"),
     ;
 
     private final String message;
