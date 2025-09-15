@@ -23,6 +23,7 @@ public abstract class BaseModifyEntity extends BaseEntity {
     @Column(name = "created_by", nullable = false)
     Long createdBy;
 
+    @CreationTimestamp
     @LastModifiedDate
     @Column(name = "modified_at")
     LocalDateTime modifiedAt;

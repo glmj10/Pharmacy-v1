@@ -34,7 +34,7 @@ public class Category extends BaseModifyEntity {
     @JoinColumn(name = "parent_id")
     Category parent;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "type_id")
     Type type;
 }

@@ -47,10 +47,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public ApiResponse<AuthResponse> login(AuthRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new CustomException(ErrorCode.VALIDATION_ERROR, "Email hoặc mật khẩu không chính xác"));
-
+                .orElseThrow(() -> new CustomException(ErrorCode.VALIDATION_ERROR,
+                        "Email hoặc mật khẩu không chính xác"));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Email hoặc mật khẩu không chính xác");
+        }
+
+        if(!user.isVerified()) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR,
+                    "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để xác thực");
         }
 
         AuthResponse authResponse = new AuthResponse();
@@ -87,14 +92,16 @@ public class AuthServiceImpl implements AuthService {
         verificationTokenRepository.save(verificationToken);
 
         emailService.sendVerificationEmail(user.getEmail(), token, jwtAuthenticationProvider.getTokenExpiry(token));
-        return ApiResponse.buildOkResponse(null, "Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản");
+        return ApiResponse.buildOkResponse(null,
+                "Đăng ký thành công, vui lòng kiểm tra email để kích hoạt tài khoản");
     }
 
     @Transactional
     @Override
     public ApiResponse<String> verifyAccount(String token) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
-                .orElseThrow(() -> new CustomException(ErrorCode.VALIDATION_ERROR, "Token không hợp lệ hoặc đã hết hạn"));
+                .orElseThrow(() -> new CustomException(ErrorCode.VALIDATION_ERROR,
+                        "Token không hợp lệ hoặc đã hết hạn"));
 
         if(verificationToken.isUsed()) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Token đã được sử dụng");

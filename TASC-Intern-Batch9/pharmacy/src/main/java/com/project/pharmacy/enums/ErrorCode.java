@@ -46,6 +46,17 @@ public enum ErrorCode {
     VALIDATION_ERROR("Lỗi xác thực dữ liệu"),
     BUSINESS_ERROR("Lỗi nghiệp vụ"),
     INTERNAL_SERVER_ERROR("Lỗi máy chủ nội bộ"),
+
+    UNSUPPORTED_MEDIA_TYPE("Định dạng không được hỗ trợ"),
+    UNSUPPORTED_OPERATION("Phương thức không được hỗ trợ"),
+
+    FILE_NOT_FOUND("Tệp tin không tồn tại"),
+    FILE_STORAGE_ERROR("Lỗi lưu trữ tệp tin"),
+
+    BAD_REQUEST("Yêu cầu không hợp lệ"),
+
+    TYPE_NOT_FOUND("Loại danh mục không tồn tại"),
+    TYPE_ALREADY_EXISTS("Loại danh mục đã tồn tại")
     ;
 
     private final String message;

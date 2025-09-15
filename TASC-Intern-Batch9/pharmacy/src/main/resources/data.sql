@@ -21,3 +21,19 @@ SELECT * FROM (
 WHERE NOT EXISTS (
     SELECT 1 FROM roles WHERE code = 'STAFF'
 );
+
+INSERT INTO types (code, name, description)
+SELECT * FROM (
+                  SELECT 'Blog' AS name, 'BLOG' AS code, 'Blog' AS description
+              ) AS tmp
+WHERE NOT EXISTS (
+    SELECT 1 FROM types WHERE code = 'BLOG'
+);
+
+INSERT INTO types (code, name, description)
+SELECT * FROM (
+                  SELECT 'Product' AS name, 'PRODUCT' AS code, 'Product' AS description
+              ) AS tmp
+WHERE NOT EXISTS (
+    SELECT 1 FROM types WHERE code = 'PRODUCT'
+);

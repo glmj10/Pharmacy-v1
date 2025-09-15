@@ -1,9 +1,6 @@
 package com.project.pharmacy.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
@@ -18,11 +15,12 @@ import java.util.UUID;
 @Table(name = "file_meta_data")
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class FileMetadata {
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "uuid", nullable = false, unique = true)
-    UUID uuid = UUID.randomUUID();
-
+    UUID uuid;
     @Column(name = "original_file_name", nullable = false)
     String originalFileName;
 

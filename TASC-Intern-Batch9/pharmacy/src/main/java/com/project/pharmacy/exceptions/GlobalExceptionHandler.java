@@ -7,10 +7,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
@@ -93,6 +95,49 @@ public class GlobalExceptionHandler {
 
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(UnsupportedOperationException.class)
+    public ResponseEntity<ErrorResponse> handleUnsupportedOperationException(UnsupportedOperationException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.UNSUPPORTED_OPERATION,
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage() != null ? ex.getMessage() : "Phương thức không được hỗ trợ"
+        );
+
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Unsupported operation: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "Loại phương tiện không được hỗ trợ"
+        );
+
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Unsupported media type: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ErrorResponse> handleMissingServletRequestPartException(MissingServletRequestPartException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.BAD_REQUEST,
+                HttpStatus.BAD_REQUEST,
+                "Thiếu phần yêu cầu: " + ex.getRequestPartName()
+        );
+
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Missing request part: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
 
     private ErrorResponse buildErrorResponse(CustomException ex, WebRequest request) {
         return ErrorResponse.builder()

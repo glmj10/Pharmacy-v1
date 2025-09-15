@@ -10,7 +10,7 @@ spring:
     name: Pharmacy-advanced
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         format_sql: true
@@ -20,5 +20,6 @@ spring:
   sql:
     init:
       mode: always
-app:
-  base-url: ${APP_BASE_URL:http://localhost:8080}
+file:
+  upload:
+    max-size: ${FILE_UPLOAD_MAX_SIZE:10}

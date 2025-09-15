@@ -1,6 +1,7 @@
 package com.project.pharmacy.controller;
 
 import com.project.pharmacy.dto.request.ChangeUserRoleRequest;
+import com.project.pharmacy.dto.request.UserSearchCriteria;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.PageResponse;
 import com.project.pharmacy.dto.response.UserResponse;
@@ -32,8 +33,8 @@ public class UserController {
     public ResponseEntity<ApiResponse<PageResponse<List<UserResponse>>>> getAllUsers(
             @RequestParam(defaultValue = "1") Integer pageIndex,
             @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String email) {
-        ApiResponse<PageResponse<List<UserResponse>>> response = userService.getAllUsers(pageIndex, pageSize, email);
+            @ModelAttribute UserSearchCriteria criteria) {
+        ApiResponse<PageResponse<List<UserResponse>>> response = userService.getAllUsers(pageIndex, pageSize, criteria);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

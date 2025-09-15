@@ -1,6 +1,7 @@
 package com.project.pharmacy.service.impl;
 
 import com.project.pharmacy.dto.request.ChangeUserRoleRequest;
+import com.project.pharmacy.dto.request.UserSearchCriteria;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.PageResponse;
 import com.project.pharmacy.dto.response.UserResponse;
@@ -96,7 +97,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ApiResponse<PageResponse<List<UserResponse>>> getAllUsers(Integer pageIndex,
-                                                                     Integer pageSize, String email) {
+                                                                     Integer pageSize, UserSearchCriteria criteria) {
         if(pageIndex <= 0) {
             pageIndex = 1;
         }
@@ -106,12 +107,7 @@ public class UserServiceImpl implements UserService {
         }
 
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
-        Page<User> userPage;
-        if(email != null && !email.isEmpty()) {
-            userPage = userRepository.findAllByEmailContainingIgnoreCase(email, pageable);
-        } else {
-            userPage = userRepository.findAll(pageable);
-        }
+        Page<User> userPage = userRepository.searchUsers(criteria, pageable);
 
         List<UserResponse> userResponses = userPage.getContent().stream().map(userMapper::toUserResponse).toList();
         PageResponse<List<UserResponse>> pageResponse = PageResponse.<List<UserResponse>>builder()

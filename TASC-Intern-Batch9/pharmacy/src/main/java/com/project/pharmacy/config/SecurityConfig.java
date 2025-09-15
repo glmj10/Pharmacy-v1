@@ -43,7 +43,13 @@ public class SecurityConfig {
             "/api/v1/auth/forgot-password",
             "/api/v1/auth/reset-password",
             "/api/v1/auth/refresh-token",
+
+            "/api/v1/categories",
+            "/api/v1/categories/parent/**",
+
+
     };
+
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -69,7 +75,6 @@ public class SecurityConfig {
                     exceptions.accessDeniedHandler(customAccessDeniedHandler);
                 })
         ;
-
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(authenticationLogger, JWTAuthenticationFilter.class);
