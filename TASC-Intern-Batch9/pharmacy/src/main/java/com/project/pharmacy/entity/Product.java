@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -35,6 +36,8 @@ public class Product extends BaseModifyEntity {
     Integer priority = 0;
     Integer quantity;
 
+    String noted;
+
     @Column(name = "registration_number")
     String registrationNumber;
     String slug;
@@ -51,10 +54,10 @@ public class Product extends BaseModifyEntity {
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(name = "product_categories", joinColumns = @JoinColumn(name = "product_id"),
                                             inverseJoinColumns = @JoinColumn(name = "category_id"))
-    List<Category> categories;
+    List<Category> categories = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    List<Wishlist> wishlists;
+    List<Wishlist> wishlists = new ArrayList<>();
 
     @ManyToOne
     @JoinColumn(name = "brand_id")

@@ -10,4 +10,6 @@ import org.springframework.stereotype.Repository;
 public interface BrandRepository extends JpaRepository<Brand, Long> {
     Page<Brand> findByNameContainingIgnoreCase(String name, Pageable pageable);
     boolean existsBySlug(String slug);
+
+    Brand findBySlug(String slug);
 }

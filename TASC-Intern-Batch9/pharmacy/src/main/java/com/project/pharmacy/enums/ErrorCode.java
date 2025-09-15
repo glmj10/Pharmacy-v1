@@ -60,6 +60,10 @@ public enum ErrorCode {
 
     BRAND_NOT_FOUND("Thương hiệu không tồn tại"),
     BRAND_ALREADY_EXISTS("Thương hiệu đã tồn tại"),
+
+    IMAGE_NOT_FOUND("Hình ảnh không tồn tại"),
+    THUMBNAIL_REQUIRED("Yêu cầu hình ảnh đại diện")
+
     ;
 
     private final String message;

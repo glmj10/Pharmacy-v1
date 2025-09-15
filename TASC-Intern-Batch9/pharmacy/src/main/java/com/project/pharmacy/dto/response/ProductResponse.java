@@ -14,9 +14,10 @@ public class ProductResponse {
     String title;
     Long priceOld;
     Long priceNew;
+    String importPrice;
     Long quantity;
     String manufacturer;
-    String type;
+    String productType;
     String noted;
     String indication;
     String slug;

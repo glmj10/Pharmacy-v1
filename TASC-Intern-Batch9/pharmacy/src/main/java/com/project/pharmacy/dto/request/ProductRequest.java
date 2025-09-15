@@ -23,11 +23,14 @@ public class ProductRequest {
     @NotNull(message = "Số lượng không được để trống")
     Long quantity;
 
+    @NotNull(message = "Giá nhập không được để trống")
+    Long importPrice;
+
     @NotEmpty(message = "Nhà sản xuất không được để trống")
     String manufacturer;
 
     @NotEmpty(message = "Loại sản phẩm không được để trống")
-    String type;
+    String productType;
 
     @NotEmpty(message = "Ghi chú không được để trống")
     String noted;

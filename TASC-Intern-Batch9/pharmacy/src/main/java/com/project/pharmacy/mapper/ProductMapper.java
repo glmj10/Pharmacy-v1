@@ -40,6 +40,7 @@ public interface ProductMapper {
     @Mapping(target = "thumbnailUrl", ignore = true)
     @Mapping(target = "inWishlist", ignore = true)
     @Mapping(target = "categories", ignore = true)
+    @Mapping(target = "importPrice", ignore = true)
     ProductResponse toProductResponse(Product product);
 
 }

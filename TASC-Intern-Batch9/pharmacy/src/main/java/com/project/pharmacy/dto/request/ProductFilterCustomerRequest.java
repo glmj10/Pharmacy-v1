@@ -17,4 +17,8 @@ public class ProductFilterCustomerRequest {
     String brand;
     String category;
 
+    public Boolean isAscending() {
+        return isAscending != null && isAscending;
+    }
+
 }

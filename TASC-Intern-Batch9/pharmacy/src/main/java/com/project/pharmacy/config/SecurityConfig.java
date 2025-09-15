@@ -1,6 +1,7 @@
 package com.project.pharmacy.config;
 
 
+import com.cloudinary.Api;
 import com.project.pharmacy.security.CustomAccessDeniedHandler;
 import com.project.pharmacy.security.CustomAuthenticationEntryPoint;
 import com.project.pharmacy.security.JWTAuthenticationFilter;
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,6 +27,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
+import java.lang.reflect.Method;
 import java.util.List;
 
 @Configuration
@@ -44,15 +47,25 @@ public class SecurityConfig {
             "/api/v1/auth/reset-password",
             "/api/v1/auth/refresh-token",
 
-            "/api/v1/categories",
-            "/api/v1/categories/parent/**",
-
             "/api/v1/brands/customer/public/**",
 
-            "/api/v1/blogs",
-            "/api/v1/blogs/slug/**",
     };
 
+    private final String[] PUBLIC_GET_ENDPOINTS = {
+            "/api/v1/products",
+            "/api/v1/products/slug/{slug}",
+            "/api/v1/products/rank/suggestions/top15",
+            "/api/v1/categories/**",
+            "/api/v1/products/brand/suggestions/top15",
+            "/api/v1/brands/customer/public",
+            "/api/v1/blogs",
+            "/api/v1/blogs/{slug}",
+            "/api/v1/categories/parent/{parentSlug}",
+            "/api/v1/categories",
+            "/api/v1/files/download/{uuid}",
+            "/api/v1/blogs",
+            "/api/v1/blogs/slug/{slug}",
+    };
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -66,6 +79,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
                 );
 
