@@ -23,3 +23,6 @@ spring:
 file:
   upload:
     max-size: ${FILE_UPLOAD_MAX_SIZE:10}
+order:
+  timeout:
+    order-cancel-minutes: ${ORDER_CANCEL_TIMEOUT_MINUTES:15}

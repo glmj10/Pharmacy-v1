@@ -21,12 +21,15 @@ import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,6 +39,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     final OrderRepository orderRepository;
     final OrderMapper orderMapper;
@@ -48,6 +52,9 @@ public class OrderServiceImpl implements OrderService {
     final EmailService emailService;
     final VnPayService vnPayService;
     final FileMetadataRepository fileMetadataRepository;
+
+    @Value("${order.timeout.order-cancel-minutes}")
+    private Integer orderCancelMinutes;
 
     @Transactional
     @Override
@@ -311,6 +318,15 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
 
         return ApiResponse.buildOkResponse(null, "Hủy đơn hàng thành công");
+    }
+
+    @Scheduled(cron = "0 */1 * * * *")
+    @Transactional
+    public void scheduleCancelPendingOrders() {
+        int canceledOrders = orderRepository.cancelPendingOrders(orderCancelMinutes);
+        if (canceledOrders > 0) {
+            log.info("Đã hủy {} đơn hàng ở trạng thái Đang chờ xử lý", canceledOrders);
+        }
     }
 
     @Transactional
