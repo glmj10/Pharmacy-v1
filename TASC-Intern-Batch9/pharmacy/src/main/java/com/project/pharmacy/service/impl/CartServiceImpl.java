@@ -16,6 +16,7 @@ import com.project.pharmacy.utils.NumberUtils;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.Synchronized;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -118,6 +119,11 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Sản phẩm không tồn tại"));
 
+        if(product.getActive() == null || !product.getActive()) {
+            throw new CustomException(ErrorCode.PRODUCT_INACTIVE,
+                    HttpStatus.BAD_REQUEST, "Sản phẩm hiện không khả dụng");
+        }
+
         if (product.getQuantity() < request.getQuantity()) {
             throw new CustomException(ErrorCode.INSUFFICIENT_PRODUCT_QUANTITY,
                     HttpStatus.BAD_REQUEST, "Số lượng sản phẩm không đủ");
@@ -218,7 +224,9 @@ public class CartServiceImpl implements CartService {
                         HttpStatus.NOT_FOUND, "Sản phẩm trong giỏ hàng không tồn tại"));
 
         cartItemRepository.remove(item);
-        cart.setTotalPrice(cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * item.getQuantity());
+        if(item.getSelected()) {
+            cart.setTotalPrice(cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * item.getQuantity());
+        }
         cartRepository.updateCart(cart);
 
         return ApiResponse.buildOkResponse(null, "Xóa sản phẩm khỏi giỏ hàng thành công");
@@ -234,13 +242,14 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
 
-        cart.getCartItems().forEach(item -> {
+        List<CartItem> cartItems = cartItemRepository.findAllByCart(cart);
+        cartItems.forEach(item -> {
             if (item.getSelected()) {
                 cart.setTotalPrice(cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * item.getQuantity());
             }
         });
 
-        cartItemRepository.removeAll(cart.getCartItems());
+        cartItemRepository.removeAll(cartItems);
         cart.getCartItems().clear();
         cartRepository.updateCart(cart);
 
@@ -360,7 +369,6 @@ public class CartServiceImpl implements CartService {
                             .build();
                     ProductResponse productResponse = productMapper.toProductResponse(cartItem.getProduct());
 
-                    // Add null check for thumbnail
                     if (cartItem.getProduct().getThumbnail() != null) {
                         try {
                             FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(

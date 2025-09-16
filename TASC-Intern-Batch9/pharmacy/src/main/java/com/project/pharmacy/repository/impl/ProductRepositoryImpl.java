@@ -262,7 +262,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         return total != null ? total : 0L;
     }
 
-    @Transactional
     @Override
     public long countProducts(ProductFilterCustomerRequest filterCustomerRequest) {
         StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p");
@@ -329,7 +328,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         return count != null ? count : 0L;
     }
 
-    @Transactional
     @Override
     public Product createProduct(Product product) {
         String sql = """
@@ -385,7 +383,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         return product;
     }
 
-    @Transactional
     @Override
     public Product updateProduct(Long id, Product product) {
         String sql = """

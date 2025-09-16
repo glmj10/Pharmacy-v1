@@ -18,6 +18,7 @@ public enum ErrorCode {
 
     INVALID_CREDENTIALS("Thông tin đăng nhập không hợp lệ"),
     PRODUCT_NOT_FOUND("Sản phẩm không tồn tại"),
+    PRODUCT_INACTIVE("Sản phẩm không hoạt động"),
     INSUFFICIENT_STOCK("Số lượng trong kho không đủ"),
     ORDER_NOT_FOUND("Đơn hàng không tồn tại"),
     PAYMENT_FAILED("Thanh toán không thành công"),

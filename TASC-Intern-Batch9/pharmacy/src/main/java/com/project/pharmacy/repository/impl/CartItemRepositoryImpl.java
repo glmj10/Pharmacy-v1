@@ -3,10 +3,13 @@ package com.project.pharmacy.repository.impl;
 import com.project.pharmacy.entity.Cart;
 import com.project.pharmacy.entity.CartItem;
 import com.project.pharmacy.entity.Product;
+import com.project.pharmacy.enums.ErrorCode;
+import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.repository.CartItemRepository;
 import com.project.pharmacy.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -14,6 +17,7 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Repository
@@ -22,7 +26,6 @@ public class CartItemRepositoryImpl implements CartItemRepository {
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final ProductRepository productRepository;
 
-    @Transactional
     @Override
     public CartItem create(CartItem cartItem) {
         String sql = "INSERT INTO cart_items (cart_id, product_id, quantity, selected, price_at_addition, created_at, total_price) " +
@@ -42,7 +45,6 @@ public class CartItemRepositoryImpl implements CartItemRepository {
         return cartItem;
     }
 
-    @Transactional
     @Override
     public void updateCartItem(CartItem cartItem) {
         String sql = "UPDATE cart_items " +
@@ -58,7 +60,6 @@ public class CartItemRepositoryImpl implements CartItemRepository {
         namedParameterJdbcTemplate.update(sql, params);
     }
 
-    @Transactional
     @Override
     public void remove(CartItem cartItem) {
         String sql = "DELETE FROM cart_items WHERE id = :id";
@@ -67,15 +68,21 @@ public class CartItemRepositoryImpl implements CartItemRepository {
         namedParameterJdbcTemplate.update(sql, params);
     }
 
-    @Transactional
     @Override
     public void removeAll(List<CartItem> cartItems) {
-        String sql = "DELETE FROM cart_items WHERE id IN (:ids)";
         List<Long> ids = cartItems.stream().map(CartItem::getId).toList();
+        if (ids.isEmpty()) {
+            throw new CustomException(ErrorCode.BUSINESS_ERROR,
+                    HttpStatus.BAD_REQUEST, "No cart items to delete");
+        }
+
+        String sql = "DELETE FROM cart_items WHERE id IN (:ids)";
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("ids", ids);
+
         namedParameterJdbcTemplate.update(sql, params);
     }
+
 
     @Override
     public List<CartItem> findByCart(Cart cart) {
@@ -91,9 +98,8 @@ public class CartItemRepositoryImpl implements CartItemRepository {
             cartItem.setQuantity(rs.getInt("quantity"));
             cartItem.setSelected(rs.getBoolean("selected"));
             cartItem.setPriceAtAddition(rs.getObject("price_at_addition", Integer.class));
-            cartItem.setCart(cart); // Set the cart relationship
+            cartItem.setCart(cart);
 
-            // Load the product relationship
             Long productId = rs.getLong("product_id");
             Product product = productRepository.findById(productId).orElse(null);
             cartItem.setProduct(product);
