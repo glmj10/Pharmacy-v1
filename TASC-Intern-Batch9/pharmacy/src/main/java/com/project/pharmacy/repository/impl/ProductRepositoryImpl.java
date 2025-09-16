@@ -34,29 +34,40 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAll(int size, int offSet, ProductCMSFilterRequest filterRequest) {
-        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p");
         List<Object> params = new ArrayList<>();
+        Brand brand = null;
+        Category category = null;
 
         if(filterRequest.getBrandId() != null) {
-            sql.append("JOIN brands b ON p.brand_id = b.id");
+            sql.append(" JOIN brands b ON p.brand_id = b.id");
+            brand = brandRepository.findById(filterRequest.getBrandId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.BRAND_NOT_FOUND,
+                            HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu"));
         }
 
         if(filterRequest.getCategoryId() != null) {
-            sql.append(" JOIN categories c ON p.category_id = c.id");
+            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
+            sql.append(" JOIN categories c ON pc.category_id = c.id");
+            category = categoryRepository.findById(filterRequest.getCategoryId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
+                            HttpStatus.NOT_FOUND, "Không tìm thấy danh mục"));
         }
 
-        if (filterRequest.getBrandId() != null) {
+        sql.append(" WHERE 1=1");
+
+        if (brand != null && brand.getId() != null) {
             sql.append(" AND p.brand_id = ?");
             params.add(filterRequest.getBrandId());
         }
 
-        if (filterRequest.getCategoryId() != null) {
-            sql.append(" AND p.category_id = ?");
+        if (category != null && category.getId() != null) {
+            sql.append(" AND pc.category_id = ?");
             params.add(filterRequest.getCategoryId());
         }
 
         if (filterRequest.getTitle() != null && !filterRequest.getTitle().isBlank()) {
-            sql.append(" AND LOWER(name) LIKE ?");
+            sql.append(" AND LOWER(title) LIKE ?");
             params.add("%" + filterRequest.getTitle().toLowerCase() + "%");
         }
 
@@ -74,11 +85,13 @@ public class ProductRepositoryImpl implements ProductRepository {
             sql.append(" AND price_new <= ?");
             params.add(filterRequest.getPriceTo());
         }
+
         if(filterRequest.isAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterRequest.isAscending()) ? "ASC" : "DESC");
-        } else
+        } else {
             sql.append(" ORDER BY modified_at DESC");
+        }
 
         sql.append(" LIMIT ? OFFSET ?");
         params.add(size);
@@ -89,39 +102,48 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAll(int size, int offSet, ProductFilterCustomerRequest filterCustomerRequest) {
-        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p");
         List<Object> params = new ArrayList<>();
-        Brand brand = new Brand();
-        Category category = new Category();
+        Brand brand = null;
+        Category category = null;
+
         if(filterCustomerRequest.getBrand() != null) {
-            sql.append("JOIN brands b ON p.brand_id = b.id");
+            sql.append(" JOIN brands b ON p.brand_id = b.id");
             brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
+            if (brand == null) {
+                return new ArrayList<>();
+            }
         }
 
         if(filterCustomerRequest.getCategory() != null) {
-            sql.append(" JOIN categories c ON p.category_id = c.id");
+            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
+            sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findBySlug(filterCustomerRequest.getCategory())
-            .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
-                    HttpStatus.NOT_FOUND, "Category not found"));
+                    .orElse(null);
+            if (category == null) {
+                return new ArrayList<>();
+            }
         }
 
-        if (filterCustomerRequest.getBrand() != null) {
+        sql.append(" WHERE 1=1");
+
+        if (brand != null && brand.getId() != null) {
             sql.append(" AND p.brand_id = ?");
             params.add(brand.getId());
         }
 
-        if (filterCustomerRequest.getCategory() != null) {
-            sql.append(" AND p.category_id = ?");
+        if (category != null && category.getId() != null) {
+            sql.append(" AND pc.category_id = ?");
             params.add(category.getId());
         }
 
         if (filterCustomerRequest.getTitle() != null && !filterCustomerRequest.getTitle().isBlank()) {
-            sql.append(" AND LOWER(name) LIKE ?");
+            sql.append(" AND LOWER(title) LIKE ?");
             params.add("%" + filterCustomerRequest.getTitle().toLowerCase() + "%");
         }
 
-            sql.append(" AND active = ?");
-            params.add(true);
+        sql.append(" AND active = ?");
+        params.add(true);
 
         if(filterCustomerRequest.getPriceFrom() != null) {
             sql.append(" AND price_new >= ?");
@@ -136,8 +158,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         if(filterCustomerRequest.isAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
-        } else
+        } else {
             sql.append(" ORDER BY modified_at DESC");
+        }
 
         sql.append(" LIMIT ? OFFSET ?");
         params.add(size);
@@ -149,23 +172,23 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Optional<Product> findById(Long id) {
         String sql = "SELECT * FROM products WHERE id = ?";
-        Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), id);
-        if(product == null) {
-            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
-                    HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id);
+        try {
+            Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), id);
+            return Optional.ofNullable(product);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return Optional.empty();
         }
-        return Optional.of(product);
     }
 
     @Override
     public Optional<Product> findBySlug(String slug) {
         String sql = "SELECT * FROM products WHERE slug = ?";
-        Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), slug);
-        if(product == null) {
-            throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
-                    HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug);
+        try {
+            Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), slug);
+            return Optional.ofNullable(product);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return Optional.empty();
         }
-        return Optional.of(product);
     }
 
     @Override
@@ -191,16 +214,19 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public long countProducts(ProductCMSFilterRequest filterRequest) {
-        StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p");
         List<Object> params = new ArrayList<>();
 
         if(filterRequest.getBrandId() != null) {
-            sql.append("JOIN brands b ON p.brand_id = b.id");
+            sql.append(" JOIN brands b ON p.brand_id = b.id");
         }
 
         if(filterRequest.getCategoryId() != null) {
-            sql.append(" JOIN categories c ON p.category_id = c.id");
+            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
+            sql.append(" JOIN categories c ON pc.category_id = c.id");
         }
+
+        sql.append(" WHERE 1=1");
 
         if (filterRequest.getBrandId() != null) {
             sql.append(" AND p.brand_id = ?");
@@ -208,12 +234,12 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
 
         if (filterRequest.getCategoryId() != null) {
-            sql.append(" AND p.category_id = ?");
+            sql.append(" AND pc.category_id = ?");
             params.add(filterRequest.getCategoryId());
         }
 
         if (filterRequest.getTitle() != null && !filterRequest.getTitle().isBlank()) {
-            sql.append(" AND LOWER(name) LIKE ?");
+            sql.append(" AND LOWER(title) LIKE ?");
             params.add("%" + filterRequest.getTitle().toLowerCase() + "%");
         }
 
@@ -232,12 +258,6 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterRequest.getPriceTo());
         }
 
-        if(filterRequest.isAscending() != null) {
-            sql.append(" ORDER BY price_new ");
-            sql.append(Boolean.TRUE.equals(filterRequest.isAscending()) ? "ASC" : "DESC");
-        } else
-            sql.append(" ORDER BY modified_at DESC");
-
         Long total = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
         return total != null ? total : 0L;
     }
@@ -245,34 +265,43 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Transactional
     @Override
     public long countProducts(ProductFilterCustomerRequest filterCustomerRequest) {
-        StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p WHERE 1=1");
+        StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p");
         List<Object> params = new ArrayList<>();
-        Brand brand = new Brand();
-        Category category = new Category();
+        Brand brand = null;
+        Category category = null;
+
         if(filterCustomerRequest.getBrand() != null) {
-            sql.append("JOIN brands b ON p.brand_id = b.id");
+            sql.append(" JOIN brands b ON p.brand_id = b.id");
             brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
+            if (brand == null) {
+                return 0L;
+            }
         }
 
         if(filterCustomerRequest.getCategory() != null) {
-            sql.append(" JOIN categories c ON p.category_id = c.id");
+            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
+            sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findBySlug(filterCustomerRequest.getCategory())
-                    .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
-                            HttpStatus.NOT_FOUND, "Category not found"));
+                    .orElse(null);
+            if (category == null) {
+                return 0L;
+            }
         }
 
-        if (filterCustomerRequest.getBrand() != null) {
+        sql.append(" WHERE 1=1");
+
+        if (brand != null && brand.getId() != null) {
             sql.append(" AND p.brand_id = ?");
             params.add(brand.getId());
         }
 
-        if (filterCustomerRequest.getCategory() != null) {
-            sql.append(" AND p.category_id = ?");
+        if (category != null && category.getId() != null) {
+            sql.append(" AND pc.category_id = ?");
             params.add(category.getId());
         }
 
         if (filterCustomerRequest.getTitle() != null && !filterCustomerRequest.getTitle().isBlank()) {
-            sql.append(" AND LOWER(name) LIKE ?");
+            sql.append(" AND LOWER(title) LIKE ?");
             params.add("%" + filterCustomerRequest.getTitle().toLowerCase() + "%");
         }
 
@@ -288,12 +317,6 @@ public class ProductRepositoryImpl implements ProductRepository {
             sql.append(" AND price_new <= ?");
             params.add(filterCustomerRequest.getPriceTo());
         }
-
-        if(filterCustomerRequest.isAscending() != null) {
-            sql.append(" ORDER BY price_new ");
-            sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
-        } else
-            sql.append(" ORDER BY modified_at DESC");
 
         Long total = jdbcTemplate.queryForObject(sql.toString(), Long.class, params.toArray());
         return total != null ? total : 0L;
@@ -315,8 +338,8 @@ public class ProductRepositoryImpl implements ProductRepository {
                 indication, manufacturer, price_old, price_new,
                 import_price, priority, quantity, registration_number,
                 slug, thumbnail, number_of_likes, active, brand_id, product_type,
-                created_by, modified_by, created_at, modified_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                created_by, modified_by, created_at, modified_at, noted
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -343,8 +366,17 @@ public class ProductRepositoryImpl implements ProductRepository {
             ps.setString(18, product.getProductType());
             ps.setObject(19, product.getCreatedBy());
             ps.setObject(20, product.getModifiedBy());
+            ps.setString(21, product.getNoted());
             return ps;
         }, keyHolder);
+
+        List<Category> categories = product.getCategories();
+        if (categories != null && !categories.isEmpty() && keyHolder.getKey() != null) {
+            String categorySql = "INSERT INTO products_categories (product_id, category_id) VALUES (?, ?)";
+            for (Category category : categories) {
+                jdbcTemplate.update(categorySql, keyHolder.getKey().longValue(), category.getId());
+            }
+        }
 
         if (keyHolder.getKey() != null) {
             product.setId(keyHolder.getKey().longValue());
@@ -362,7 +394,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 indication=?, manufacturer=?, price_old=?, price_new=?,
                 import_price=?, priority=?, quantity=?, registration_number=?,
                 slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
-                modified_by=?, modified_at=NOW()
+                modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
             WHERE id=?
             """;
 
@@ -373,8 +405,18 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.getPriority(), product.getQuantity(), product.getRegistrationNumber(),
                 product.getSlug(), product.getThumbnail(), product.getNumberOfLikes(),
                 product.getActive(), product.getBrand() != null ? product.getBrand().getId() : null,
-                product.getProductType(), product.getModifiedBy(), id
+                product.getProductType(), product.getModifiedBy(), product.getNoted(), id
         );
+
+        String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
+        jdbcTemplate.update(deleteCategorySql, id);
+        List<Category> categories = product.getCategories();
+        if (categories != null && !categories.isEmpty()) {
+            String insertCategorySql = "INSERT INTO products_categories (product_id, category_id) VALUES (?, ?)";
+            for (Category category : categories) {
+                jdbcTemplate.update(insertCategorySql, id, category.getId());
+            }
+        }
         return product;
     }
 
@@ -383,5 +425,8 @@ public class ProductRepositoryImpl implements ProductRepository {
     public void deleteProduct(Long id) {
         String sql = "DELETE FROM products WHERE id=?";
         jdbcTemplate.update(sql, id);
+
+        String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
+        jdbcTemplate.update(deleteCategorySql, id);
     }
 }

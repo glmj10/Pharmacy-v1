@@ -13,4 +13,17 @@ public class NumberUtils {
             return "NO_CHANGE";
         }
     }
+
+    public static String toPriceChangeType(Integer priceDifferent) {
+        if (priceDifferent == null) {
+            return "NO_CHANGE";
+        }
+        if (priceDifferent > 0) {
+            return "INCREASE";
+        } else if (priceDifferent < 0) {
+            return "DECREASE";
+        } else {
+            return "NO_CHANGE";
+        }
+    }
 }

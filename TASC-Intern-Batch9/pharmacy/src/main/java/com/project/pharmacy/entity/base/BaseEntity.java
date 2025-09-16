@@ -18,11 +18,12 @@ public abstract class BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(name = "created_at")
     @CreationTimestamp
+    @Column(name = "created_at")
     LocalDateTime createdAt;
 
-    @Column(name = "updated_at")
+
     @CreationTimestamp
+    @Column(name = "updated_at")
     LocalDateTime updatedAt;
 }

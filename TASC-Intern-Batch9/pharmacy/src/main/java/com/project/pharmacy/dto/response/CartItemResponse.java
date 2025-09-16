@@ -11,9 +11,9 @@ import lombok.experimental.FieldDefaults;
 public class CartItemResponse {
     Long id;
     ProductResponse product;
-    Long quantity;
-    Long priceAtAddition;
-    Long priceDifferent;
+    Integer quantity;
+    Integer priceAtAddition;
+    Integer priceDifferent;
     String priceChangeType;
     Boolean selected;
     Boolean isOutOfStock;

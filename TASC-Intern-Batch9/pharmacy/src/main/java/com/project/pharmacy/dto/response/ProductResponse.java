@@ -12,10 +12,10 @@ public class ProductResponse {
     Long id;
     String thumbnailUrl;
     String title;
-    Long priceOld;
-    Long priceNew;
-    String importPrice;
-    Long quantity;
+    Integer priceOld;
+    Integer priceNew;
+    Integer importPrice;
+    Integer quantity;
     String manufacturer;
     String productType;
     String noted;

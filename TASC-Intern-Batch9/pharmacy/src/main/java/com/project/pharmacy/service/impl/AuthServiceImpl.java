@@ -82,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
         user.getRoles().add(role);
         userRepository.save(user);
 
-        cartRepository.save(new Cart(user));
+        cartRepository.createCart(new Cart(user));
 
         String token = jwtAuthenticationProvider.generateVerificationToken(user);
         VerificationToken verificationToken = new VerificationToken();

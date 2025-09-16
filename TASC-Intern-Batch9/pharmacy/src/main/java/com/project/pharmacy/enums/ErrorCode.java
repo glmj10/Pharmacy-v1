@@ -62,8 +62,12 @@ public enum ErrorCode {
     BRAND_ALREADY_EXISTS("Thương hiệu đã tồn tại"),
 
     IMAGE_NOT_FOUND("Hình ảnh không tồn tại"),
-    THUMBNAIL_REQUIRED("Yêu cầu hình ảnh đại diện")
+    THUMBNAIL_REQUIRED("Yêu cầu hình ảnh đại diện"),
 
+    INSUFFICIENT_PRODUCT_QUANTITY("Số lượng sản phẩm không đủ"),
+    CART_ITEM_NOT_FOUND("Mục giỏ hàng không tồn tại"),
+    PRODUCT_OUT_OF_STOCK("Sản phẩm hết hàng")
+    ,
     ;
 
     private final String message;

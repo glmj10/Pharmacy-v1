@@ -71,6 +71,7 @@ public class ProductServiceImpl implements ProductService {
                 .map(product -> {
                     ProductResponse response = productMapper.toProductResponse(product);
                     response.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+                    response.setImportPrice(product.getImportPrice());
                     response.setCategories(
                             product.getCategories().stream()
                                     .map(categoryMapper::toCategoryResponse)
@@ -176,6 +177,7 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setThumbnailUrl(fileMetadata.getUrl());
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+        productResponse.setImportPrice(product.getImportPrice());
         List<Category> categories = categoryRepository.findAllByProductsContains(product);
         productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
         return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
