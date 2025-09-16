@@ -19,7 +19,6 @@ public interface OrderMapper {
     @Mapping(target = "customerAddress", ignore = true)
     @Mapping(target = "totalPrice", ignore = true)
     @Mapping(target = "orderDetails", ignore = true)
-    @Mapping(target = "profile", ignore = true)
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "paymentStatus", constant = "PENDING")
     @Mapping(target = "cart", ignore = true)

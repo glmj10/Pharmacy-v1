@@ -30,3 +30,7 @@ vnpay:
   hash-secret: ${VNPAY_HASH_SECRET}
   vnp-url: ${VNPAY_URL}
   return-url: ${VNPAY_RETURN_URL}
+frontend:
+  vnp-return: ${FRONTEND_PAYMENT_RETURN_URL}
+  cms-url: ${FRONTEND_CMS_URL}
+  user-url: ${FRONTEND_USER_URL}

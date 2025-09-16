@@ -13,6 +13,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @Table(name = "order_details")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class OrderDetail extends BaseEntity {
     @Column(name = "price_at_order")
     Integer priceAtOrder;
@@ -26,7 +27,7 @@ public class OrderDetail extends BaseEntity {
     @JoinColumn(name = "order_id")
     Order order;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "product_id")
     Product product;
 }

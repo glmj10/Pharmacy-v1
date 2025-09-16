@@ -62,7 +62,7 @@ public class CartServiceImpl implements CartService {
         List<CartItem> items = cartItemRepository.findByCart(cart);
 
         List<CartItemResponse> itemResponses = items.stream()
-                .filter(cartItem -> cartItem.getProduct() != null) // Add null check for product
+                .filter(cartItem -> cartItem.getProduct() != null)
                 .map(cartItem -> {
                     CartItemResponse cartItemResponse = CartItemResponse.builder()
                             .id(cartItem.getId())
@@ -75,7 +75,6 @@ public class CartServiceImpl implements CartService {
                             .build();
                     ProductResponse productResponse = productMapper.toProductResponse(cartItem.getProduct());
 
-                    // Add null check for thumbnail
                     if (cartItem.getProduct().getThumbnail() != null) {
                         try {
                             FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(
@@ -194,7 +193,7 @@ public class CartServiceImpl implements CartService {
         }
         item.setQuantity(quantity);
 
-        cartItemRepository.create(item);
+        cartItemRepository.updateCartItem(item);
         cartRepository.updateCart(cart);
 
         CartItemResponse response = CartItemResponse.builder()

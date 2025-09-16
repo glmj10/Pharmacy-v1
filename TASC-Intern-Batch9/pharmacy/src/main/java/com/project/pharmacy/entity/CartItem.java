@@ -36,4 +36,8 @@ public class CartItem extends BaseEntity {
     public boolean isSelected() {
         return this.selected != null && this.selected;
     }
+
+    public boolean isProductAvailable() {
+        return this.product.getQuantity() >= this.quantity;
+    }
 }

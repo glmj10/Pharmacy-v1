@@ -40,6 +40,7 @@ public enum ErrorCode {
     WISHLIST_NOT_FOUND("Danh sách yêu thích không tồn tại"),
 
     CART_NOT_FOUND("Giỏ hàng không tồn tại"),
+    CART_EMPTY("Giỏ hàng trống"),
 
     RESOURCE_NOT_FOUND("Tài nguyên không tồn tại"),
     RESOURCE_ALREADY_EXISTS("Tài nguyên đã tồn tại"),
@@ -67,7 +68,17 @@ public enum ErrorCode {
 
     INSUFFICIENT_PRODUCT_QUANTITY("Số lượng sản phẩm không đủ"),
     CART_ITEM_NOT_FOUND("Mục giỏ hàng không tồn tại"),
-    PRODUCT_OUT_OF_STOCK("Sản phẩm hết hàng")
+    PRODUCT_OUT_OF_STOCK("Sản phẩm hết hàng"),
+    
+    SIGNATURE_NOT_VALID("Chữ ký không hợp lệ"),
+
+    ORDER_DETAIL_NOT_FOUND("Chi tiết đơn hàng không tồn tại"),
+    CANNOT_CANCEL_ORDER("Không thể hủy đơn hàng"),
+    INVALID_ORDER_STATUS("Trạng thái đơn hàng không hợp lệ"),
+
+    FAILED_TO_SEND_EMAIL("Gửi email thất bại"),
+    INVALID_PAYMENT_METHOD("Phương thức thanh toán không hợp lệ"),
+    INVALID_PAYMENT_STATUS("Trạng thái thanh toán không hợp lệ")
     ,
     ;
 
