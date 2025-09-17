@@ -67,6 +67,10 @@ public class SecurityConfig {
             "/api/v1/blogs/slug/{slug}",
     };
 
+    public final String[] PUBLIC_POST_ENDPOINTS = {
+            "/api/v1/contacts",
+    };
+
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
@@ -80,6 +84,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
+                        .requestMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
                         .anyRequest().authenticated()
                 );
 
