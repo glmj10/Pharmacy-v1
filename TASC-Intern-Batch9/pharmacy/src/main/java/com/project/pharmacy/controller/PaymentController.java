@@ -24,4 +24,11 @@ public class PaymentController {
         ApiResponse<String> response = vnPayService.handleVnPayReturn(params);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/recreate-vnpay-url")
+    public ResponseEntity<ApiResponse<String>> createVnPayUrl(@RequestParam Long orderId) {
+        ApiResponse<String> response = vnPayService.recreatePaymentUrl(orderId);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }

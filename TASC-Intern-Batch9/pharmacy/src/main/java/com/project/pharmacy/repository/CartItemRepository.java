@@ -10,6 +10,8 @@ import java.util.Optional;
 public interface CartItemRepository {
     CartItem create(CartItem cartItem);
 
+    List<CartItem> createAll(List<CartItem> cartItems);
+
     void updateCartItem(CartItem cartItem);
 
     void remove(CartItem cartItem);

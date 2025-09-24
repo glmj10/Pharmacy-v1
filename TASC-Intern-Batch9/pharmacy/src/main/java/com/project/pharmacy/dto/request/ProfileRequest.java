@@ -12,7 +12,7 @@ public class ProfileRequest {
     String fullName;
 
     @NotEmpty(message = "Số điện thoại không được để trống")
-    String phone;
+    String phoneNumber;
 
     @NotEmpty(message = "Địa chỉ không được để trống")
     String address;

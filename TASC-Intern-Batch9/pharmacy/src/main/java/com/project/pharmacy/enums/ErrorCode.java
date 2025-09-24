@@ -73,12 +73,14 @@ public enum ErrorCode {
     SIGNATURE_NOT_VALID("Chữ ký không hợp lệ"),
 
     ORDER_DETAIL_NOT_FOUND("Chi tiết đơn hàng không tồn tại"),
+    ORDER_ALREADY_PAID("Đơn hàng đã được thanh toán"),
     CANNOT_CANCEL_ORDER("Không thể hủy đơn hàng"),
     INVALID_ORDER_STATUS("Trạng thái đơn hàng không hợp lệ"),
 
     FAILED_TO_SEND_EMAIL("Gửi email thất bại"),
     INVALID_PAYMENT_METHOD("Phương thức thanh toán không hợp lệ"),
     INVALID_PAYMENT_STATUS("Trạng thái thanh toán không hợp lệ"),
+
 
     CONTACT_NOT_FOUND("Yêu cầu tư vấn không tồn tại")
     ,

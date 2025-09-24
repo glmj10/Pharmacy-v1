@@ -28,7 +28,8 @@ public class CartItemRepositoryImpl implements CartItemRepository {
 
     @Override
     public CartItem create(CartItem cartItem) {
-        String sql = "INSERT INTO cart_items (cart_id, product_id, quantity, selected, price_at_addition, created_at, total_price) " +
+        String sql = "INSERT INTO cart_items (cart_id, product_id, quantity, selected," +
+                " price_at_addition, created_at, total_price) " +
                 "VALUES (:cartId, :productId, :quantity, :selected, :priceAtAddition, :createdAt, :totalPrice)";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
@@ -43,6 +44,14 @@ public class CartItemRepositoryImpl implements CartItemRepository {
         KeyHolder keyHolder = new GeneratedKeyHolder();
         namedParameterJdbcTemplate.update(sql, params, keyHolder, new String[]{"id"});
         return cartItem;
+    }
+
+    @Override
+    public List<CartItem> createAll(List<CartItem> cartItems) {
+        for (CartItem cartItem : cartItems) {
+            create(cartItem);
+        }
+        return cartItems;
     }
 
     @Override
@@ -124,8 +133,8 @@ public class CartItemRepositoryImpl implements CartItemRepository {
             cartItem.setQuantity(rs.getInt("quantity"));
             cartItem.setSelected(rs.getBoolean("selected"));
             cartItem.setPriceAtAddition(rs.getObject("price_at_addition", Integer.class));
-            cartItem.setCart(cart); // Set the cart relationship
-            cartItem.setProduct(product); // Set the product relationship
+            cartItem.setCart(cart);
+            cartItem.setProduct(product);
             return cartItem;
         });
         if (cartItems.isEmpty()) {

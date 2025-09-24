@@ -14,7 +14,9 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class Profile extends BaseEntity {
-    String phone;
+
+    @Column(name = "phone_number")
+    String phoneNumber;
     String address;
 
     @Column(name = "full_name")

@@ -171,9 +171,39 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<Product> findById(Long id) {
-        String sql = "SELECT * FROM products WHERE id = ?";
+        String sql = "SELECT * FROM products p where p.id = ? ";
         try {
-            Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), id);
+            Product product = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                Product p = new Product();
+                p.setId(rs.getLong("id"));
+                p.setTitle(rs.getString("title"));
+                p.setActiveIngredient(rs.getString("active_ingredient"));
+                p.setDosageForm(rs.getString("dosage_form"));
+                p.setDescription(rs.getString("description"));
+                p.setIndication(rs.getString("indication"));
+                p.setManufacturer(rs.getString("manufacturer"));
+                p.setPriceOld(rs.getInt("price_old"));
+                p.setPriceNew(rs.getInt("price_new"));
+                p.setImportPrice(rs.getInt("import_price"));
+                p.setPriority(rs.getInt("priority"));
+                p.setQuantity(rs.getInt("quantity"));
+                p.setNoted(rs.getString("noted"));
+                p.setRegistrationNumber(rs.getString("registration_number"));
+                p.setSlug(rs.getString("slug"));
+                p.setThumbnail(rs.getString("thumbnail"));
+                p.setNumberOfLikes(rs.getInt("number_of_likes"));
+                p.setActive(rs.getBoolean("active"));
+                p.setProductType(rs.getString("product_type"));
+
+                Brand brand = brandRepository.findById(rs.getLong("brand_id"))
+                        .orElse(null);
+                p.setBrand(brand);
+
+                List<Category> categories = categoryRepository.findAllByProductId(p.getId());
+                p.setCategories(categories);
+                return p;
+            }, id);
+
             return Optional.ofNullable(product);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
             return Optional.empty();
@@ -182,9 +212,36 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<Product> findBySlug(String slug) {
-        String sql = "SELECT * FROM products WHERE slug = ?";
+        String sql = "SELECT * FROM products p where p.slug = ? ";
         try {
-            Product product = jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<>(Product.class), slug);
+            Product product = jdbcTemplate.queryForObject(sql, (rs, rowNum) -> {
+                Product p = new Product();
+                p.setId(rs.getLong("id"));
+                p.setTitle(rs.getString("title"));
+                p.setActiveIngredient(rs.getString("active_ingredient"));
+                p.setDosageForm(rs.getString("dosage_form"));
+                p.setDescription(rs.getString("description"));
+                p.setIndication(rs.getString("indication"));
+                p.setManufacturer(rs.getString("manufacturer"));
+                p.setPriceOld(rs.getInt("price_old"));
+                p.setPriceNew(rs.getInt("price_new"));
+                p.setImportPrice(rs.getInt("import_price"));
+                p.setPriority(rs.getInt("priority"));
+                p.setQuantity(rs.getInt("quantity"));
+                p.setNoted(rs.getString("noted"));
+                p.setRegistrationNumber(rs.getString("registration_number"));
+                p.setSlug(rs.getString("slug"));
+                p.setThumbnail(rs.getString("thumbnail"));
+                p.setNumberOfLikes(rs.getInt("number_of_likes"));
+                p.setActive(rs.getBoolean("active"));
+                p.setProductType(rs.getString("product_type"));
+
+                Brand brand = brandRepository.findById(rs.getLong("brand_id"))
+                        .orElse(null);
+                p.setBrand(brand);
+
+                return p;
+            }, slug);
             return Optional.ofNullable(product);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
             return Optional.empty();
@@ -193,21 +250,21 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public boolean existsBySlug(String slug) {
-        String sql = "SELECT COUNT(*) FROM products WHERE slug = ?";
+        String sql = "SELECT COUNT(*) FROM products WHERE slug = ? ";
         Integer count = jdbcTemplate.queryForObject(sql, Integer.class, slug);
         return count != null && count > 0;
     }
 
     @Override
     public List<Product> findTop15ByActiveTrue() {
-        String sql = "SELECT * FROM products WHERE active = true ORDER BY modified_at DESC LIMIT ? OFFSET ?";
+        String sql = "SELECT * FROM products WHERE active = true ORDER BY modified_at DESC LIMIT ? OFFSET ? ";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), 15, 0);
     }
 
     @Override
     public List<Product> findTop15ByBrandAndActive(Brand brand, boolean b) {
         String sql = "SELECT * FROM products " +
-                    "WHERE brand_id = ? AND active = ? ORDER BY modified_at DESC LIMIT 15";
+                    "WHERE brand_id = ? AND active = ? ORDER BY modified_at DESC LIMIT 15 ";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class),
                 brand.getId(), b);
     }
@@ -425,5 +482,31 @@ public class ProductRepositoryImpl implements ProductRepository {
 
         String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
         jdbcTemplate.update(deleteCategorySql, id);
+    }
+
+    @Override
+    public List<Product> updateAll(List<Product> products) {
+        String sql = """
+            UPDATE products SET 
+                title=?, active_ingredient=?, dosage_form=?, description=?,
+                indication=?, manufacturer=?, price_old=?, price_new=?,
+                import_price=?, priority=?, quantity=?, registration_number=?,
+                slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
+                modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
+            WHERE id=?
+            """;
+
+        for (Product product : products) {
+            jdbcTemplate.update(sql,
+                    product.getTitle(), product.getActiveIngredient(), product.getDosageForm(),
+                    product.getDescription(), product.getIndication(), product.getManufacturer(),
+                    product.getPriceOld(), product.getPriceNew(), product.getImportPrice(),
+                    product.getPriority(), product.getQuantity(), product.getRegistrationNumber(),
+                    product.getSlug(), product.getThumbnail(), product.getNumberOfLikes(),
+                    product.getActive(), product.getBrand() != null ? product.getBrand().getId() : null,
+                    product.getProductType(), product.getModifiedBy(), product.getNoted(), product.getId()
+            );
+        }
+        return products;
     }
 }

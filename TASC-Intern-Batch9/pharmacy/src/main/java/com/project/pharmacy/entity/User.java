@@ -4,8 +4,6 @@ import com.project.pharmacy.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.*;
 
@@ -31,6 +29,9 @@ public class User extends BaseEntity {
 
     @Column(name = "is_active_email")
     boolean isActiveEmail = false;
+
+    @Column(name = "profile_pic")
+    String profilePic;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "user")
     List<Profile> profileList;

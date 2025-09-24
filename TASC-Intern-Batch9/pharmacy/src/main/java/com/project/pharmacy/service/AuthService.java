@@ -6,6 +6,8 @@ import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.AuthResponse;
 import com.project.pharmacy.dto.response.UserResponse;
 import jakarta.mail.MessagingException;
+import jakarta.transaction.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
@@ -18,7 +20,8 @@ public interface AuthService {
     ApiResponse<String> forgotPassword(String email, Boolean isUser)
             throws MessagingException, UnsupportedEncodingException;
     ApiResponse<String> changePassword(ChangePasswordRequest changePasswordRequest);
-    ApiResponse<UserResponse> changeInfo(UserRequest request);
+    ApiResponse<UserResponse> changeInfo(UserInfoRequest request, MultipartFile profilePic);
+
     ApiResponse<Void> logout(String bearerToken) throws ParseException;
-    ApiResponse<AuthResponse> refreshToken(String token) throws ParseException, JOSEException;
+    ApiResponse<AuthResponse> refreshToken(RefreshRequest request) throws ParseException, JOSEException;
 }

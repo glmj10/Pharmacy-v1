@@ -16,7 +16,6 @@ import com.project.pharmacy.utils.NumberUtils;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import lombok.Synchronized;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,16 +37,6 @@ public class CartServiceImpl implements CartService {
     ProductRepository productRepository;
     FileMetadataRepository fileMetadataRepository;
 
-    @Override
-    public void createCart(User user) {
-        try {
-            Cart cart = new Cart();
-            cart.setUser(user);
-            cartRepository.createCart(cart);
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
-        }
-    }
 
     @Transactional
     @Override
@@ -77,12 +66,9 @@ public class CartServiceImpl implements CartService {
 
                     if (cartItem.getProduct().getThumbnail() != null) {
                         try {
-                            FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(
-                                            cartItem.getProduct().getThumbnail()))
-                                    .orElse(null);
-                            if (fileMetadata != null) {
-                                productResponse.setThumbnailUrl(fileMetadata.getUrl());
-                            }
+                            fileMetadataRepository.findByUuid(UUID.fromString(
+                                    cartItem.getProduct().getThumbnail())).
+                                    ifPresent(fileMetadata -> productResponse.setThumbnailUrl(fileMetadata.getUrl()));
                         } catch (IllegalArgumentException e) {
                             // Handle invalid UUID format gracefully
                             productResponse.setThumbnailUrl(null);
@@ -142,7 +128,7 @@ public class CartServiceImpl implements CartService {
                             : existingItem.getQuantity() + request.getQuantity()
             );
             existingItem.setPriceAtAddition(product.getPriceNew());
-            existingItem = cartItemRepository.create(existingItem);
+            cartItemRepository.updateCartItem(existingItem);
         } else {
             CartItem newItem = new CartItem();
             newItem.setProduct(product);
@@ -355,7 +341,7 @@ public class CartServiceImpl implements CartService {
         List<CartItem> items = cartItemRepository.findAllByCartAndSelected(cart, true);
 
         List<CartItemResponse> itemResponses = items.stream()
-                .filter(cartItem -> cartItem.getProduct() != null) // Add null check for product
+                .filter(cartItem -> cartItem.getProduct() != null)
                 .map(cartItem -> {
                     CartItemResponse cartItemResponse = CartItemResponse.builder()
                             .id(cartItem.getId())
@@ -370,12 +356,9 @@ public class CartServiceImpl implements CartService {
 
                     if (cartItem.getProduct().getThumbnail() != null) {
                         try {
-                            FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(
-                                            cartItem.getProduct().getThumbnail()))
-                                    .orElse(null);
-                            if (fileMetadata != null) {
-                                productResponse.setThumbnailUrl(fileMetadata.getUrl());
-                            }
+                            fileMetadataRepository.findByUuid(UUID.fromString(
+                                    cartItem.getProduct().getThumbnail())).
+                                    ifPresent(fileMetadata -> productResponse.setThumbnailUrl(fileMetadata.getUrl()));
                         } catch (IllegalArgumentException e) {
                             // Handle invalid UUID format gracefully
                             productResponse.setThumbnailUrl(null);

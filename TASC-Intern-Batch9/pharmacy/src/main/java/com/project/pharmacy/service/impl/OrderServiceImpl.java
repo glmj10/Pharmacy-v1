@@ -192,7 +192,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order order = orderMapper.toOrder(request);
         order.setCustomerName(profile.getFullName());
-        order.setCustomerPhoneNumber(profile.getPhone());
+        order.setCustomerPhoneNumber(profile.getPhoneNumber());
         order.setCustomerAddress(profile.getAddress());
         order.setCart(cart);
         order.setTotalPrice(cart.getTotalPrice());

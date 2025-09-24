@@ -5,11 +5,13 @@ import com.project.pharmacy.dto.request.UserSearchCriteria;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.PageResponse;
 import com.project.pharmacy.dto.response.UserResponse;
+import com.project.pharmacy.entity.FileMetadata;
 import com.project.pharmacy.entity.Role;
 import com.project.pharmacy.entity.User;
 import com.project.pharmacy.enums.ErrorCode;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.mapper.UserMapper;
+import com.project.pharmacy.repository.FileMetadataRepository;
 import com.project.pharmacy.repository.RoleRepository;
 import com.project.pharmacy.repository.UserRepository;
 import com.project.pharmacy.security.SecurityUtils;
@@ -24,6 +26,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final FileMetadataRepository fileMetadataRepository;
 
     @Override
     public ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request) {
@@ -92,6 +96,7 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
         UserResponse userResponse = userMapper.toUserResponse(user);
+        userResponse.setProfilePicUrl(getProfilePicUrl(user.getProfilePic()));
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
 
@@ -109,7 +114,11 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
         Page<User> userPage = userRepository.searchUsers(criteria, pageable);
 
-        List<UserResponse> userResponses = userPage.getContent().stream().map(userMapper::toUserResponse).toList();
+        List<UserResponse> userResponses = userPage.getContent().stream().map(user -> {
+            UserResponse userResponse = userMapper.toUserResponse(user);
+            userResponse.setProfilePicUrl(getProfilePicUrl(user.getProfilePic()));
+            return userResponse;
+        }).toList();
         PageResponse<List<UserResponse>> pageResponse = PageResponse.<List<UserResponse>>builder()
                 .content(userResponses)
                 .currentPage(pageIndex)
@@ -127,6 +136,7 @@ public class UserServiceImpl implements UserService {
         User currentUser = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         UserResponse userResponse = userMapper.toUserResponse(currentUser);
+        userResponse.setProfilePicUrl(getProfilePicUrl(currentUser.getProfilePic()));
         userResponse.setRoles(null);
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
@@ -135,5 +145,14 @@ public class UserServiceImpl implements UserService {
     public ApiResponse<Long> getTotalUser() {
         Long totalUsers = userRepository.count();
         return ApiResponse.buildOkResponse(totalUsers, "Lấy tổng số người dùng thành công");
+    }
+
+    private String getProfilePicUrl(String profilePic) {
+        if (profilePic == null || profilePic.isEmpty()) {
+            return null;
+        }
+        FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(profilePic))
+                .orElse(null);
+        return fileMetadata != null ? fileMetadata.getUrl() : null;
     }
 }

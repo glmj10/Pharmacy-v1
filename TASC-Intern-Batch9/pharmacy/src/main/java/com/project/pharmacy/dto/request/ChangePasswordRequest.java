@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChangePasswordRequest {
     @NotEmpty(message = "Mật khẩu cũ không được để trống" )
-    private String oldPassword;
+    private String currentPassword;
 
     @NotEmpty(message = "Mật khẩu mới không được để trống")
-    private String password;
+    private String newPassword;
 
     @NotEmpty(message = "Mật khẩu xác nhận không được để trống")
     private String confirmPassword;

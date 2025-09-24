@@ -5,16 +5,20 @@ import com.nimbusds.jwt.SignedJWT;
 import com.project.pharmacy.dto.request.*;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.AuthResponse;
+import com.project.pharmacy.dto.response.FileMetadataResponse;
 import com.project.pharmacy.dto.response.UserResponse;
 import com.project.pharmacy.entity.*;
 import com.project.pharmacy.enums.ErrorCode;
+import com.project.pharmacy.enums.FileCategoryEnum;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.exceptions.ValidationException;
+import com.project.pharmacy.mapper.UserMapper;
 import com.project.pharmacy.repository.*;
 import com.project.pharmacy.security.JWTAuthenticationProvider;
 import com.project.pharmacy.security.SecurityUtils;
 import com.project.pharmacy.service.AuthService;
 import com.project.pharmacy.service.EmailService;
+import com.project.pharmacy.service.FileMetadataService;
 import com.project.pharmacy.utils.DateUtils;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
@@ -24,6 +28,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
@@ -42,7 +47,15 @@ public class AuthServiceImpl implements AuthService {
     final RoleRepository roleRepository;
     final InvalidatedTokenRepository invalidatedTokenRepository;
     final PasswordResetTokenRepository passwordResetTokenRepository;
+    final FileMetadataRepository fileMetadataRepository;
+    final FileMetadataService fileMetadataService;
+    final UserMapper userMapper;
 
+    private void invalidateTokenIfAbsent(String jti, LocalDateTime expiryTime) {
+        if (jti != null && expiryTime != null) {
+            invalidatedTokenRepository.insertIgnore(jti, expiryTime);
+        }
+    }
 
     @Override
     public ApiResponse<AuthResponse> login(AuthRequest request) {
@@ -80,6 +93,18 @@ public class AuthServiceImpl implements AuthService {
         Role role = roleRepository.findByCode("USER")
                 .orElseThrow(() -> new CustomException(ErrorCode.VALIDATION_ERROR, "Không tìm thấy quyền người dùng"));
         user.getRoles().add(role);
+
+        FileMetadata fileMetadata = FileMetadata.builder()
+                .originalFileName("default-avatar.jpg")
+                .storedFileName("default-avatar.jpg")
+                .fileExtension("jpg")
+                .fileSize(0L)
+                .contentType("image/jpeg")
+                .fileType(FileCategoryEnum.AVATAR.name())
+                .build();
+
+        fileMetadata = fileMetadataRepository.save(fileMetadata);
+        user.setProfilePic(fileMetadata.getUuid().toString());
         userRepository.save(user);
 
         cartRepository.createCart(new Cart(user));
@@ -172,21 +197,44 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(SecurityUtils.getCurrentUserEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND,
                         "Người dùng không tồn tại"));
-        if(!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+        if(!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu cũ không chính xác");
         }
-        if(!request.getPassword().equals(request.getConfirmPassword())) {
+        if(!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu mới không khớp");
         }
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         return ApiResponse.buildOkResponse(null, "Đổi mật khẩu thành công");
     }
 
     @Transactional
     @Override
-    public ApiResponse<UserResponse> changeInfo(UserRequest request) {
-        return null;
+    public ApiResponse<UserResponse> changeInfo(UserInfoRequest request, MultipartFile profilePic) {
+        Long id = SecurityUtils.getCurrentUserId();
+        assert id != null;
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+        if(request != null) {
+            user.setEmail(request.getEmail());
+            user.setUsername(request.getUsername());
+        }
+        if(profilePic != null) {
+            fileMetadataService.deleteFile(user.getProfilePic());
+            ApiResponse<FileMetadataResponse> fileResponse = fileMetadataService.storeFile(profilePic, FileCategoryEnum.AVATAR.name());
+            if(fileResponse.getStatus() != HttpStatus.OK.value() && fileResponse.getStatus() != HttpStatus.CREATED.value()) {
+                throw new CustomException(ErrorCode.FILE_STORAGE_ERROR, "Lỗi lưu trữ ảnh đại diện");
+            }
+            user.setProfilePic(fileResponse.getData().getId().toString());
+        }
+        UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
+        FileMetadata fileMetadata = fileMetadataRepository.findByUuid(java.util.UUID.fromString(user.getProfilePic()))
+                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "File không tồn tại"));
+        userResponse.setProfilePicUrl(fileMetadata.getUrl());
+        userResponse.setRoles(null);
+        return ApiResponse.buildOkResponse(userResponse, "Cập nhật thông tin người dùng thành công");
     }
 
     @Transactional
@@ -198,36 +246,25 @@ public class AuthServiceImpl implements AuthService {
 
         String token = bearerToken.substring(7);
         SignedJWT jwt = SignedJWT.parse(token);
-        InvalidatedToken invalidatedToken = new InvalidatedToken(
-                jwt.getJWTClaimsSet().getJWTID(),
-                DateUtils.convertToLocalDateTime(jwt.getJWTClaimsSet().getExpirationTime())
-        );
-
-        invalidatedTokenRepository.save(invalidatedToken);
-
+        String jti = jwt.getJWTClaimsSet().getJWTID();
+        LocalDateTime expiry = DateUtils.convertToLocalDateTime(jwt.getJWTClaimsSet().getExpirationTime());
+        invalidateTokenIfAbsent(jti, expiry);
         return ApiResponse.buildOkResponse(null, "Đăng xuất thành công");
     }
 
     @Transactional
     @Override
-    public ApiResponse<AuthResponse> refreshToken(String token) throws ParseException, JOSEException {
-        if(token == null || !token.startsWith("Bearer ")) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR, "Phiên đăng nhập không hợp lệ");
-        }
-        String oldToken = token.substring(7);
-        SignedJWT signedJWT = jwtAuthenticationProvider.verifyToken(oldToken, true);
+    public ApiResponse<AuthResponse> refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+        SignedJWT signedJWT = jwtAuthenticationProvider.verifyToken(request.getToken(), true);
         long userId = (long) signedJWT.getJWTClaimsSet().getClaim("id");
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
-        InvalidatedToken invalidatedToken = new InvalidatedToken();
-        invalidatedToken.setId(signedJWT.getJWTClaimsSet().getJWTID());
-        invalidatedToken.setExpiryTime(DateUtils.
-                convertToLocalDateTime(signedJWT.getJWTClaimsSet().getExpirationTime()));
-
-        invalidatedTokenRepository.save(invalidatedToken);
+        String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
+        LocalDateTime oldExpiry = DateUtils.convertToLocalDateTime(signedJWT.getJWTClaimsSet().getExpirationTime());
+        invalidateTokenIfAbsent(oldJti, oldExpiry);
 
         String newToken = jwtAuthenticationProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse(newToken);

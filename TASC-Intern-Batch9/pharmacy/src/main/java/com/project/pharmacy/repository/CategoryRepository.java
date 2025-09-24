@@ -5,6 +5,8 @@ import com.project.pharmacy.entity.Product;
 import com.project.pharmacy.entity.Type;
 import com.project.pharmacy.enums.CategoryTypeEnum;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -21,4 +23,11 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findByType(Type type);
 
     List<Category> findAllByProductsContains(Product product);
+
+    @Query("""
+            SELECT c FROM Category c
+            JOIN c.products p
+            WHERE p.id = :productId
+    """)
+    List<Category> findAllByProductId(@Param("productId") Long productId);
 }

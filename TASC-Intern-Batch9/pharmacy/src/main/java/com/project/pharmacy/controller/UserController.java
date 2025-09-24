@@ -66,4 +66,5 @@ public class UserController {
         ApiResponse<UserResponse> response = userService.getCurrentUser();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
 }

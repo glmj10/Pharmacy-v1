@@ -1,8 +1,8 @@
-package com.pharmacy.backend.controller;
+package com.project.pharmacy.controller;
 
-import com.pharmacy.backend.dto.response.ApiResponse;
-import com.pharmacy.backend.dto.response.ProductResponse;
-import com.pharmacy.backend.service.WishlistService;
+import com.project.pharmacy.dto.response.ApiResponse;
+import com.project.pharmacy.dto.response.ProductResponse;
+import com.project.pharmacy.service.WishlistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -32,9 +32,9 @@ public class WishlistController {
     }
 
 
-    @DeleteMapping("/remove/{wishlistId}")
-    public ResponseEntity<ApiResponse<Void>> removeProductFromWishlist(@PathVariable Long wishlistId) {
-        ApiResponse<Void> response = wishlistService.removeProductFromWishlist(wishlistId);
+    @DeleteMapping("/remove/{productId}")
+    public ResponseEntity<ApiResponse<Void>> removeProductFromWishlist(@PathVariable Long productId) {
+        ApiResponse<Void> response = wishlistService.removeProductFromWishlist(productId);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

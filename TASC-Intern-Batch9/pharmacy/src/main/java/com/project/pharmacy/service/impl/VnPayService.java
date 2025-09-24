@@ -2,6 +2,7 @@ package com.project.pharmacy.service.impl;
 
 import com.project.pharmacy.config.VnPayConfig;
 import com.project.pharmacy.dto.response.ApiResponse;
+import com.project.pharmacy.entity.Cart;
 import com.project.pharmacy.entity.Order;
 import com.project.pharmacy.entity.User;
 import com.project.pharmacy.enums.ErrorCode;
@@ -115,6 +116,28 @@ public class VnPayService {
         String secureHash = hmacSHA512(vnPayConfig.getHashSecret(), queryString);
 
         return vnPayConfig.getVnpUrl() + "?" + queryString + "&vnp_SecureHash=" + secureHash;
+    }
+
+    public ApiResponse<String> recreatePaymentUrl(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Đơn hàng không tồn tại"));
+
+        Cart cart = order.getCart();
+        User user = cart.getUser();
+        if (!Objects.equals(user.getId(), Objects.requireNonNull(SecurityUtils.getCurrentUserId()))) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED,
+                    "Bạn không có quyền truy cập đơn hàng này");
+        }
+
+        if (order.getPaymentStatus() == PaymentStatusEnum.COMPLETED) {
+            throw new CustomException(ErrorCode.ORDER_ALREADY_PAID, HttpStatus.BAD_REQUEST,
+                    "Đơn hàng đã được thanh toán");
+        }
+
+        HttpServletRequest servletRequest = SecurityUtils.getCurrentHttpServletRequest();
+        String paymentUrl = createPaymentUrl(order, servletRequest);
+        return ApiResponse.buildOkResponse(paymentUrl, "Tạo URL thanh toán thành công");
     }
 
     private String buildQueryString(Map<String, String> params) {

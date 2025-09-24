@@ -52,7 +52,6 @@ public class ProductServiceImpl implements ProductService {
     final UserRepository userRepository;
     final CategoryMapper categoryMapper;
     final FileMetadataRepository fileMetadataRepository;
-
     @Transactional
     @Override
     public ApiResponse<PageResponse<List<ProductResponse>>> getAllCMSProduct(int pageIndex, int pageSize, ProductCMSFilterRequest filterRequest) {

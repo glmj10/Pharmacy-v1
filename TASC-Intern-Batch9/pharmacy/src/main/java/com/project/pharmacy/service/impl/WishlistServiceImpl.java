@@ -2,17 +2,11 @@ package com.project.pharmacy.service.impl;
 
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.ProductResponse;
-import com.project.pharmacy.entity.FileMetadata;
-import com.project.pharmacy.entity.Product;
-import com.project.pharmacy.entity.User;
-import com.project.pharmacy.entity.Wishlist;
+import com.project.pharmacy.entity.*;
 import com.project.pharmacy.enums.ErrorCode;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.mapper.ProductMapper;
-import com.project.pharmacy.repository.FileMetadataRepository;
-import com.project.pharmacy.repository.ProductRepository;
-import com.project.pharmacy.repository.UserRepository;
-import com.project.pharmacy.repository.WishlistRepository;
+import com.project.pharmacy.repository.*;
 import com.project.pharmacy.security.SecurityUtils;
 import com.project.pharmacy.service.WishlistService;
 import jakarta.transaction.Transactional;
@@ -26,12 +20,14 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class WishlistImpl implements WishlistService {
+public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final ProductMapper productMapper;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final FileMetadataRepository fileMetadataRepository;
+    private final CartRepository cartRepository;
+    private final CartItemRepository cartItemRepository;
 
     @Transactional
     @Override
@@ -138,5 +134,27 @@ public class WishlistImpl implements WishlistService {
 
         return ApiResponse.buildOkResponse(null,
                 "Xóa tất cả sản phẩm khỏi danh sách yêu thích thành công");
+    }
+
+    @Override
+    public ApiResponse<Void> addAllToCart() {
+        User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+        List<Wishlist> wishlists = wishlistRepository.findAllByUser(user);
+        List<Product> wishListProducts = wishlists.stream().map(Wishlist::getProduct).toList();
+        if (wishListProducts.isEmpty()) {
+            return ApiResponse.buildOkResponse(
+                    null,
+                    "Danh sách yêu thích trống"
+            );
+        }
+
+        Cart cart = cartRepository.findByUser(user)
+                .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
+
+
+        return null;
     }
 }

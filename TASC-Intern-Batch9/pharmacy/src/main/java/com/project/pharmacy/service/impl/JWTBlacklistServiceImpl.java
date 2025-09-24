@@ -9,6 +9,7 @@ import com.project.pharmacy.service.JWTBlacklistService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.ParseException;
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
 
 
     @Scheduled(cron = "0 0 * * * *")
+    @Transactional
     public void cleanUpExpiredTokens() {
         List<InvalidatedToken> expiredTokens = invalidatedTokenRepository
                 .findTop10ByExpiryTimeBefore(LocalDateTime.now());
@@ -40,6 +42,7 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
     }
 
     @Scheduled(cron = "0 0 * * * *")
+    @Transactional
     public void cleanUpPasswordResetTokens() {
         LocalDateTime now = LocalDateTime.now();
         List<PasswordResetToken> expiredTokens = passwordResetTokenRepository.findTop10ByExpiryAtBefore(now);
@@ -63,6 +66,7 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
     }
 
     @Override
+    @Transactional
     public boolean isTokenVersionHasUpdated(String token, Integer version) throws ParseException {
         SignedJWT signedJWT = SignedJWT.parse(token);
 
@@ -72,7 +76,7 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
             Date date = signedJWT.getJWTClaimsSet().getExpirationTime();
             LocalDateTime localDateTime = date.toInstant()
                     .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-            invalidatedTokenRepository.save(new InvalidatedToken(jti, localDateTime));
+            invalidatedTokenRepository.insertIgnore(jti, localDateTime);
             return true;
         }
 
