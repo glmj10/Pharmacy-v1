@@ -1,0 +1,87 @@
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+  cloud:
+    gateway:
+      routes:
+        - id: identity-service
+          uri: ${IDENTITY_SERVICE_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**, /api/v1/users/**, /api/v1/roles/**
+          filters:
+            - StripPrefix=3
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URI:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - StripPrefix=3
+
+        - id: file-service
+          uri: ${FILE_SERVICE_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/files/**
+          filters:
+            - StripPrefix=3
+
+        - id: user-service
+          uri: ${USER_SERVICE_URI:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/profiles/**
+          filters:
+            - StripPrefix=3
+
+        - id: category-service
+          uri: ${CATEGORY_SERVICE_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/categories/**
+          filters:
+            - StripPrefix=3
+
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URI:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/products/**
+          filters:
+            - StripPrefix=3
+
+        - id: cart-service
+          uri: ${CART_SERVICE_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/v1/carts/**
+          filters:
+            - StripPrefix=3
+
+        - id: order-service
+          uri: ${ORDER_SERVICE_URI:http://localhost:8088}
+          predicates:
+            - Path=/api/v1/orders/**
+          filters:
+            - StripPrefix=3
+
+        - id: blog-service
+          uri: ${BLOG_SERVICE_URI:http://localhost:8089}
+          predicates:
+            - Path=/api/v1/blogs/**
+          filters:
+            - StripPrefix=3
+
+        - id: cms-service
+          uri: ${CMS_SERVICE_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/v1/cms/**
+          filters:
+            - StripPrefix=3
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION:3600}
+  reset-password:
+    expiration: ${JWT_RESET_PASSWORD_EXPIRATION:600}
+  refresh:
+    expiration: ${JWT_REFRESH_EXPIRATION:86400}
+  verify:
+    expiration: ${JWT_VERIFICATION_EXPIRATION:600}
+frontend:
+  cms-url: ${FRONTEND_CMS_URL}
+  user-url: ${FRONTEND_USER_URL}
