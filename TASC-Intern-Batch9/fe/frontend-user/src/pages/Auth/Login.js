@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import UnverifiedAccountModal from '../../components/UnverifiedAccountModal/UnverifiedAccountModal';
 import {
   FaEye,
   FaEyeSlash,
@@ -17,6 +18,8 @@ import './Auth.css';
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showUnverifiedModal, setShowUnverifiedModal] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,9 +40,20 @@ const Login = () => {
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(
-        error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.'
-      );
+      
+      // Kiểm tra nếu lỗi là tài khoản chưa được xác thực
+      if (error?.response?.status === 400 && 
+          error?.response?.data?.errorCode === 'VALIDATION_ERROR' &&
+          error?.response?.data?.message?.includes('chưa được kích hoạt')) {
+        
+        setUnverifiedEmail(data.email);
+        setShowUnverifiedModal(true);
+        // KHÔNG hiển thị toast error, chỉ chuyển sang modal
+      } else {
+        // Xử lý các lỗi khác
+        const errorMessage = error?.response?.data?.message || error?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        toast.error(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -209,6 +223,12 @@ const Login = () => {
           </div>
         </div>
       </div>
+      
+      <UnverifiedAccountModal 
+        isOpen={showUnverifiedModal} 
+        onClose={() => setShowUnverifiedModal(false)}
+        email={unverifiedEmail}
+      />
     </div>
   );
 };

@@ -49,9 +49,9 @@ const useProductInteractions = () => {
     navigate(`/products/${productSlug}`);
   }, [navigate]);
 
-  const handleAddToCart = executeWithAuth(async (productId) => {
+  const handleAddToCart = executeWithAuth(async (productId, quantity = 1) => {
     try {
-      await addToCart(productId, 1);
+      await addToCart(productId, quantity);
     } catch (error) {
       console.error('Error adding to cart:', error);
     }

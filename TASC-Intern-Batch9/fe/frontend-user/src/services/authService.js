@@ -93,6 +93,16 @@ export const authService = {
       confirmPassword
     });
     return response.data;
+  },
+
+  verifyAccount: async (token) => {
+    const response = await publicApi.patch(`/auth/verify?token=${token}`);
+    return response.data;
+  },
+
+  sendVerificationEmail: async (email) => {
+    const response = await publicApi.post(`/auth/send-verification-email?email=${email}`);
+    return response.data;
   }
 
 };

@@ -23,6 +23,7 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
 import Blog from './pages/Blogs/Blog';
 import BlogDetail from './pages/Blogs/BlogDetail';
+import VerifyAccount from './pages/Auth/VerifyAccount';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
                   <Route path="/products/:slug" element={<ProductDetail />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/blog/:slug" element={<BlogDetail />} />
+                  <Route path="/verify-account" element={<VerifyAccount />} />
                   <Route path="/cart" element={
                     <ProtectedRoute>
                       <Cart />

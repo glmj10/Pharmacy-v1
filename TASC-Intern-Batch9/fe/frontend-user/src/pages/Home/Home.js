@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { productService } from '../../services/productService';
 import { categoryService } from '../../services/categoryService';
 import { contactService } from '../../services/contactService';
@@ -24,8 +24,11 @@ import 'slick-carousel/slick/slick-theme.css';
 
 import ProductCard from '../../components/ProductCard/ProductCard';
 import { useProductInteractions } from '../../hooks/useProductInteractions';
+import { useAuthModal } from '../../contexts/AuthModalContext';
 
 const Home = () => {
+  const location = useLocation();
+  const { openLoginModal } = useAuthModal();
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -47,6 +50,13 @@ const Home = () => {
     handleAddToCart,
     handleWishlistToggle,
   } = useProductInteractions();
+
+  // Mở modal đăng nhập nếu được chuyển hướng từ VerifyAccount
+  useEffect(() => {
+    if (location.state?.openLoginModal) {
+      openLoginModal();
+    }
+  }, [location.state, openLoginModal]);
 
   useEffect(() => {
     const abortController = new AbortController();

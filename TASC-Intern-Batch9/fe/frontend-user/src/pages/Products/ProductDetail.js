@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'; 
 import { productService } from '../../services/productService';
-import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { useAuthAction } from '../../hooks/useAuthAction';
 import { useProductInteractions } from '../../hooks/useProductInteractions';
-import { FaChevronRight, FaHome } from 'react-icons/fa'; // Vẫn cần import FaHome ở đây
+import { FaChevronRight, FaHome } from 'react-icons/fa'; 
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import './ProductDetail.css';
 import './ProductDetailDescription.css'
 import ProductCard from '../../components/ProductCard/ProductCard';
 
 const ProductDetail = () => {
-  // Slider state for related products
   const [relatedIndex, setRelatedIndex] = useState(0);
-  const relatedVisible = 3; // Number of cards visible at once
+  const relatedVisible = 3; 
 
   const handleRelatedPrev = () => {
     setRelatedIndex(prev => Math.max(prev - 1, 0));
@@ -38,9 +35,7 @@ const ProductDetail = () => {
   const descriptionRef = useRef(null);
   const autoSlideRef = useRef(null);
 
-  const { addToCart } = useCart();
   const { user } = useAuth();
-  const { executeWithAuth } = useAuthAction();
   const { handleWishlistToggle, handleAddToCart: hookAddToCart, wishlistItems } = useProductInteractions();
 
   const isInWishlist = useMemo(() => {
@@ -93,7 +88,6 @@ const ProductDetail = () => {
     }
   }, [slug]);
 
-  // Wrapper function để handle wishlist toggle cho product chính
   const handleProductWishlistToggle = async () => {
     if (!product) return;
     
@@ -101,7 +95,6 @@ const ProductDetail = () => {
     
     try {
       await handleWishlistToggle(product);
-      // Cập nhật trạng thái inWishlist của product sau khi toggle
       setProduct(prev => ({
         ...prev,
         inWishlist: !currentInWishlist
@@ -132,14 +125,22 @@ const ProductDetail = () => {
     }, 100); 
   }, [product?.description, showFullDescription]);
 
-  const handleAddToCart = executeWithAuth(async (id = product?.id) => {
+  const handleAddToCart = async (id = product?.id, qty = null) => {
     try {
-      await addToCart(id, quantity);
-      setQuantity(1);
+      if (id && typeof id === 'object' && (id._reactName || id.type)) {
+        id = product?.id;
+      }
+      
+      const quantityToAdd = qty !== null ? qty : (id === product?.id ? quantity : 1);
+      await hookAddToCart(id, quantityToAdd);
+      
+      if (id === product?.id) {
+        setQuantity(1);
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
-  });
+  };
 
   const handleQuantityChange = (change) => {
     const newQuantity = quantity + change;
@@ -178,7 +179,6 @@ const ProductDetail = () => {
     ];
   }, [product?.title, location.state]); 
 
-  // Auto slideshow effect
   useEffect(() => {
     if (autoSlide && product && productImages.length > 1) {
       autoSlideRef.current = setInterval(() => {
@@ -418,7 +418,7 @@ const ProductDetail = () => {
               <div className="action-buttons">
                 <button
                   className="add-to-cart-btn"
-                  onClick={handleAddToCart}
+                  onClick={() => handleAddToCart()}
                   disabled={product.quantity === 0}
                 >
                   <i className="fas fa-cart-plus"></i>

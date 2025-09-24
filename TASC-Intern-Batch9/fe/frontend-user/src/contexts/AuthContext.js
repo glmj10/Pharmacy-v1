@@ -105,12 +105,7 @@ export const AuthProvider = ({ children }) => {
       dispatch({ type: 'SET_LOADING', payload: false });
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      if (error?.response?.data?.message) {
-        throw new Error(error.response.data.message);
-      }
-      if (error?.message) {
-        throw new Error(error.message);
-      }
+      // Ném lại error gốc để giữ nguyên response data
       throw error;
     }
   };
@@ -202,6 +197,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyAccount = async (token) => {
+    try {
+      const response = await authService.verifyAccount(token);
+      return response;
+    } catch (error) {
+      console.error('Verify account error:', error);
+      throw error;
+    }
+  };
+
+  const sendVerificationEmail = async (email) => {
+    try {
+      const response = await authService.sendVerificationEmail(email);
+      return response;
+    } catch (error) {
+      console.error('Send verification email error:', error);
+      throw error;
+    }
+  };
+
   const updateUserLocal = (userData) => {
     try {
       localStorage.setItem('user', JSON.stringify(userData));
@@ -223,6 +238,8 @@ export const AuthProvider = ({ children }) => {
     updateUserLocal,
     forgotPassword,
     resetPassword,
+    verifyAccount,
+    sendVerificationEmail,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
