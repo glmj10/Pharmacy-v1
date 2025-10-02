@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To Do App</title>
+    <script src="script.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css"
+        integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="main">
+        <div class="title">
+            <h1>Todo App</h1>
+        </div>
+
+        <div class="content">
+            <div class="to-do-input">
+                <input id="to-do-input" type="text" placeholder="Add your new todo">
+                <div class="add-button">
+                    <i class="fa-solid fa-plus"></i>
+                </div>
+            </div>
+
+            <div class="to-do-selection">
+                <ul>
+                </ul>
+            </div>
+
+            <div class="last-content">
+                <div>
+                    <span>You have 
+                        <span id="pending-tasks">0</span>
+                        pending tasks</span>
+                </div>
+
+                <div class="clear-all-button"> 
+                    <div>
+                        Clear all
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8088}
   servlet:
     encoding:
       charset: UTF-8
@@ -7,7 +7,7 @@ server:
       enabled: true
 spring:
   application:
-    name: identity-service
+    name: order-service
   jpa:
     hibernate:
       ddl-auto: update
@@ -20,9 +20,6 @@ spring:
   sql:
     init:
       mode: always
-file:
-  upload:
-    max-size: ${FILE_UPLOAD_MAX_SIZE:10}
 order:
   timeout:
     order-cancel-minutes: ${ORDER_CANCEL_TIMEOUT_MINUTES:15}
