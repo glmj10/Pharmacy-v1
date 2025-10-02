@@ -3,6 +3,9 @@
     justify-content: space-around;
 }
 
+.input-validating {
+    color: red;
+}
 
 .add-button {
     cursor: pointer;
@@ -22,6 +25,15 @@ li {
 
 .delete-button {
     cursor: pointer;
+    visibility: hidden;
+}
+
+li:hover .delete-button {
+    visibility: visible;
+}
+
+.delete-button:active {
+    transform: scale(0.9);
 }
 
 .last-content {

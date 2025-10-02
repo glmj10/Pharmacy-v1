@@ -5,10 +5,24 @@ var toDoList = Array.from(allToDoElement).map(item => item.textContent.trim())
 
 const ul = document.querySelector(".to-do-selection ul");
 const pendingTasks = document.querySelector("#pending-tasks")
+let input = document.querySelector("#to-do-input")
+const validateValue = document.querySelector(".input-validating")
 
 function addEvent() {
-    let input = document.querySelector("#to-do-input")
     let value = input.value.trim();
+
+    if(value.length == 0) {
+        validateValue.textContent = "Thông tin không được để trống";
+        return;
+    }
+
+    if(toDoList.includes(value)) {
+        validateValue.textContent = "Công việc đã tồn tại";
+        return;
+    }
+
+    console.log(toDoList.includes(value))
+
     toDoList.push(input.value.trim());
 
 
@@ -23,7 +37,7 @@ function addEvent() {
 
     const delDiv = document.createElement("div");
     delDiv.classList.add("delete-button");
-    
+
     const icon = document.createElement("i");
     icon.classList.add("fa-solid", "fa-trash");
 
@@ -41,6 +55,7 @@ function addEvent() {
 
     pendingTasks.textContent = toDoList.length;
     input.value = ""
+    validateValue.textContent = "";
 }
 
 function clearAll() {
@@ -51,3 +66,17 @@ function clearAll() {
 
 document.querySelector(".add-button").addEventListener("click", addEvent)
 document.querySelector(".clear-all-button").addEventListener("click", clearAll)
+document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
+    if (event.key === "Enter") {
+        addEvent();
+    }
+})
+
+
+// document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
+//     if (input.value.trim().length === 0 && event.key != "Enter") {
+//         validateValue.textContent = "Thông tin nhập vào không được để trống"
+//     } else {
+//         validateValue.textContent = ""
+//     }
+// })
