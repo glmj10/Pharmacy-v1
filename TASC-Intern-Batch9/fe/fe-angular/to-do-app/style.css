@@ -7,7 +7,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #ff6b9d 0%, #ffa500 50%, #ff4757 100%);
     min-height: 100vh;
     padding: 20px;
 }
@@ -42,7 +42,7 @@ body {
     font-size: 2.5rem;
     font-weight: 700;
     margin-bottom: 30px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #ff6b9d, #ff4757);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -82,8 +82,8 @@ body {
 }
 
 #to-do-input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #ff6b9d;
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
     transform: translateY(-2px);
 }
 
@@ -110,13 +110,13 @@ body {
 }
 
 #input-search:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #ff6b9d;
+    box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.1);
 }
 
 #search-button {
     padding: 12px 20px;
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #ff6b9d, #ff4757);
     color: white;
     border: none;
     border-radius: 10px;
@@ -128,7 +128,7 @@ body {
 
 #search-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 20px rgba(255, 107, 157, 0.3);
 }
 
 #search-button:active {
@@ -152,7 +152,7 @@ body {
 
 /* Add button */
 .add-button {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #ff6b9d, #ff4757);
     color: white;
     width: 55px;
     height: 55px;
@@ -162,12 +162,12 @@ body {
     justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
 }
 
 .add-button:hover {
     transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
 }
 
 .add-button:active {
@@ -197,7 +197,7 @@ body {
 }
 
 .to-do-selection::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #667eea, #764ba2);
+    background: linear-gradient(135deg, #ff6b9d, #ff4757);
     border-radius: 3px;
 }
 
@@ -243,7 +243,7 @@ li.completed {
 
 /* Delete button */
 .delete-button {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    background: linear-gradient(135deg, #ff9ff3, #f368e0);
     color: white;
     width: 35px;
     height: 35px;
@@ -266,7 +266,7 @@ li:hover .delete-button {
 
 .delete-button:hover {
     transform: scale(1.1);
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 4px 15px rgba(255, 159, 243, 0.4);
 }
 
 .delete-button:active {
@@ -289,26 +289,26 @@ li:hover .delete-button {
 }
 
 #pending-tasks {
-    color: #667eea;
+    color: #ff6b9d;
     font-weight: 700;
     font-size: 18px;
 }
 
 /* Clear all button */
 .clear-all-button {
-    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    background: linear-gradient(135deg, #ffa500, #ff6348);
     color: white;
     padding: 12px 24px;
     border-radius: 10px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
 }
 
 .clear-all-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 8px 25px rgba(255, 165, 0, 0.4);
 }
 
 .clear-all-button:active {
