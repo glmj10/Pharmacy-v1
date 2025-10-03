@@ -10,7 +10,7 @@ const validateValue = document.querySelector(".input-validating")
 let index = 0;
 function addEvent() {
     let value = input.value.trim();
-    
+
     if(value.length == 0) {
         validateValue.textContent = "Thông tin không được để trống";
         return;
@@ -81,6 +81,12 @@ function searchToDo(search) {
 document.querySelector("#input-search").addEventListener("keyup", (event) => {
     searchToDo(event.target.value.trim());
 })
+
+document.querySelector("#search-button").addEventListener("click", () => {
+    const searchInput = document.querySelector("#input-search").value.trim();
+    searchToDo(searchInput);
+})
+
 document.querySelector(".add-button").addEventListener("click", addEvent)
 document.querySelector(".clear-all-button").addEventListener("click", clearAll)
 document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
