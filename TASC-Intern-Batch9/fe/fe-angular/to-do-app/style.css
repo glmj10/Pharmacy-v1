@@ -1,6 +1,7 @@
 .to-do-input {
     display: flex;
     justify-content: space-around;
+    align-items: center;
 }
 
 .input-validating {

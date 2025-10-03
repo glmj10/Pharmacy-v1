@@ -7,10 +7,10 @@ const ul = document.querySelector(".to-do-selection ul");
 const pendingTasks = document.querySelector("#pending-tasks")
 let input = document.querySelector("#to-do-input")
 const validateValue = document.querySelector(".input-validating")
-
+let index = 0;
 function addEvent() {
     let value = input.value.trim();
-
+    
     if(value.length == 0) {
         validateValue.textContent = "Thông tin không được để trống";
         return;
@@ -64,6 +64,23 @@ function clearAll() {
     ul.innerHTML = "";
 }
 
+function searchToDo(search) {
+    const allLi = ul.querySelectorAll("li");
+    allLi.forEach(li => {
+        const text = li.querySelector("h3").textContent.toLowerCase();
+        if (text.includes(search.toLowerCase())) {
+            li.style.display = ""; 
+        } else {
+            li.style.display = "none";
+        }
+    });
+}
+
+
+
+document.querySelector("#input-search").addEventListener("keyup", (event) => {
+    searchToDo(event.target.value.trim());
+})
 document.querySelector(".add-button").addEventListener("click", addEvent)
 document.querySelector(".clear-all-button").addEventListener("click", clearAll)
 document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
@@ -71,12 +88,3 @@ document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
         addEvent();
     }
 })
-
-
-// document.querySelector("#to-do-input").addEventListener("keyup", (event) => {
-//     if (input.value.trim().length === 0 && event.key != "Enter") {
-//         validateValue.textContent = "Thông tin nhập vào không được để trống"
-//     } else {
-//         validateValue.textContent = ""
-//     }
-// })
