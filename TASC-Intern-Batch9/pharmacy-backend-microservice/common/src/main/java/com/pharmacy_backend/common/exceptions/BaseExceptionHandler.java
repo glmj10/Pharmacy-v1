@@ -5,13 +5,9 @@ import com.pharmacy_backend.common.enums.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
@@ -19,8 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+public abstract class BaseExceptionHandler {
 
     // Handle CustomException
     @ExceptionHandler(CustomException.class)
@@ -81,20 +76,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNoResourceFoundException(NoResourceFoundException ex, WebRequest request) {
-        CustomException customException = new CustomException(
-                ErrorCode.RESOURCE_NOT_FOUND,
-                HttpStatus.NOT_FOUND,
-                "Endpoint không tồn tại"
-        );
-
-        ErrorResponse errorResponse = buildErrorResponse(customException, request);
-        log.warn("Resource not found: {}", ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
-    }
-
     @ExceptionHandler(UnsupportedOperationException.class)
     public ResponseEntity<ErrorResponse> handleUnsupportedOperationException(UnsupportedOperationException ex, WebRequest request) {
         CustomException customException = new CustomException(
@@ -105,34 +86,6 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = buildErrorResponse(customException, request);
         log.warn("Unsupported operation: {}", ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex, WebRequest request) {
-        CustomException customException = new CustomException(
-                ErrorCode.UNSUPPORTED_MEDIA_TYPE,
-                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "Loại phương tiện không được hỗ trợ"
-        );
-
-        ErrorResponse errorResponse = buildErrorResponse(customException, request);
-        log.warn("Unsupported media type: {}", ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.UNSUPPORTED_MEDIA_TYPE);
-    }
-
-    @ExceptionHandler(MissingServletRequestPartException.class)
-    public ResponseEntity<ErrorResponse> handleMissingServletRequestPartException(MissingServletRequestPartException ex, WebRequest request) {
-        CustomException customException = new CustomException(
-                ErrorCode.BAD_REQUEST,
-                HttpStatus.BAD_REQUEST,
-                "Thiếu phần yêu cầu: " + ex.getRequestPartName()
-        );
-
-        ErrorResponse errorResponse = buildErrorResponse(customException, request);
-        log.warn("Missing request part: {}", ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }

@@ -1,11 +1,14 @@
-package com.project.pharmacy.entity;
+package com.pharmacy_backend.identity_service.entity;
 
-import com.project.pharmacy.entity.base.BaseEntity;
+import com.pharmacy_backend.common.entity.base.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -32,9 +35,6 @@ public class User extends BaseEntity {
 
     @Column(name = "profile_pic")
     String profilePic;
-
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "user")
-    List<Profile> profileList;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"),

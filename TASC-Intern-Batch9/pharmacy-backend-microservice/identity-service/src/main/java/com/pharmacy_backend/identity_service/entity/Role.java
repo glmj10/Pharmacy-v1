@@ -1,4 +1,4 @@
-package com.project.pharmacy.entity;
+package com.pharmacy_backend.identity_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

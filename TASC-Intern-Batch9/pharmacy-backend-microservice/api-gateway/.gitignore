@@ -37,3 +37,4 @@ pom.xml
 .mvn
 
 src/test
+.idea/compiler.xml
