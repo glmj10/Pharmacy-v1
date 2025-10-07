@@ -1,13 +1,11 @@
-package com.project.pharmacy.security;
+package com.pharmacy_backend.common.security;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 
 @RequiredArgsConstructor
@@ -32,14 +30,6 @@ public class SecurityUtils {
         }
 
         return null;
-    }
-
-    public static HttpServletRequest getCurrentHttpServletRequest() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            return attrs.getRequest();
-        }
-        throw new IllegalStateException("Không có request hiện tại");
     }
 
     public static boolean isCurrentUserAdmin() {

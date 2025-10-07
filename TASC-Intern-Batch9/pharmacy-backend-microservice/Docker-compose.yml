@@ -39,7 +39,6 @@ services:
     networks:
       - backend
 
-
   # ======================
   # Kafka UI (on 9090)
   # ======================
@@ -56,11 +55,26 @@ services:
     networks:
       - backend
 
+  # ======================
+  # Redis (cache + blacklist token)
+  # ======================
+  redis:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+    volumes:
+      - redis_data:/data
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+
 # ======================
 # Volumes & Networks
 # ======================
 volumes:
   mysql_data:
+  redis_data:
 
 networks:
   backend:

@@ -1,17 +1,18 @@
-package com.pharmacy_backend.common.security;
+package com.pharmacy_backend.identity_service.security;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.pharmacy_backend.common.dto.request.UserRequestForToken;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import com.pharmacy_backend.common.exceptions.AuthenticationException;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.common.utils.DateUtils;
+import com.pharmacy_backend.identity_service.entity.Role;
+import com.pharmacy_backend.identity_service.entity.User;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Component
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -50,18 +52,20 @@ public class JWTAuthenticationProvider {
 
     private final RedisService redisTokenService;
 
-    public String generateToken(UserRequestForToken request) {
+    public String generateToken(com.pharmacy_backend.identity_service.entity.User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
-        List<String> authorities = request.getAuthorities();
+        List<String> authorities = user.getRoles().stream().map(
+                Role::getCode
+        ).collect(Collectors.toList());
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
                 .issuer(ISSUER)
-                .subject(request.getUsername())
+                .subject(user.getUsername())
                 .claim("authorities", authorities)
-                .claim("email", request.getEmail())
-                .claim("id", request.getId())
-                .claim("ver", request.getTokenVersion())
+                .claim("email", user.getEmail())
+                .claim("id", user.getId())
+                .claim("ver", user.getTokenVersion())
                 .issueTime(new Date())
                 .jwtID(UUID.randomUUID().toString())
                 .expirationTime(new Date(System.currentTimeMillis() + expiration * 1000))
@@ -87,7 +91,8 @@ public class JWTAuthenticationProvider {
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
         boolean verified = signedJWT.verify(verifier);
 
-        if (redisTokenService.getValue(RedisKeyTypeEnum.INVALIDATED_JWT.name() + signedJWT.getJWTClaimsSet().getJWTID()) != null) {
+        if (redisTokenService.getValue(RedisKeyTypeEnum.INVALIDATED_JWT.name()
+                + ":" + signedJWT.getJWTClaimsSet().getJWTID()) != null) {
             throw new AuthenticationException("Phiên đăng nhập đã bị vô hiệu hóa");
         }
 
@@ -101,7 +106,7 @@ public class JWTAuthenticationProvider {
         return signedJWT;
     }
 
-    public String generateVerificationToken(UserRequestForToken user) {
+    public String generateVerificationToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
@@ -125,7 +130,7 @@ public class JWTAuthenticationProvider {
         return jwsObject.serialize();
     }
 
-    public String generatePasswordResetToken(UserRequestForToken user) {
+    public String generatePasswordResetToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()

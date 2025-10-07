@@ -2,6 +2,7 @@ package com.pharmacy_backend.api_gateway.config;
 
 import com.pharmacy_backend.api_gateway.security.CustomAuthenticationEntryPoint;
 import com.pharmacy_backend.api_gateway.security.JWTAuthenticationFilter;
+import com.pharmacy_backend.common.config.GatewayEndpointConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,41 +31,6 @@ public class SecurityConfig {
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
 
-    private final String[] PUBLIC_ENDPOINTS = {
-            "/api/v1/auth/login",
-            "/api/v1/auth/send-verification-email",
-            "/api/v1/auth/verify",
-            "/api/v1/auth/register",
-            "/api/v1/auth/forgot-password",
-            "/api/v1/auth/reset-password",
-            "/api/v1/auth/refresh-token",
-
-            "/api/v1/brands/customer/public/**",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-ui.html",
-
-    };
-
-    private final String[] PUBLIC_GET_ENDPOINTS = {
-            "/api/v1/products",
-            "/api/v1/products/slug/{slug}",
-            "/api/v1/products/rank/suggestions/top15",
-            "/api/v1/categories/**",
-            "/api/v1/products/brand/suggestions/top15",
-            "/api/v1/brands/customer/public",
-            "/api/v1/blogs",
-            "/api/v1/blogs/{slug}",
-            "/api/v1/categories/parent/{parentSlug}",
-            "/api/v1/categories",
-            "/api/v1/files/download/{uuid}",
-            "/api/v1/blogs",
-            "/api/v1/blogs/slug/{slug}",
-    };
-
-    public final String[] PUBLIC_POST_ENDPOINTS = {
-            "/api/v1/contacts",
-    };
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain() {
@@ -72,9 +38,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .pathMatchers(HttpMethod.GET, PUBLIC_GET_ENDPOINTS).permitAll()
-                        .pathMatchers(HttpMethod.POST, PUBLIC_POST_ENDPOINTS).permitAll()
+                        .pathMatchers(GatewayEndpointConfig.PUBLIC_ENDPOINTS).permitAll()
+                        .pathMatchers(HttpMethod.GET, GatewayEndpointConfig.PUBLIC_GET_ENDPOINTS).permitAll()
+                        .pathMatchers(HttpMethod.POST, GatewayEndpointConfig.PUBLIC_POST_ENDPOINTS).permitAll()
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -84,6 +50,7 @@ public class SecurityConfig {
                     exceptions.authenticationEntryPoint(customAuthenticationEntryPoint)
                 )
                 .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+
                 .build();
     }
 

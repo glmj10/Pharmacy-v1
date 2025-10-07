@@ -1,0 +1,27 @@
+server:
+  port: 8888
+
+spring:
+  application:
+    name: config-server
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/glmj10/config-repo.git
+          search-paths:
+            - "/*"
+          default-label: main
+          username: glmj10
+          password: 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
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+  instance:
+    hostname: localhost

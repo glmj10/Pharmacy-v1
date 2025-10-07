@@ -5,12 +5,3 @@ spring:
     url: ${DOCKER_DATASOURCE_URL}
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
-jwt:
-  secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:3600}
-  reset-password:
-    expiration: ${JWT_RESET_PASSWORD_EXPIRATION:600}
-  refresh:
-    expiration: ${JWT_REFRESH_EXPIRATION:86400}
-  verify:
-    expiration: ${JWT_VERIFICATION_EXPIRATION:600}

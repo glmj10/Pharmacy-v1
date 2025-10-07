@@ -1,4 +1,4 @@
-package com.pharmacy_backend.api_gateway.config;
+package com.pharmacy_backend.identity_service.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

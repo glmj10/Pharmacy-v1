@@ -3,7 +3,6 @@ package com.pharmacy_backend.identity_service.security;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.pharmacy_backend.common.dto.response.ErrorResponse;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -24,7 +23,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request,
                        HttpServletResponse response,
-                       AccessDeniedException accessDeniedException) throws IOException, ServletException {
+                       AccessDeniedException accessDeniedException) throws IOException{
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
@@ -33,8 +32,7 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
                 .message("Không có quyền truy cập")
                 .path(request.getRequestURI())
-                .timestamp(LocalDateTime.now())
-                .build();
+                .timestamp(LocalDateTime.now()).build();
 
         objectMapper.findAndRegisterModules();
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);

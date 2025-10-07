@@ -80,7 +80,9 @@ public enum ErrorCode {
     INVALID_PAYMENT_METHOD("Phương thức thanh toán không hợp lệ"),
     INVALID_PAYMENT_STATUS("Trạng thái thanh toán không hợp lệ"),
 
-    CONTACT_NOT_FOUND("Yêu cầu tư vấn không tồn tại")
+    CONTACT_NOT_FOUND("Yêu cầu tư vấn không tồn tại"),
+
+    ILLEGAL_STATE("Trạng thái không hợp lệ")
     ,
     ;
 

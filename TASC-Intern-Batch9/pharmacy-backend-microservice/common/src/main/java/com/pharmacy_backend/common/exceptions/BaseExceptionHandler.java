@@ -8,8 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.security.access.AccessDeniedException;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,8 +90,35 @@ public abstract class BaseExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.ILLEGAL_STATE,
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage() != null ? ex.getMessage() : "Trạng thái không hợp lệ"
+        );
 
-    private ErrorResponse buildErrorResponse(CustomException ex, WebRequest request) {
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Illegal state: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.RESOURCE_NOT_FOUND,
+                HttpStatus.NOT_FOUND,
+                ex.getMessage() != null ? ex.getMessage() : "Tài nguyên không tồn tại"
+        );
+
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Resource not found: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    protected ErrorResponse buildErrorResponse(CustomException ex, WebRequest request) {
         return ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(ex.getHttpStatus().value())

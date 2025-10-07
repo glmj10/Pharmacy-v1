@@ -41,9 +41,6 @@ public class User extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     Set<Role> roles = new HashSet<>();
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
-    List<VerificationToken> verificationTokens = new ArrayList<>();
-
     public void setStatusEmail(boolean statusEmail) {
         isActiveEmail = statusEmail;
     }
