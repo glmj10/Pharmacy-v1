@@ -12,8 +12,8 @@ spring:
           search-paths:
             - "/*"
           default-label: main
-          username: glmj10
-          password: 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
+          username: ${GITHUB_USERNAME:glmj10}
+          password: ${GITHUB_TOKEN}
 management:
   endpoints:
     web:
