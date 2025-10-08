@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/files")
 public class FileController {

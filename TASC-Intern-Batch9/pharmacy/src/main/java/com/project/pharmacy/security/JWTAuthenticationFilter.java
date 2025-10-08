@@ -50,6 +50,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                     handleUnauthorized(response, "Phiên đăng nhập đã hết hạn");
                     return;
                 }
+
                 User user = userRepository.findById(Long.valueOf(
                         signedJWT.getJWTClaimsSet()
                         .getClaim("id").toString())

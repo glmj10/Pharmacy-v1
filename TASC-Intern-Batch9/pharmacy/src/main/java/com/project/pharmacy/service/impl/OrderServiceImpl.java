@@ -320,7 +320,7 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildOkResponse(null, "Hủy đơn hàng thành công");
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void scheduleCancelPendingOrders() {
         int canceledOrders = orderRepository.cancelPendingOrders(orderCancelMinutes);

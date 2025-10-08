@@ -93,7 +93,7 @@ public class EmailUtils {
                         <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
                         <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
                         <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu:</p>
-                        <p><a href="%s/?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
+                        <p><a href="%s/reset-password?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
                         <p>Liên kết này sẽ hết hạn sau %s.</p>
                         <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
                         <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>

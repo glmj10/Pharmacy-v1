@@ -237,9 +237,8 @@ public class CategoryServiceImpl implements CategoryService {
             CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
             categoryResponse.setChildren(new ArrayList<>());
             FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(category.getThumbnail()))
-                    .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                            HttpStatus.NOT_FOUND, "Thumbnail không tồn tại"));
-            categoryResponse.setThumbnail(fileMetadata.getUrl());
+                            .orElse(null);
+            categoryResponse.setThumbnail(fileMetadata != null ? fileMetadata.getUrl() : null);
 
             categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
             idToCategoryMap.put(category.getId(), categoryResponse);

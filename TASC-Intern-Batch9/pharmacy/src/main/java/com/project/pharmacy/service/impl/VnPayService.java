@@ -26,10 +26,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -93,8 +90,9 @@ public class VnPayService {
 
     public String createPaymentUrl(Order order, HttpServletRequest request) {
         Map<String, String> params = new TreeMap<>();
-        String orderId = String.valueOf(order.getId());
-        String vnp_OrderInfo = "Thanh toan don hang #" + orderId;
+        String vnp_TxnRef = String.valueOf(order.getId() + new Random().nextInt(1000));
+
+        String vnp_OrderInfo = "Thanh toan don hang #" + vnp_TxnRef;
         String vnp_Amount = String.valueOf(order.getTotalPrice() * 100);
         String vnp_IpAddr = request.getRemoteAddr();
         String vnp_CreateDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
@@ -104,7 +102,7 @@ public class VnPayService {
         params.put("vnp_TmnCode", vnPayConfig.getTmnCode());
         params.put("vnp_Amount", vnp_Amount);
         params.put("vnp_CurrCode", "VND");
-        params.put("vnp_TxnRef", orderId);
+        params.put("vnp_TxnRef", vnp_TxnRef);
         params.put("vnp_OrderInfo", vnp_OrderInfo);
         params.put("vnp_OrderType", "other");
         params.put("vnp_Locale", "vn");

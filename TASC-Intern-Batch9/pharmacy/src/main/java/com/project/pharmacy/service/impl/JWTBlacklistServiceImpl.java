@@ -59,6 +59,7 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
         return jti != null && invalidatedTokenRepository.existsById(jti);
     }
 
+
     @Override
     public boolean isTokenExpired(String token) throws ParseException {
         SignedJWT signedJWT = SignedJWT.parse(token);

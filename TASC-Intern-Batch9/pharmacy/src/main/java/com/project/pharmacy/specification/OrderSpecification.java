@@ -54,7 +54,7 @@ public class OrderSpecification {
             if (phoneNumber == null || phoneNumber.isEmpty()) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.like(criteriaBuilder.lower(root.get("profile").get("phoneNumber")), "%" + phoneNumber.toLowerCase() + "%");
+            return criteriaBuilder.like(criteriaBuilder.lower(root.get("customerPhoneNumber")), "%" + phoneNumber.toLowerCase() + "%");
         };
     }
 

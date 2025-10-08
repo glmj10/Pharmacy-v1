@@ -27,7 +27,7 @@ public class ApplicationInitConfig {
     @Value("${default-admin.password}")
     private String password;
     @Bean
-    ApplicationRunner applicationRunner(UserRepository repository, AuthService authService) {
+    ApplicationRunner applicationRunner(UserRepository repository) {
         return args -> {
             if(userRepository.count() == 0) {
                 for(int i = 0; i < 40; i++ ) {

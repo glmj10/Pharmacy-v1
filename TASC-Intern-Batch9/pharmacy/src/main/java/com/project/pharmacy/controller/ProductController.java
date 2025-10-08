@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/products")
 public class ProductController {

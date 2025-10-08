@@ -24,7 +24,7 @@ WHERE NOT EXISTS (
 
 INSERT INTO types (code, name, description)
 SELECT * FROM (
-                  SELECT 'Blog' AS name, 'BLOG' AS code, 'Blog' AS description
+                  SELECT 'BLOG' AS name, 'BLOG' AS code, 'BLOG' AS description
               ) AS tmp
 WHERE NOT EXISTS (
     SELECT 1 FROM types WHERE code = 'BLOG'
@@ -32,7 +32,7 @@ WHERE NOT EXISTS (
 
 INSERT INTO types (code, name, description)
 SELECT * FROM (
-                  SELECT 'Product' AS name, 'PRODUCT' AS code, 'Product' AS description
+                  SELECT 'PRODUCT' AS name, 'PRODUCT' AS code, 'PRODUCT' AS description
               ) AS tmp
 WHERE NOT EXISTS (
     SELECT 1 FROM types WHERE code = 'PRODUCT'
