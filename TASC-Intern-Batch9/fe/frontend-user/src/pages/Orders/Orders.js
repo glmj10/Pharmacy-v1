@@ -144,17 +144,13 @@ const Orders = () => {
 
   const handleRetryPayment = async (orderId) => {
     try {
-      // Debug: Log để xem cấu trúc order khi người dùng nhấn nút
       const order = orders.find(o => o.id === orderId);
-      console.log('Order for retry payment:', order);
-      console.log('Available order fields:', Object.keys(order || {}));
       
       toast.info('Đang tạo liên kết thanh toán...', { autoClose: 1000 });
       const response = await paymentService.recreateVNPAYUrl(orderId);
       
       if (response?.status === 200 && response?.data) {
         toast.success('Đang chuyển hướng đến VNPAY...', { autoClose: 1500 });
-        // Delay một chút để người dùng thấy thông báo
         setTimeout(() => {
           window.location.href = response.data;
         }, 500);

@@ -52,7 +52,6 @@ export const responseErrorInterceptor = async (error) => {
             const response = await authService.refreshToken({ token: currentToken });
 
             const { data } = response.data;
-            console.log('Token refreshed successfully:', data);
             const newToken = data.token;
 
             if (!newToken) {

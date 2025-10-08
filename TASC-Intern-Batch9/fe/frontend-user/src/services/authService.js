@@ -81,7 +81,7 @@ export const authService = {
   },
 
   forgotPassword: async (confirmationData) => {
-    const response = await publicApi.post('/auth/forgot-password', confirmationData);
+    const response = await publicApi.post('/auth/forgot-password?email=' + confirmationData.email);
     return response.data;
   },
 

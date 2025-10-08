@@ -32,14 +32,12 @@ export const userService = {
 
   updateUser: async (userData) => {
     try {
-      console.log('updateUser called with:', userData);
       
       const requestData = {
         username: userData.username,
         email: userData.email
       };
-      
-      console.log('Sending request data:', requestData);
+    
       
       const formData = new FormData();
       formData.append('info', new Blob([JSON.stringify(requestData)], {
@@ -52,9 +50,6 @@ export const userService = {
         },
       });
       
-      console.log('API response:', response);
-      
-      // Check if response exists and has data
       if (!response) {
         throw new Error('No response received from server');
       }
@@ -63,8 +58,6 @@ export const userService = {
         ...response,
         data: transformUserData(response.data)
       };
-      
-      console.log('Transformed result:', result);
       
       return result;
     } catch (error) {

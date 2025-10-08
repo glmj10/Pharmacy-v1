@@ -38,7 +38,10 @@ const ResendVerificationModal = ({ isOpen, onClose }) => {
       setShowNotification(true);
       setEmail('');
     } catch (error) {
-      const message = error?.response?.data?.message || error.message || 'Gửi email thất bại';
+      // Use the improved error message from AuthContext
+      const message = error.message || 'Gửi email thất bại';
+
+      
       setNotificationData({
         type: 'error',
         title: 'Gửi email thất bại',
@@ -96,6 +99,7 @@ const ResendVerificationModal = ({ isOpen, onClose }) => {
 
       {showNotification && (
         <NotificationModal
+          isOpen={showNotification}
           type={notificationData.type}
           title={notificationData.title}
           message={notificationData.message}

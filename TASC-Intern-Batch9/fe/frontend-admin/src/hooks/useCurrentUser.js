@@ -39,7 +39,7 @@ export const useCurrentUser = () => {
         throw new Error(response.message || 'Không thể lấy thông tin người dùng');
       }
     } catch (err) {
-      console.log('Error fetching user info:', err);
+      console.error('Error fetching user info:', err);
       setError(err.message || 'Có lỗi xảy ra khi tải thông tin người dùng');
       
       // Try to get cached user info

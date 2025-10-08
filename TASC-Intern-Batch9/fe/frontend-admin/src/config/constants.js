@@ -14,7 +14,7 @@ export const ENDPOINTS = {
         REFRESH_TOKEN: "/auth/refresh-token",
         REGISTER: "/auth/register",
         INFO: "/auth/info",
-        PASSWORD: "/auth/password",
+        PASSWORD: "/auth/change-password",
         FORGOT_PASSWORD: "/auth/forgot-password",
         RESET_PASSWORD: "/auth/reset-password",
     },

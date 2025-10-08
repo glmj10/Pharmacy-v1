@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
+import { handleVerificationEmailError } from '../utils/errorHandler';
 
 const AuthContext = createContext();
 
@@ -135,7 +136,6 @@ export const AuthProvider = ({ children }) => {
         toast.success(result.message);
       }
     } catch (error) {
-      console.log('Logout completed with cleanup');
     } finally {
       dispatch({ type: 'LOGOUT' });
     }
@@ -213,7 +213,14 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       console.error('Send verification email error:', error);
-      throw error;
+      
+      const errorMessage = handleVerificationEmailError(error);
+      
+      const customError = new Error(errorMessage);
+      customError.originalError = error;
+      customError.status = error.response?.status;
+      
+      throw customError;
     }
   };
 

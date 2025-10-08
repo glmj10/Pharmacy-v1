@@ -404,7 +404,6 @@ const ProductForm = () => {
         categoryIds: formData.categoryIds.map(id => parseInt(id)),
       }
       
-      console.log('Product request being sent:', productRequest);
       
       const productBlob = new Blob([JSON.stringify(productRequest)], { type: 'application/json' })
       submitFormData.append('product', productBlob)
