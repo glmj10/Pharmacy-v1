@@ -1,7 +1,6 @@
 package com.project.pharmacy.config;
 
 
-import com.cloudinary.Api;
 import com.project.pharmacy.security.CustomAccessDeniedHandler;
 import com.project.pharmacy.security.CustomAuthenticationEntryPoint;
 import com.project.pharmacy.security.JWTAuthenticationFilter;
@@ -27,7 +26,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.crypto.spec.SecretKeySpec;
-import java.lang.reflect.Method;
 import java.util.List;
 
 @Configuration
@@ -48,6 +46,9 @@ public class SecurityConfig {
             "/api/v1/auth/refresh-token",
 
             "/api/v1/brands/customer/public/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-ui.html",
 
     };
 

@@ -6,7 +6,6 @@ import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.AuthResponse;
 import com.project.pharmacy.dto.response.UserResponse;
 import jakarta.mail.MessagingException;
-import jakarta.transaction.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UnsupportedEncodingException;

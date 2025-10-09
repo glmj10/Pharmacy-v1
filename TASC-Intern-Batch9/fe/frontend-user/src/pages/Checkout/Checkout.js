@@ -226,7 +226,6 @@ const Checkout = () => {
       };
 
       const response = await orderService.createOrder(orderData);
-      console.log(paymentMethod);
       if (paymentMethod === 'VNPAY' && response?.message === 'Chuyển hướng đến VNPAY' && response?.data) {
         window.location.href = response.data;
         return;

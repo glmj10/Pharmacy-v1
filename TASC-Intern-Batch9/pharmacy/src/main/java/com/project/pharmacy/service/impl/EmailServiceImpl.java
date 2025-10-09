@@ -77,7 +77,6 @@ public class EmailServiceImpl implements EmailService {
                     HttpStatus.BAD_REQUEST, "Tài khoản đã được xác thực");
         } else {
             String token = jwtAuthenticationProvider.generateVerificationToken(user);
-
             sendVerificationEmail(email, token, jwtAuthenticationProvider.getTokenExpiry(token));
             VerificationToken verificationToken = new VerificationToken();
             verificationToken.setToken(token);

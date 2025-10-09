@@ -9,6 +9,7 @@ import com.project.pharmacy.enums.ErrorCode;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.repository.UserRepository;
 import com.project.pharmacy.service.JWTBlacklistService;
+import com.project.pharmacy.service.impl.RedisTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -50,6 +51,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                     handleUnauthorized(response, "Phiên đăng nhập đã hết hạn");
                     return;
                 }
+
                 User user = userRepository.findById(Long.valueOf(
                         signedJWT.getJWTClaimsSet()
                         .getClaim("id").toString())

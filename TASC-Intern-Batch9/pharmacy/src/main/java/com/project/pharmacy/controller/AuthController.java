@@ -21,7 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 
-@Controller
+@RestController
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

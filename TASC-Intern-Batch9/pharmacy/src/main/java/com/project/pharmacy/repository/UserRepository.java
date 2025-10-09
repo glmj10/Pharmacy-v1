@@ -16,7 +16,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
     Optional<User> findById(Long id);
     @Query(value = """
-    SELECT u.*
+    SELECT DISTINCT u.*
     FROM users u
     JOIN user_roles ur on u.id = ur.user_id
     JOIN roles r on ur.role_id = r.id

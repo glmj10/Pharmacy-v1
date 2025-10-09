@@ -12,7 +12,6 @@ import java.util.List;
 public interface InvalidatedTokenRepository extends JpaRepository<InvalidatedToken, String> {
     List<InvalidatedToken> findTop10ByExpiryTimeBefore(LocalDateTime expiryTime);
 
-    // Idempotent insert (MySQL specific) to avoid duplicate key errors when the same token is invalidated concurrently.
     @Modifying(clearAutomatically = false, flushAutomatically = false)
     @Query(value = "INSERT IGNORE INTO invalidate_tokens(id, expiry_time) VALUES(:id, :expiryTime)", nativeQuery = true)
     int insertIgnore(@Param("id") String id, @Param("expiryTime") LocalDateTime expiryTime);

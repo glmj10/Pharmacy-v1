@@ -10,6 +10,7 @@ const NotificationModal = ({
   buttonText = 'Đóng',
   onButtonClick
 }) => {
+  
   const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -24,7 +25,9 @@ const NotificationModal = ({
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   const getModalClass = () => {
     switch (type) {

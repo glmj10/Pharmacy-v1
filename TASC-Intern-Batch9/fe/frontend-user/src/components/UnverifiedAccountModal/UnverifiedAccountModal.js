@@ -30,7 +30,8 @@ const UnverifiedAccountModal = ({ isOpen, onClose, email }) => {
       });
       setShowNotification(true);
     } catch (error) {
-      const message = error?.response?.data?.message || error.message || 'Gửi email thất bại';
+      const message = error.message || 'Gửi email thất bại';
+      
       setNotificationData({
         type: 'error',
         title: 'Gửi email thất bại',
@@ -108,6 +109,7 @@ const UnverifiedAccountModal = ({ isOpen, onClose, email }) => {
 
       {showNotification && (
         <NotificationModal
+          isOpen={showNotification}
           type={notificationData.type}
           title={notificationData.title}
           message={notificationData.message}

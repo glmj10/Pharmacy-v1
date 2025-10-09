@@ -167,7 +167,7 @@ const Navbar = () => {
 
   const getCategoryLinkAndClose = useCallback((category) => {
     let to = '/products?category=' + category.slug;
-    if (category.type === 'BLOG') {
+    if (category.type.code === 'BLOG') {
       to = '/blog?category=' + category.slug;
     }
     return {

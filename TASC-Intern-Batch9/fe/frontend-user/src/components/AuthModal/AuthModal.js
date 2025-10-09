@@ -9,7 +9,7 @@ import NotificationModal from '../NotificationModal/NotificationModal';
 import './AuthModal.css';
 
 const AuthModal = () => {
-  const { isOpen, modalType, closeModal, handleAuthSuccess, setModalType, openModal } = useAuthModal();
+  const { isOpen, modalType, closeModal, handleAuthSuccess, setModalType, openLoginModal } = useAuthModal();
   const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -100,7 +100,8 @@ const AuthModal = () => {
       });
       setShowNotification(true);
     } catch (error) {
-      const message = error?.response?.data?.message || error.message || 'Gửi email thất bại';
+      const message = error.message || 'Gửi email thất bại';
+      
       setNotificationData({
         type: 'error',
         title: 'Gửi email thất bại',
@@ -131,33 +132,46 @@ const AuthModal = () => {
     const hasResetPassword = params.has('resetPassword');
     const hasVerifyAccount = params.has('verifyAccount');
     const token = params.get('token');
+    const isResetPasswordPage = location.pathname.includes('/reset-password');
+    const isVerifyAccountPage = location.pathname.includes('/verify');
+    const resetPasswordToken = window.resetPasswordToken;
+    
+    
+    // Check for reset password token from window (set by ResetPassword component)
+    if (resetPasswordToken) {
+      setResetPasswordMode(true);
+      setVerifyAccountMode(false);
+      setForgotPasswordMode(false);
+      setResetData((prev) => ({ ...prev, token: resetPasswordToken }));
+      // Clear the token after using it
+      delete window.resetPasswordToken;
+      return;
+    }
     
     if (token) {
-      if (hasVerifyAccount) {
-        // Token dành cho verify account
+      if (hasVerifyAccount || isVerifyAccountPage) {
         setVerifyAccountMode(true);
         setResetPasswordMode(false);
         setForgotPasswordMode(false);
         setModalType && setModalType('login');
         handleVerifyAccount(token);
-        openModal && openModal();
-      } else if (hasResetPassword) {
-        // Token dành cho reset password
+        openLoginModal && openLoginModal();
+      } else if (hasResetPassword || isResetPasswordPage) {
         setResetPasswordMode(true);
         setVerifyAccountMode(false);
         setForgotPasswordMode(false);
         setModalType && setModalType('login');
         setResetData((prev) => ({ ...prev, token }));
-        openModal && openModal();
+        openLoginModal && openLoginModal();
       }
-    } else if (hasResetPassword) {
+    } else if (hasResetPassword || isResetPasswordPage) {
       setResetPasswordMode(true);
       setVerifyAccountMode(false);
       setForgotPasswordMode(false);
       setModalType && setModalType('login');
-      openModal && openModal();
+      openLoginModal && openLoginModal();
     }
-  }, [location.search, openModal]);
+  }, [location.search, location.pathname, openLoginModal, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -227,11 +241,8 @@ const AuthModal = () => {
     setLoading(true);
     
     try {
-      console.log('Registering with data:', registerData);
       await register(registerData);
-      // Lưu email để có thể gửi lại email xác thực
       setRegisteredEmail(registerData.email);
-      // Hiển thị modal thông báo đăng ký thành công thay vì đóng modal
       setRegisterSuccessNotice(true);
     } catch (error) {
       toast.error('Đăng ký thất bại: ' + error.message);
@@ -340,7 +351,7 @@ const AuthModal = () => {
         ) : emailSentNotice ? (
           <div className="auth-modal-body">
             <h2 className="auth-title">Đã gửi email xác nhận</h2>
-            <p className="auth-subtitle">Vui lòng kiểm tra email để xác thực tài khoản hoặc đặt lại mật khẩu.</p>
+            <p className="auth-subtitle">Vui lòng kiểm tra email để xác thực tài khoản để đặt lại mật khẩu.</p>
             <button className="auth-submit-btn" onClick={() => setEmailSentNotice(false)}>Đóng</button>
           </div>
         ) : verifyAccountMode ? (
@@ -597,6 +608,7 @@ const AuthModal = () => {
 
       {showNotification && (
         <NotificationModal
+          isOpen={showNotification}
           type={notificationData.type}
           title={notificationData.title}
           message={notificationData.message}

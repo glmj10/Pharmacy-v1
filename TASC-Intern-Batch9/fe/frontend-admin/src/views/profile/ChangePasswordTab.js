@@ -81,8 +81,8 @@ const ChangePasswordTab = ({ userInfo }) => {
 
     try {
       const response = await authService.changePassword({
-        oldPassword: formData.currentPassword,
-        password: formData.newPassword,
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
         confirmPassword: formData.confirmPassword,
       });
 

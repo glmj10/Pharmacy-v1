@@ -6,6 +6,7 @@ import com.project.pharmacy.entity.PasswordResetToken;
 import com.project.pharmacy.repository.InvalidatedTokenRepository;
 import com.project.pharmacy.repository.PasswordResetTokenRepository;
 import com.project.pharmacy.service.JWTBlacklistService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -18,28 +19,23 @@ import java.util.List;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class JWTBlacklistServiceImpl implements JWTBlacklistService {
 
     private final InvalidatedTokenRepository invalidatedTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final RedisTokenService redisTokenService;
 
-
-    public JWTBlacklistServiceImpl(InvalidatedTokenRepository invalidatedTokenRepository, PasswordResetTokenRepository passwordResetTokenRepository) {
-        this.invalidatedTokenRepository = invalidatedTokenRepository;
-        this.passwordResetTokenRepository = passwordResetTokenRepository;
-    }
-
-
-    @Scheduled(cron = "0 0 * * * *")
-    @Transactional
-    public void cleanUpExpiredTokens() {
-        List<InvalidatedToken> expiredTokens = invalidatedTokenRepository
-                .findTop10ByExpiryTimeBefore(LocalDateTime.now());
-        if (!expiredTokens.isEmpty()) {
-            invalidatedTokenRepository.deleteAll(expiredTokens);
-        }
-        log.info("Cleaned up {} expired tokens", expiredTokens.size());
-    }
+//    @Scheduled(cron = "0 0 * * * *")
+//    @Transactional
+//    public void cleanUpExpiredTokens() {
+//        List<InvalidatedToken> expiredTokens = invalidatedTokenRepository
+//                .findTop10ByExpiryTimeBefore(LocalDateTime.now());
+//        if (!expiredTokens.isEmpty()) {
+//            invalidatedTokenRepository.deleteAll(expiredTokens);
+//        }
+//        log.info("Cleaned up {} expired tokens", expiredTokens.size());
+//    }
 
     @Scheduled(cron = "0 0 * * * *")
     @Transactional
@@ -56,8 +52,9 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
     public boolean isTokenInvalidated(String token) throws ParseException {
         SignedJWT signedJWT = SignedJWT.parse(token);
         String jti = signedJWT.getJWTClaimsSet().getJWTID();
-        return jti != null && invalidatedTokenRepository.existsById(jti);
+        return jti != null && redisTokenService.isTokenInvalidated(jti);
     }
+
 
     @Override
     public boolean isTokenExpired(String token) throws ParseException {

@@ -1,5 +1,8 @@
 package com.project.pharmacy.service.impl;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.pharmacy.dto.request.OrderFilterRequest;
 import com.project.pharmacy.dto.request.OrderRequest;
 import com.project.pharmacy.dto.response.*;
@@ -28,6 +31,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +57,8 @@ public class OrderServiceImpl implements OrderService {
     final EmailService emailService;
     final VnPayService vnPayService;
     final FileMetadataRepository fileMetadataRepository;
+    final RedisTemplate<String, Object> redisTemplate;
+    final ObjectMapper objectMapper;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
@@ -65,6 +72,20 @@ public class OrderServiceImpl implements OrderService {
         if(pageSize <= 0) {
             pageSize = 10;
         }
+
+        String key = buildCacheKey(filterRequest, pageIndex, pageSize);
+        Object cached = redisTemplate.opsForValue().get(key);
+
+        if(cached != null) {
+            try {
+                String json = (String) cached;
+                return objectMapper.readValue(json, new TypeReference<>() {
+                });
+            } catch (Exception e) {
+                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi đọc key từ cache");
+            }
+        }
+
         Specification<Order> orderSpecification = OrderSpecification.hasDateRange(filterRequest.getFromDate(), filterRequest.getToDate())
                 .and(OrderSpecification.hasCustomerPhoneNumber(filterRequest.getCustomerPhoneNumber()))
                 .and(OrderSpecification.hasOrderId(filterRequest.getId()));
@@ -101,7 +122,17 @@ public class OrderServiceImpl implements OrderService {
                 .content(orderResponses)
                 .build();
 
-        return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách đơn hàng thành công");
+        ApiResponse<PageResponse<List<OrderResponse>>> apiResponse =
+                ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách đơn hàng thành công");
+        try {
+            String json = objectMapper.writeValueAsString(apiResponse);
+            redisTemplate.opsForValue().set(key, json, 30, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.error("Lỗi khi lưu cache với key {}: {}", key, e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi lưu cache");
+        }
+
+        return apiResponse;
     }
 
     @Override
@@ -320,7 +351,7 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildOkResponse(null, "Hủy đơn hàng thành công");
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 * * * * *")
     @Transactional
     public void scheduleCancelPendingOrders() {
         int canceledOrders = orderRepository.cancelPendingOrders(orderCancelMinutes);
@@ -357,9 +388,22 @@ public class OrderServiceImpl implements OrderService {
         }
         cartItemRepository.removeAll(cartItems);
         cart.setTotalPrice(cart.getTotalPrice() - cartItems.stream()
-                .mapToLong(cartItem -> (long) cartItem.getQuantity() * cartItem.getProduct().getPriceNew())
+                .mapToLong(cartItem
+                        -> (long) cartItem.getQuantity() * cartItem.getProduct().getPriceNew())
                 .sum());
         cartRepository.updateCart(cart);
     }
 
+    private String buildCacheKey(OrderFilterRequest filterRequest, int pageIndex, int pageSize) {
+        String orderStatus = filterRequest.getOrderStatus() != null ? filterRequest.getOrderStatus() : "ALL";
+        String paymentStatus = filterRequest.getPaymentStatus() != null ? filterRequest.getPaymentStatus() : "ALL";
+        String customerPhoneNumber = filterRequest.getCustomerPhoneNumber() != null ?
+                filterRequest.getCustomerPhoneNumber() : "ALL";
+        String fromDate = filterRequest.getFromDate() != null ? filterRequest.getFromDate().toString() : "NONE";
+        String toDate = filterRequest.getToDate() != null ? filterRequest.getToDate().toString() : "NONE";
+
+        return String.format("ORDER_FILTER:pageIndex=%s:pageSize=%s" +
+                        ":orderStatus=%s:paymentStatus=%s:customerPhoneNumber=%s:fromDate=%s:toDate=%s"
+        ,pageIndex, pageSize, orderStatus, paymentStatus, customerPhoneNumber, fromDate, toDate);
+    }
 }

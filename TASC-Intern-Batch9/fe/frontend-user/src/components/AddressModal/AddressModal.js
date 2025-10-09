@@ -55,11 +55,6 @@ const AddressModal = ({ isOpen, onClose, onSelectAddress, currentSelectedAddress
     setLoading(true);
     try {
       if (isEditing) {
-        console.log(await profileService.updateProfile(currentAddress.id, {
-          fullName: currentAddress.fullName,
-          phoneNumber: currentAddress.phoneNumber,
-          address: currentAddress.address
-        }))
         toast.success('Cập nhật địa chỉ thành công!');
       } else {
         await profileService.createProfile({

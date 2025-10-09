@@ -19,12 +19,12 @@ import com.project.pharmacy.security.SecurityUtils;
 import com.project.pharmacy.service.AuthService;
 import com.project.pharmacy.service.EmailService;
 import com.project.pharmacy.service.FileMetadataService;
-import com.project.pharmacy.utils.DateUtils;
 import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,7 +33,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
 import java.time.LocalDateTime;
+import java.util.Date;
 
+@Slf4j
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
@@ -50,12 +52,13 @@ public class AuthServiceImpl implements AuthService {
     final FileMetadataRepository fileMetadataRepository;
     final FileMetadataService fileMetadataService;
     final UserMapper userMapper;
+    final RedisTokenService redisTokenService;
 
-    private void invalidateTokenIfAbsent(String jti, LocalDateTime expiryTime) {
-        if (jti != null && expiryTime != null) {
-            invalidatedTokenRepository.insertIgnore(jti, expiryTime);
-        }
-    }
+//    private void invalidateTokenIfAbsent(String jti, LocalDateTime expiryTime) {
+//        if (jti != null && expiryTime != null) {
+//            invalidatedTokenRepository.insertIgnore(jti, expiryTime);
+//        }
+//    }
 
     @Override
     public ApiResponse<AuthResponse> login(AuthRequest request) {
@@ -248,8 +251,10 @@ public class AuthServiceImpl implements AuthService {
         String token = bearerToken.substring(7);
         SignedJWT jwt = SignedJWT.parse(token);
         String jti = jwt.getJWTClaimsSet().getJWTID();
-        LocalDateTime expiry = DateUtils.convertToLocalDateTime(jwt.getJWTClaimsSet().getExpirationTime());
-        invalidateTokenIfAbsent(jti, expiry);
+        Date expiry = jwt.getJWTClaimsSet().getExpirationTime();
+        log.info("Logging out token with jti: {} and expiry: {}", jti, expiry.getTime());
+        redisTokenService.storeInvalidatedToken(jti, expiry.getTime());
+//        invalidateTokenIfAbsent(jti, expiry);
         return ApiResponse.buildOkResponse(null, "Đăng xuất thành công");
     }
 
@@ -264,9 +269,10 @@ public class AuthServiceImpl implements AuthService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
         String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
-        LocalDateTime oldExpiry = DateUtils.convertToLocalDateTime(signedJWT.getJWTClaimsSet().getExpirationTime());
-        invalidateTokenIfAbsent(oldJti, oldExpiry);
+        Date oldExpiry = signedJWT.getJWTClaimsSet().getExpirationTime();
+//        invalidateTokenIfAbsent(oldJti, oldExpiry);
 
+        redisTokenService.storeInvalidatedToken(oldJti, oldExpiry.getTime());
         String newToken = jwtAuthenticationProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse(newToken);
         return ApiResponse.buildOkResponse(authResponse, "Làm mới phiên đăng nhập thành công");
