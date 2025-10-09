@@ -9,7 +9,6 @@ import com.project.pharmacy.enums.ErrorCode;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.repository.UserRepository;
 import com.project.pharmacy.service.JWTBlacklistService;
-import com.project.pharmacy.service.impl.RedisTokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,12 +51,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
-                User user = userRepository.findById(Long.valueOf(
-                        signedJWT.getJWTClaimsSet()
-                        .getClaim("id").toString())
-                ).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-                if(jwtBlacklistService.isTokenVersionHasUpdated(token, user.getTokenVersion())) {
+                if(jwtBlacklistService.isTokenVersionHasUpdated(token)) {
                     handleUnauthorized(response, "Phiên đăng nhập đã được câp nhật. Vui lòng đăng nhập lại.");
                     return;
                 }

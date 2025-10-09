@@ -171,4 +171,8 @@ public class JWTAuthenticationProvider {
         return signedJWT.getJWTClaimsSet().getStringClaim("email");
     }
 
+    public String getJWTID(String token) throws ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        return signedJWT.getJWTClaimsSet().getJWTID();
+    }
 }

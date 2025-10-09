@@ -13,7 +13,7 @@ spring:
             - "/*"
           default-label: main
           username: ${GITHUB_USERNAME:glmj10}
-          password: ${GITHUB_TOKEN:}
+          password: ${GITHUB_TOKEN}
 management:
   endpoints:
     web:
