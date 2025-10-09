@@ -220,6 +220,7 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(request.getEmail());
             user.setUsername(request.getUsername());
         }
+
         if(profilePic != null) {
             fileMetadataService.deleteFile(user.getProfilePic());
             ApiResponse<FileMetadataResponse> fileResponse = fileMetadataService.storeFile(profilePic, FileCategoryEnum.AVATAR.name());
