@@ -51,12 +51,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
                     return;
                 }
 
-                User user = userRepository.findById(Long.valueOf(
-                        signedJWT.getJWTClaimsSet()
-                        .getClaim("id").toString())
-                ).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-
-                if(jwtBlacklistService.isTokenVersionHasUpdated(token, user.getTokenVersion())) {
+                if(jwtBlacklistService.isTokenVersionHasUpdated(token)) {
                     handleUnauthorized(response, "Phiên đăng nhập đã được câp nhật. Vui lòng đăng nhập lại.");
                     return;
                 }

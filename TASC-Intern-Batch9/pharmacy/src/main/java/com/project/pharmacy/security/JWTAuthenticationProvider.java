@@ -12,6 +12,7 @@ import com.project.pharmacy.exceptions.AuthenticationException;
 import com.project.pharmacy.exceptions.CustomException;
 import com.project.pharmacy.repository.InvalidatedTokenRepository;
 import com.project.pharmacy.repository.PasswordResetTokenRepository;
+import com.project.pharmacy.service.impl.RedisService;
 import com.project.pharmacy.utils.DateUtils;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class JWTAuthenticationProvider {
 
     static final String ISSUER = "Pharmacy";
 
-    private final InvalidatedTokenRepository invalidatedTokenRepository;
+    private final RedisService redisService;
 
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -90,7 +91,7 @@ public class JWTAuthenticationProvider {
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
         boolean verified = signedJWT.verify(verifier);
 
-        if (invalidatedTokenRepository.existsById(signedJWT.getJWTClaimsSet().getJWTID())) {
+        if (redisService.isTokenInvalidated(signedJWT.getJWTClaimsSet().getJWTID())) {
             throw new AuthenticationException("Phiên đăng nhập đã bị vô hiệu hóa");
         }
 
@@ -171,4 +172,8 @@ public class JWTAuthenticationProvider {
         return signedJWT.getJWTClaimsSet().getStringClaim("email");
     }
 
+    public String getJWTID(String token) throws ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        return signedJWT.getJWTClaimsSet().getJWTID();
+    }
 }

@@ -11,7 +11,8 @@ import java.util.List;
 public interface UserService {
     ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request);
     ApiResponse<UserResponse> getUserById(Long userId);
-    ApiResponse<PageResponse<List<UserResponse>>> getAllUsers(Integer pageIndex, Integer pageSize, UserSearchCriteria criteria);
+    ApiResponse<PageResponse<List<UserResponse>>> getAllUsers(Integer pageIndex,
+                                                              Integer pageSize, UserSearchCriteria criteria);
     ApiResponse<UserResponse> getCurrentUser();
     ApiResponse<Long> getTotalUser();
 }

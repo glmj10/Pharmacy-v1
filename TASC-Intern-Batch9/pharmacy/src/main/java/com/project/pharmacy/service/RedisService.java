@@ -1,4 +1,4 @@
-package com.pharmacy_backend.common.service;
+package com.project.pharmacy.service;
 
 public interface RedisService {
     void setValue(String key, String value);
