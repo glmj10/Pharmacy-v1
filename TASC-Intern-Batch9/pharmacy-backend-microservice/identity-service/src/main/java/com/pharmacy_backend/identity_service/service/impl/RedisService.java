@@ -1,6 +1,6 @@
-package com.project.pharmacy.service.impl;
+package com.pharmacy_backend.identity_service.service.impl;
 
-import com.project.pharmacy.enums.RedisKeyTypeEnum;
+import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -96,3 +96,4 @@ public class RedisService {
         return version != null ? Integer.parseInt(version.toString()) : null;
     }
 }
+

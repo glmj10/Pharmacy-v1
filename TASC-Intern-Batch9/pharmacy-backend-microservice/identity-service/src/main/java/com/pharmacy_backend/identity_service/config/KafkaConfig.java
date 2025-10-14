@@ -10,4 +10,7 @@ public class KafkaConfig {
 
     @Value("${spring.kafka.producer.topic.user-updated}")
     public static String USER_UPDATED_TOPIC;
+
+    @Value("${spring.kafka.producer.topic.user-verified}")
+    public static String USER_VERIFIED_TOPIC;
 }

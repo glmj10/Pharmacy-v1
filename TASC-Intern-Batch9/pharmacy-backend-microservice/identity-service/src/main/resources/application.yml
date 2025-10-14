@@ -14,3 +14,5 @@ spring:
         user-created: ${KAFKA_CREATE_USER_TOPIC:user-created}
         user-updated: ${KAFKA_UPDATE_USER_TOPIC:user-updated}
         user-verified: ${KAFKA_VERIFY_USER_TOPIC:user-verified}
+outbox:
+  cron-job-rate-ms: ${OUTBOX_CRON_JOB_RATE_MS:5000}

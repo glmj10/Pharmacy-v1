@@ -9,10 +9,10 @@ import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import com.pharmacy_backend.common.exceptions.AuthenticationException;
 import com.pharmacy_backend.common.exceptions.CustomException;
-import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.common.utils.DateUtils;
 import com.pharmacy_backend.identity_service.entity.Role;
 import com.pharmacy_backend.identity_service.entity.User;
+import com.pharmacy_backend.identity_service.service.impl.RedisService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -50,7 +50,7 @@ public class JWTAuthenticationProvider {
 
     static final String ISSUER = "Pharmacy";
 
-    private final RedisService redisTokenService;
+    private final RedisService redisService;
 
     public String generateToken(com.pharmacy_backend.identity_service.entity.User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
@@ -91,8 +91,7 @@ public class JWTAuthenticationProvider {
                 : signedJWT.getJWTClaimsSet().getExpirationTime();
         boolean verified = signedJWT.verify(verifier);
 
-        if (redisTokenService.getValue(RedisKeyTypeEnum.INVALIDATED_JWT.name()
-                + ":" + signedJWT.getJWTClaimsSet().getJWTID()) != null) {
+        if (redisService.isTokenInvalidated(signedJWT.getJWTClaimsSet().getJWTID())) {
             throw new AuthenticationException("Phiên đăng nhập đã bị vô hiệu hóa");
         }
 
@@ -178,4 +177,8 @@ public class JWTAuthenticationProvider {
         return signedJWT.getJWTClaimsSet().getStringClaim("email");
     }
 
+    public String getJWTID(String token) throws ParseException {
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        return signedJWT.getJWTClaimsSet().getJWTID();
+    }
 }

@@ -15,10 +15,10 @@ import java.text.ParseException;
 public interface AuthService {
     ApiResponse<AuthResponse> login(AuthRequest request);
     ApiResponse<String> register(RegistrationRequest request) throws JsonProcessingException;
-    ApiResponse<String> verifyAccount(String token);
+    ApiResponse<String> verifyAccount(String token) throws ParseException;
     ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException;
     ApiResponse<String> forgotPassword(String email, Boolean isUser)
-            throws MessagingException, UnsupportedEncodingException;
+            throws MessagingException, UnsupportedEncodingException, ParseException;
     ApiResponse<String> changePassword(ChangePasswordRequest request);
     ApiResponse<UserResponse> changeInfo(UserInfoRequest request, MultipartFile profilePic);
 

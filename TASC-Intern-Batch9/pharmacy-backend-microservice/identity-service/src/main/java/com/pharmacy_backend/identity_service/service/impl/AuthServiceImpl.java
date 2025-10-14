@@ -27,16 +27,14 @@ import com.pharmacy_backend.identity_service.service.AuthService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.MessagingException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
-import java.time.LocalDateTime;
+import java.util.Date;
 
 
 @Service
@@ -49,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
     JWTAuthenticationProvider jwtAuthenticationProvider;
     ObjectMapper objectMapper;
     OutboxRepository outboxRepository;
+    RedisService redisService;
 
     @Override
     public ApiResponse<AuthResponse> login(AuthRequest request) {
@@ -86,39 +85,96 @@ public class AuthServiceImpl implements AuthService {
         String json = objectMapper.writeValueAsString(userRegisteredEvent);
 
         handleSaveOutboxEvent(user, KafkaConfig.USER_REGISTERED_TOPIC, json);
-        //send message queue to cart-service to create cart for user
         String token = jwtAuthenticationProvider.generateVerificationToken(user);
         Long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
 
+        //send message queue to cart-service to create cart for user
         UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
-
+                user.getEmail(),
+                token,
+                DateUtils.convertToLocalDateTime(String.valueOf(expiryTime))
         );
+
         //send message queue to notification-service to send verify email
-        return ApiResponse.buildCreatedResponse(null, "Đăng ký thành công");
+        handleSaveOutboxEvent(user, KafkaConfig.USER_VERIFIED_TOPIC,
+                objectMapper.writeValueAsString(userVerifyAccountEvent));
+        return ApiResponse.buildCreatedResponse(null, "Đăng ký thành công," +
+                " vui lòng kiểm tra email để xác thực tài khoản");
     }
 
     @Override
-    public ApiResponse<String> verifyAccount(String token) {
-        return null;
+    public ApiResponse<String> verifyAccount(String token) throws ParseException {
+        String jti = jwtAuthenticationProvider.getJWTID(token);
+        if(!redisService.isVerificationTokenValid(jti)) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR, "Token không hợp lệ hoặc đã hết hạn");
+        }
+
+        User user = userRepository.findByEmail(jwtAuthenticationProvider.getUserEmail(token))
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+        user.setStatusEmail(true);
+        userRepository.save(user);
+        redisService.removeVerificationToken(jti);
+
+        return ApiResponse.buildOkResponse(null, "Xác thực tài khoản thành công, vui lòng đăng nhập");
     }
 
     @Override
     public ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException {
-        return null;
+        String jti = jwtAuthenticationProvider.getJWTID(request.getResetToken());
+        if(!redisService.isResetPasswordTokenValid(jti)) {
+            throw new CustomException(
+                    ErrorCode.VALIDATION_ERROR
+                    , "Token không hợp lệ hoặc đã hết hạn"
+            );
+        }
+
+        User user = userRepository.findByEmail(
+                jwtAuthenticationProvider.getUserEmail(request.getResetToken()))
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+
+        if(!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu không khớp");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+        redisService.removeResetPasswordToken(jti);
+        return ApiResponse.buildOkResponse(
+                null,
+                "Đặt lại mật khẩu thành công"
+        );
     }
 
     @Override
-    public ApiResponse<String> forgotPassword(String email, Boolean isUser) throws MessagingException, UnsupportedEncodingException {
-        return null;
+    public ApiResponse<String> forgotPassword(String email, Boolean isUser)
+            throws MessagingException, ParseException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+        String token = jwtAuthenticationProvider.generatePasswordResetToken(user);
+        Long expiryTime = DateUtils.convertToMillis(
+                jwtAuthenticationProvider.getTokenExpiry(token)
+        );
+        redisService.storeResetPasswordToken(
+                jwtAuthenticationProvider.getJWTID(token), expiryTime);
+//        emailService.sendResetEmail(user.getEmail(), token, jwtAuthenticationProvider.getTokenExpiry(token), isUser);
+        return ApiResponse.buildOkResponse(null,
+                "Gửi email thành công, vui lòng kiểm tra email để đặt lại mật khẩu");
     }
 
     @Override
     public ApiResponse<String> changePassword(ChangePasswordRequest request) {
         User user = userRepository.findByEmail(SecurityUtils.getCurrentUserEmail())
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND,
-                        "Người dùng không tồn tại"));
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND,
+                        "Người dùng không tồn tại"
+                        )
+                );
         if(!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu cũ không chính xác");
+            throw new CustomException(
+                    ErrorCode.VALIDATION_ERROR, "Mật khẩu cũ không chính xác");
         }
         if(!request.getNewPassword().equals(request.getConfirmPassword())) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu mới không khớp");
@@ -142,13 +198,15 @@ public class AuthServiceImpl implements AuthService {
         String token = bearerToken.substring(7);
         SignedJWT jwt = SignedJWT.parse(token);
         String jti = jwt.getJWTClaimsSet().getJWTID();
-//        LocalDateTime expiry = DateUtils.convertToLocalDateTime(jwt.getJWTClaimsSet().getExpirationTime());
+        Date expiry = jwt.getJWTClaimsSet().getExpirationTime();
+        redisService.storeInvalidatedToken(jti, expiry.getTime());
 //        invalidateTokenIfAbsent(jti, expiry);
         return ApiResponse.buildOkResponse(null, "Đăng xuất thành công");
     }
 
     @Override
-    public ApiResponse<AuthResponse> refreshToken(RefreshRequest request) throws ParseException, JOSEException {
+    public ApiResponse<AuthResponse> refreshToken(RefreshRequest request)
+            throws ParseException, JOSEException {
         SignedJWT signedJWT = jwtAuthenticationProvider.verifyToken(request.getToken(), true);
         long userId = (long) signedJWT.getJWTClaimsSet().getClaim("id");
 
@@ -156,13 +214,16 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
-//        String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
-//        LocalDateTime oldExpiry = DateUtils.convertToLocalDateTime(signedJWT.getJWTClaimsSet().getExpirationTime());
-//        invalidateTokenIfAbsent(oldJti, oldExpiry);
+        String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
+        Date oldExpiry = signedJWT.getJWTClaimsSet().getExpirationTime();
 
+        redisService.storeInvalidatedToken(oldJti, oldExpiry.getTime());
         String newToken = jwtAuthenticationProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse(newToken);
-        return ApiResponse.buildOkResponse(authResponse, "Làm mới phiên đăng nhập thành công");
+        return ApiResponse.buildOkResponse(
+                authResponse,
+                "Làm mới phiên đăng nhập thành công"
+        );
     }
 
     private void handleSaveOutboxEvent(User user, String eventType, String payload) {
