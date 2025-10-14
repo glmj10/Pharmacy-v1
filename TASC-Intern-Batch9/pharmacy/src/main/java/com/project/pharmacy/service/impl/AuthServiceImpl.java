@@ -33,7 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.UnsupportedEncodingException;
 import java.text.ParseException;
-import java.time.LocalDateTime;
 import java.util.Date;
 
 @Slf4j
@@ -206,6 +205,7 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(request.getEmail());
             user.setUsername(request.getUsername());
         }
+
         if(profilePic != null) {
             fileMetadataService.deleteFile(user.getProfilePic());
             ApiResponse<FileMetadataResponse> fileResponse = fileMetadataService.storeFile(profilePic, FileCategoryEnum.AVATAR.name());
@@ -252,7 +252,6 @@ public class AuthServiceImpl implements AuthService {
 
         String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
         Date oldExpiry = signedJWT.getJWTClaimsSet().getExpirationTime();
-//        invalidateTokenIfAbsent(oldJti, oldExpiry);
 
         redisService.storeInvalidatedToken(oldJti, oldExpiry.getTime());
         String newToken = jwtAuthenticationProvider.generateToken(user);

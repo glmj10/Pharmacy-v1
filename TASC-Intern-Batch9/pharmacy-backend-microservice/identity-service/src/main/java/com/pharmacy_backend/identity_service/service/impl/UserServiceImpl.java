@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -33,6 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 //    private final FileMetadataRepository fileMetadataRepository;
+    private final RedisTemplate<String, Objects> redisTemplate;
 
     @Override
     public ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request) {
@@ -81,7 +83,10 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setRoles(new HashSet<>(roles));
-        user.setTokenVersion(user.getTokenVersion() + 1);
+        int tokenVersion = user.getTokenVersion() + 1;
+        user.setTokenVersion(tokenVersion);
+
+
         User updatedUser = userRepository.save(user);
         UserResponse userResponse = userMapper.toUserResponse(updatedUser);
         return ApiResponse.buildOkResponse(userResponse, "Cập nhật vai trò người dùng thành công");

@@ -35,16 +35,16 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
 //        log.info("Cleaned up {} expired tokens", expiredTokens.size());
 //    }
 
-    @Scheduled(cron = "0 0 * * * *")
-    @Transactional
-    public void cleanUpPasswordResetTokens() {
-        LocalDateTime now = LocalDateTime.now();
-        List<PasswordResetToken> expiredTokens = passwordResetTokenRepository.findTop10ByExpiryAtBefore(now);
-        if (!expiredTokens.isEmpty()) {
-            passwordResetTokenRepository.deleteAll(expiredTokens);
-        }
-        log.info("Cleaned up {} expired password reset tokens", expiredTokens.size());
-    }
+//    @Scheduled(cron = "0 0 * * * *")
+//    @Transactional
+//    public void cleanUpPasswordResetTokens() {
+//        LocalDateTime now = LocalDateTime.now();
+//        List<PasswordResetToken> expiredTokens = passwordResetTokenRepository.findTop10ByExpiryAtBefore(now);
+//        if (!expiredTokens.isEmpty()) {
+//            passwordResetTokenRepository.deleteAll(expiredTokens);
+//        }
+//        log.info("Cleaned up {} expired password reset tokens", expiredTokens.size());
+//    }
 
     @Override
     public boolean isTokenInvalidated(String token) throws ParseException {

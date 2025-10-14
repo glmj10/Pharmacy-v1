@@ -141,7 +141,7 @@ public class AuthServiceImpl implements AuthService {
 
         String token = bearerToken.substring(7);
         SignedJWT jwt = SignedJWT.parse(token);
-//        String jti = jwt.getJWTClaimsSet().getJWTID();
+        String jti = jwt.getJWTClaimsSet().getJWTID();
 //        LocalDateTime expiry = DateUtils.convertToLocalDateTime(jwt.getJWTClaimsSet().getExpirationTime());
 //        invalidateTokenIfAbsent(jti, expiry);
         return ApiResponse.buildOkResponse(null, "Đăng xuất thành công");
