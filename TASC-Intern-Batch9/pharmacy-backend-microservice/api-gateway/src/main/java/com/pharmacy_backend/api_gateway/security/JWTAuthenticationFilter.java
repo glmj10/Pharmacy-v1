@@ -39,8 +39,6 @@ public class JWTAuthenticationFilter implements WebFilter {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7).trim();
             try {
-                SignedJWT signedJWT = SignedJWT.parse(token);
-
                 if (jwtBlacklistService.isTokenInvalidated(token)) {
                     return handleUnauthorized(exchange, "Phiên đăng nhập không hợp lệ hoặc đã bị thu hồi");
                 }

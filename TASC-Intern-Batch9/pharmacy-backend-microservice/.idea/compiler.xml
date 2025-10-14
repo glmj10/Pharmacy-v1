@@ -19,7 +19,7 @@
         </processorPath>
         <module name="common" />
       </profile>
-      <profile name="Annotation profile for product-service" enabled="true">
+      <profile name="Annotation profile for api-gateway" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -37,8 +37,8 @@
         <module name="user-service" />
         <module name="order-service" />
         <module name="blog-service" />
-        <module name="cms-service" />
         <module name="identity-service" />
+        <module name="cms-service" />
         <module name="file-service" />
         <module name="notification-service" />
       </profile>

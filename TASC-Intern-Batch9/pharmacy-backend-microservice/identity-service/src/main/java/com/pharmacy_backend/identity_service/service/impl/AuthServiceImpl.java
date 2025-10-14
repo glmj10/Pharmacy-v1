@@ -1,18 +1,25 @@
 package com.pharmacy_backend.identity_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.exceptions.ValidationException;
+import com.pharmacy_backend.common.kafka.event.UserRegisteredEvent;
+import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.utils.DateUtils;
+import com.pharmacy_backend.identity_service.config.KafkaConfig;
 import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
+import com.pharmacy_backend.identity_service.entity.OutboxEvent;
 import com.pharmacy_backend.identity_service.entity.Role;
 import com.pharmacy_backend.identity_service.entity.User;
+import com.pharmacy_backend.identity_service.repository.OutboxRepository;
 import com.pharmacy_backend.identity_service.repository.RoleRepository;
 import com.pharmacy_backend.identity_service.repository.UserRepository;
 import com.pharmacy_backend.identity_service.security.JWTAuthenticationProvider;
@@ -20,6 +27,7 @@ import com.pharmacy_backend.identity_service.service.AuthService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.MessagingException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,11 +43,12 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
     PasswordEncoder passwordEncoder;
     UserRepository userRepository;
     RoleRepository roleRepository;
     JWTAuthenticationProvider jwtAuthenticationProvider;
+    ObjectMapper objectMapper;
+    OutboxRepository outboxRepository;
 
     @Override
     public ApiResponse<AuthResponse> login(AuthRequest request) {
@@ -56,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ApiResponse<String> register(RegistrationRequest request) {
+    public ApiResponse<String> register(RegistrationRequest request) throws JsonProcessingException {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new ValidationException("email", "Nguời dùng đã tồn tại", request.getEmail());
         }
@@ -73,7 +82,17 @@ public class AuthServiceImpl implements AuthService {
         user.getRoles().add(role);
         userRepository.save(user);
 
+        UserRegisteredEvent userRegisteredEvent = new UserRegisteredEvent(user.getId());
+        String json = objectMapper.writeValueAsString(userRegisteredEvent);
+
+        handleSaveOutboxEvent(user, KafkaConfig.USER_REGISTERED_TOPIC, json);
         //send message queue to cart-service to create cart for user
+        String token = jwtAuthenticationProvider.generateVerificationToken(user);
+        Long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
+
+        UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
+
+        );
         //send message queue to notification-service to send verify email
         return ApiResponse.buildCreatedResponse(null, "Đăng ký thành công");
     }
@@ -144,5 +163,14 @@ public class AuthServiceImpl implements AuthService {
         String newToken = jwtAuthenticationProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse(newToken);
         return ApiResponse.buildOkResponse(authResponse, "Làm mới phiên đăng nhập thành công");
+    }
+
+    private void handleSaveOutboxEvent(User user, String eventType, String payload) {
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateType("USER");
+        outboxEvent.setAggregateId(user.getId());
+        outboxEvent.setEventType(eventType);
+        outboxEvent.setPayload(payload);
+        outboxRepository.save(outboxEvent);
     }
 }

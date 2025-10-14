@@ -15,6 +15,7 @@ import java.util.UUID;
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
+@Builder
 public class BaseOutBoxEntity {
     @Id
     @GeneratedValue
