@@ -52,6 +52,8 @@ public class ProductServiceImpl implements ProductService {
     final UserRepository userRepository;
     final CategoryMapper categoryMapper;
     final FileMetadataRepository fileMetadataRepository;
+    final ProductRedisService productRedisService;
+
     @Transactional
     @Override
     public ApiResponse<PageResponse<List<ProductResponse>>> getAllCMSProduct(int pageIndex, int pageSize, ProductCMSFilterRequest filterRequest) {
@@ -188,25 +190,42 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findBySlug(slug)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug));
-        ProductResponse productResponse = productMapper.toProductResponse(product);
-        FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(product.getThumbnail()))
-                .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Không tìm thấy hình ảnh đại diện cho sản phẩm"));
-        productResponse.setThumbnailUrl(fileMetadata.getUrl());
-        productResponse.setImages(productImageService.getProductImagesByProduct(product));
-        productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
-        List<Category> categories = categoryRepository.findAllByProductsContains(product);
-        productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
-        User user;
-        Long userId = SecurityUtils.getCurrentUserId();
-        if(userId != null) {
-            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-                            HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
-            Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-            productResponse.setInWishlist(isInWishList);
+        ProductResponse productResponse = productRedisService.getCachedProductDetail(slug);
+        if(productResponse != null) {
+            User user;
+            Long userId = SecurityUtils.getCurrentUserId();
+            if(userId != null) {
+                user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                                HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+                Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+                productResponse.setInWishlist(isInWishList);
+            } else {
+                productResponse.setInWishlist(false);
+            }
+            return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
         } else {
-            productResponse.setInWishlist(false);
+            productResponse = productMapper.toProductResponse(product);
+            FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(product.getThumbnail()))
+                    .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND,
+                            HttpStatus.NOT_FOUND, "Không tìm thấy hình ảnh đại diện cho sản phẩm"));
+            productResponse.setThumbnailUrl(fileMetadata.getUrl());
+            productResponse.setImages(productImageService.getProductImagesByProduct(product));
+            productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+            List<Category> categories = categoryRepository.findAllByProductsContains(product);
+            productResponse.setCategories(categories.stream()
+                    .map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
+            User user;
+            Long userId = SecurityUtils.getCurrentUserId();
+            if(userId != null) {
+                user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                                HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+                Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+                productResponse.setInWishlist(isInWishList);
+            } else {
+                productResponse.setInWishlist(false);
+            }
         }
 
         return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
@@ -396,6 +415,31 @@ public class ProductServiceImpl implements ProductService {
             slug = baseSlug + "-" + cnt++;
         }
         return slug;
+    }
+
+    private ProductResponse buildProductResponse(Product product) {
+        ProductResponse productResponse = productMapper.toProductResponse(product);
+        FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(product.getThumbnail()))
+                .orElseThrow(() -> new CustomException(ErrorCode.IMAGE_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy hình ảnh đại diện cho sản phẩm"));
+        productResponse.setThumbnailUrl(fileMetadata.getUrl());
+        productResponse.setImages(productImageService.getProductImagesByProduct(product));
+        productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+        List<Category> categories = categoryRepository.findAllByProductsContains(product);
+        productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
+        User user;
+        Long userId = SecurityUtils.getCurrentUserId();
+        if(userId != null) {
+            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                            HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+            Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+            productResponse.setInWishlist(isInWishList);
+        } else {
+            productResponse.setInWishlist(false);
+        }
+
+        return productResponse;
     }
 
 }

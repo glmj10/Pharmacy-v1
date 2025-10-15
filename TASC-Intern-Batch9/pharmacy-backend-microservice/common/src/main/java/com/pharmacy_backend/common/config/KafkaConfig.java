@@ -1,4 +1,4 @@
-package com.pharmacy_backend.identity_service.config;
+package com.pharmacy_backend.common.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
