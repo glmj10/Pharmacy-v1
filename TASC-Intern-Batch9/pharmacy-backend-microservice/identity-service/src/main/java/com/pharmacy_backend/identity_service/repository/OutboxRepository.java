@@ -13,6 +13,6 @@ import java.util.List;
 public interface OutboxRepository extends JpaRepository<OutboxEvent, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT e FROM OutboxEvent e WHERE e.eventStatus = :status order by e.createdAt desc")
+    @Query("SELECT e FROM OutboxEvent e WHERE e.eventStatus = :status order by e.createdAt asc limit 100")
     List<OutboxEvent> findPendingEvents(@Param("status")EventStatusEnum status);
 }

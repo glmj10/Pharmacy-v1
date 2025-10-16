@@ -1,12 +1,10 @@
 package com.pharmacy_backend.common.kafka.event;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@Getter
-@Setter
-@Builder
-public class UserRegisteredEvent {
+public class CartEvent {
     private Long userId;
 }

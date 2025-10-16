@@ -22,4 +22,13 @@ public class EventProducer {
             throw e;
         }
     }
+
+    public void sendEvent(String topic, String key, String payload) {
+        try {
+            kafkaTemplate.send(topic, key, payload);
+        } catch (Exception e) {
+            log.error("Failed to send event to topic {}: {}", topic, e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
+    }
 }

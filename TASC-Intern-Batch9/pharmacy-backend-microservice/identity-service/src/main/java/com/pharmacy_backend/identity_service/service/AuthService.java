@@ -14,7 +14,7 @@ import java.text.ParseException;
 
 public interface AuthService {
     ApiResponse<AuthResponse> login(AuthRequest request);
-    ApiResponse<String> register(RegistrationRequest request) throws JsonProcessingException;
+    ApiResponse<String> register(RegistrationRequest request);
     ApiResponse<String> verifyAccount(String token) throws ParseException;
     ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException;
     ApiResponse<String> forgotPassword(String email, Boolean isUser)

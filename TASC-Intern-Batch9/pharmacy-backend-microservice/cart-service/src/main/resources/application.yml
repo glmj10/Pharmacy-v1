@@ -11,3 +11,5 @@ spring:
   kafka:
     consumer:
       group-id: cart-service
+      topic:
+        user-topic: USER_TOPIC

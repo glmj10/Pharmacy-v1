@@ -11,3 +11,21 @@ spring:
   kafka:
     consumer:
       group-id: notification-service
+      topic:
+        user-topic: USER_TOPIC
+        order-topic: ORDER_TOPIC
+      concurrency: 3
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+front-end:
+  user-url: ${FRONTEND_USER_URL:http://localhost:3001}
+  cms-url: ${FRONTEND_CMS_URL:http://localhost:3000/admin}

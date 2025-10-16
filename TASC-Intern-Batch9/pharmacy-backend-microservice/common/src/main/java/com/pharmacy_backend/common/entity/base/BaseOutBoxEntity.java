@@ -21,7 +21,7 @@ public class BaseOutBoxEntity {
     @GeneratedValue
     UUID id;
     @Column(name = "aggregate_id", nullable = false)
-    Long aggregateId;
+    String aggregateId;
 
     @Column(name = "aggregate_type", nullable = false)
     String aggregateType;
@@ -31,6 +31,8 @@ public class BaseOutBoxEntity {
 
     @Column(name = "event_version", nullable = false)
     Long eventVersion = 1L;
+
+    String topic;
 
     @Column(name = "payload", columnDefinition = "TEXT", nullable = false)
     String payload;

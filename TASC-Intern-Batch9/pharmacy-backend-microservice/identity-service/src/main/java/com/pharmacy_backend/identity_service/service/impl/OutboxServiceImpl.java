@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,8 +28,10 @@ public class OutboxServiceImpl implements OutboxService {
 
         for (OutboxEvent event : pendingOutboxEvent) {
             try {
-                eventProducer.sendEvent(event.getEventType(), event.getPayload());
+                eventProducer.sendEvent(event.getTopic(),
+                        event.getAggregateId(), event.getPayload());
                 event.setEventStatus(EventStatusEnum.PROCESSED);
+                event.setProcessedAt(LocalDateTime.now());
                 outboxRepository.save(event);
             } catch (Exception e) {
                 log.error("Failed to publish event with ID {}: {}", event.getId(), e.getMessage());

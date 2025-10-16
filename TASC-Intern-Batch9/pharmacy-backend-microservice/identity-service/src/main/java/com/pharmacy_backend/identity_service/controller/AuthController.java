@@ -34,14 +34,14 @@ public class AuthController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-//    @PostMapping("/register")
-//    public ResponseEntity<ApiResponse<String>> register(@RequestBody @Valid RegistrationRequest request) {
-//        ApiResponse<String> response = authService.register(request);
-//        return ResponseEntity.status(response.getStatus()).body(response);
-//    }
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<String>> register(@RequestBody @Valid RegistrationRequest request) {
+        ApiResponse<String> response = authService.register(request);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 
     @PatchMapping("/verify")
-    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestParam String token) {
+    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestParam String token) throws ParseException {
         ApiResponse<String> response = authService.verifyAccount(token);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
@@ -74,7 +74,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<String>> sendResetPasswordEmail(@RequestParam String email)
-            throws MessagingException, UnsupportedEncodingException {
+            throws MessagingException, UnsupportedEncodingException, ParseException {
         ApiResponse<String> response = authService.forgotPassword(email, true);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
