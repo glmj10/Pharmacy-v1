@@ -509,4 +509,10 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
         return products;
     }
+
+    @Override
+    public List<Product> findAll(boolean active) {
+        String sql = "SELECT * FROM products WHERE active = ?";
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), active);
+    }
 }

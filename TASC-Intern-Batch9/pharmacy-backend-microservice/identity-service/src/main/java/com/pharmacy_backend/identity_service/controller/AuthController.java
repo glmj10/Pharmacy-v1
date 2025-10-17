@@ -6,6 +6,7 @@ import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
 import com.pharmacy_backend.identity_service.service.AuthService;
+import com.pharmacy_backend.identity_service.kafka.producer.UserProducer;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.text.ParseException;
 @RequiredArgsConstructor
 public class AuthController {
     final AuthService authService;
+    final UserProducer userProducer;
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody AuthRequest request) {
@@ -39,16 +41,16 @@ public class AuthController {
     }
 
     @PatchMapping("/verify")
-    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestParam String token) {
+    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestParam String token) throws ParseException {
         ApiResponse<String> response = authService.verifyAccount(token);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-//    @PostMapping("/send-verification-email")
-//    public ResponseEntity<ApiResponse<Void>> sendVerifyEmail(@RequestParam String email) {
-//        ApiResponse<Void> response = emailService.resendVerificationEmail(email);
-//        return ResponseEntity.status(response.getStatus()).body(response);
-//    }
+    @PostMapping("/send-verification-email")
+    public ResponseEntity<ApiResponse<Void>> sendVerifyEmail(@RequestParam String email) {
+        ApiResponse<Void> response = authService.resendVerificationToken(email);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String bearerToken)
@@ -72,7 +74,7 @@ public class AuthController {
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResponse<String>> sendResetPasswordEmail(@RequestParam String email)
-            throws MessagingException, UnsupportedEncodingException {
+            throws MessagingException, UnsupportedEncodingException, ParseException {
         ApiResponse<String> response = authService.forgotPassword(email, true);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
@@ -91,4 +93,11 @@ public class AuthController {
         ApiResponse<UserResponse> response = authService.changeInfo(request, avatar);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
+    @PostMapping("/test-event")
+    public ResponseEntity<String> testEvent(@RequestParam String message) {
+        userProducer.sendMessage(message);
+        return ResponseEntity.ok("Message sent to Kafka topic");
+    }
+
 }

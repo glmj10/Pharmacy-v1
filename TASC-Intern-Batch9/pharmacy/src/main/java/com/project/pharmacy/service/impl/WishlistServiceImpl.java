@@ -1,5 +1,6 @@
 package com.project.pharmacy.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.pharmacy.dto.response.ApiResponse;
 import com.project.pharmacy.dto.response.ProductResponse;
 import com.project.pharmacy.entity.*;
@@ -11,6 +12,7 @@ import com.project.pharmacy.security.SecurityUtils;
 import com.project.pharmacy.service.WishlistService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -27,11 +29,11 @@ public class WishlistServiceImpl implements WishlistService {
     private final ProductRepository productRepository;
     private final FileMetadataRepository fileMetadataRepository;
     private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
 
     @Transactional
     @Override
     public ApiResponse<List<ProductResponse>> getMyWishlist() {
+
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
@@ -78,7 +80,6 @@ public class WishlistServiceImpl implements WishlistService {
         product.setNumberOfLikes(product.getNumberOfLikes() + 1);
         productRepository.updateProduct(productId, product);
         wishlistRepository.save(wishlist);
-
         return ApiResponse.buildCreatedResponse(null,
                 "Thêm sản phẩm vào danh sách yêu thích thành công");
     }
@@ -153,7 +154,6 @@ public class WishlistServiceImpl implements WishlistService {
         Cart cart = cartRepository.findByUser(user)
                 .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
-
 
         return null;
     }

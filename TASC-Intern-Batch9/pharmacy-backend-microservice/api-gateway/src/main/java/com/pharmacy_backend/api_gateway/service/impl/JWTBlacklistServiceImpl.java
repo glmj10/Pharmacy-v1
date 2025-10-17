@@ -35,16 +35,18 @@ public class JWTBlacklistServiceImpl implements JWTBlacklistService {
 
     @Override
     @Transactional
-    public boolean isTokenVersionHasUpdated(String token, Integer version) throws ParseException {
+    public boolean isTokenVersionHasUpdated(String token) throws ParseException {
         SignedJWT signedJWT = SignedJWT.parse(token);
 
         Integer tokenVersion = Integer.parseInt(signedJWT.getJWTClaimsSet().getClaim("ver").toString());
-        if(!tokenVersion.equals(version)) {
+        Integer version = redisTokenService.getUserVersion(
+                Long.valueOf(signedJWT.getJWTClaimsSet().getClaim("id").toString())
+        );
+
+        if(version != null && !tokenVersion.equals(version)) {
             String jti = signedJWT.getJWTClaimsSet().getJWTID();
-            Date date = signedJWT.getJWTClaimsSet().getExpirationTime();
-            LocalDateTime localDateTime = date.toInstant()
-                    .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
-//            invalidatedTokenRepository.insertIgnore(jti, localDateTime);
+            long exp = signedJWT.getJWTClaimsSet().getExpirationTime().getTime();
+            redisTokenService.storeInvalidatedToken(jti, exp);
             return true;
         }
 

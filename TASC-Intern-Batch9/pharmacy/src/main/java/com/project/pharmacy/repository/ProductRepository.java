@@ -4,7 +4,6 @@ import com.project.pharmacy.dto.request.ProductCMSFilterRequest;
 import com.project.pharmacy.dto.request.ProductFilterCustomerRequest;
 import com.project.pharmacy.entity.Brand;
 import com.project.pharmacy.entity.Product;
-import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,4 +34,5 @@ public interface ProductRepository {
     void deleteProduct(Long id);
 
     List<Product> updateAll(List<Product> products);
+    List<Product> findAll(boolean active);
 }

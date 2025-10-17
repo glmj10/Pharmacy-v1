@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-public abstract class BaseExceptionHandler {
+public class BaseExceptionHandler {
 
     // Handle CustomException
     @ExceptionHandler(CustomException.class)
@@ -90,6 +90,7 @@ public abstract class BaseExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+
     @ExceptionHandler(IllegalStateException.class)
     public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex, WebRequest request) {
         CustomException customException = new CustomException(
@@ -102,20 +103,6 @@ public abstract class BaseExceptionHandler {
         log.warn("Illegal state: {}", ex.getMessage());
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
-    }
-
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
-        CustomException customException = new CustomException(
-                ErrorCode.RESOURCE_NOT_FOUND,
-                HttpStatus.NOT_FOUND,
-                ex.getMessage() != null ? ex.getMessage() : "Tài nguyên không tồn tại"
-        );
-
-        ErrorResponse errorResponse = buildErrorResponse(customException, request);
-        log.warn("Resource not found: {}", ex.getMessage());
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
     protected ErrorResponse buildErrorResponse(CustomException ex, WebRequest request) {

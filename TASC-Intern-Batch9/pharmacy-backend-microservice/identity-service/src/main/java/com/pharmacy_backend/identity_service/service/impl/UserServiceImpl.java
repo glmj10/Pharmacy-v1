@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
 //    private final FileMetadataRepository fileMetadataRepository;
-    private final RedisTemplate<String, Objects> redisTemplate;
+    private final RedisService redisService;
 
     @Override
     public ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request) {
@@ -83,11 +83,10 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setRoles(new HashSet<>(roles));
-        int tokenVersion = user.getTokenVersion() + 1;
-        user.setTokenVersion(tokenVersion);
-
-
+        int version = user.getTokenVersion() + 1;
+        user.setTokenVersion(version);
         User updatedUser = userRepository.save(user);
+        redisService.storeUserVersion(user.getId(), version);
         UserResponse userResponse = userMapper.toUserResponse(updatedUser);
         return ApiResponse.buildOkResponse(userResponse, "Cập nhật vai trò người dùng thành công");
     }
