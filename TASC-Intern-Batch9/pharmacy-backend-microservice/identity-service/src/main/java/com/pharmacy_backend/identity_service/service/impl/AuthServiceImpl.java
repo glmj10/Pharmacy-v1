@@ -5,10 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
-import com.pharmacy_backend.common.enums.ErrorCode;
-import com.pharmacy_backend.common.enums.EventTypeEnum;
-import com.pharmacy_backend.common.enums.PartitionKeyEnum;
-import com.pharmacy_backend.common.enums.TopicEnum;
+import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
+import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.exceptions.ValidationException;
 import com.pharmacy_backend.common.kafka.event.UserForgotPasswordEvent;
@@ -23,11 +21,13 @@ import com.pharmacy_backend.identity_service.entity.OutboxEvent;
 import com.pharmacy_backend.identity_service.entity.Role;
 import com.pharmacy_backend.identity_service.entity.User;
 import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.identity_service.mapper.UserMapper;
 import com.pharmacy_backend.identity_service.repository.OutboxRepository;
 import com.pharmacy_backend.identity_service.repository.RoleRepository;
 import com.pharmacy_backend.identity_service.repository.UserRepository;
 import com.pharmacy_backend.identity_service.security.JWTAuthenticationProvider;
 import com.pharmacy_backend.identity_service.service.AuthService;
+import com.pharmacy_backend.identity_service.service.FileServiceClient;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +54,8 @@ public class AuthServiceImpl implements AuthService {
     final ObjectMapper objectMapper;
     final OutboxRepository outboxRepository;
     final RedisService redisService;
+    final UserMapper userMapper;
+    final FileServiceClient fileServiceClient;
 
     @Value("${spring.application.name}")
     String appName;
@@ -239,7 +241,35 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ApiResponse<UserResponse> changeInfo(UserInfoRequest request, MultipartFile profilePic) {
-        return null;
+        Long id = SecurityUtils.getCurrentUserId();
+        assert id != null;
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+        if(request != null) {
+            user.setUsername(request.getUsername());
+        }
+
+        if(profilePic != null) {
+            // Only delete old profile pic if it exists
+            if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
+                fileServiceClient.deleteFile(user.getProfilePic());
+            }
+            ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic, FileCategoryEnum.AVATAR.name());
+            if(fileResponse.getStatus() != HttpStatus.OK.value() && fileResponse.getStatus() != HttpStatus.CREATED.value()) {
+                throw new CustomException(ErrorCode.FILE_STORAGE_ERROR, "Lỗi lưu trữ ảnh đại diện");
+            }
+            user.setProfilePic(fileResponse.getData().getId().toString());
+        }
+
+        UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
+        // Only get profile pic URL if it exists
+        if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
+            String profilePicUrl = fileServiceClient.getFileUrl(user.getProfilePic()).getData();
+            userResponse.setProfilePicUrl(profilePicUrl);
+        }
+        userResponse.setRoles(null);
+        return ApiResponse.buildOkResponse(userResponse, "Cập nhật thông tin người dùng thành công");
     }
 
     @Override

@@ -14,11 +14,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserInfoRequest {
-    @Email(message = "Sai định dạng email")
-    @NotEmpty(message = "Email không được để trống")
-    @NotNull(message = "Email không được để trống")
-    String email;
-
     @NotEmpty(message = "Tên người dùng không được để trống")
     @NotNull(message = "Tên người dùng không được để trống")
     String username;

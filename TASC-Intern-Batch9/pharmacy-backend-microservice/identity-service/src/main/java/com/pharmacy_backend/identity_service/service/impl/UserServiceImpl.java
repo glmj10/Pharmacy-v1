@@ -13,6 +13,7 @@ import com.pharmacy_backend.identity_service.entity.User;
 import com.pharmacy_backend.identity_service.mapper.UserMapper;
 import com.pharmacy_backend.identity_service.repository.RoleRepository;
 import com.pharmacy_backend.identity_service.repository.UserRepository;
+import com.pharmacy_backend.identity_service.service.FileServiceClient;
 import com.pharmacy_backend.identity_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,8 +34,8 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-//    private final FileMetadataRepository fileMetadataRepository;
     private final RedisService redisService;
+    private final FileServiceClient fileServiceClient;
 
     @Override
     public ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request) {
@@ -98,7 +99,7 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
         UserResponse userResponse = userMapper.toUserResponse(user);
-//        userResponse.setProfilePicUrl(getProfilePicUrl(user.getProfilePic()));
+        userResponse.setProfilePicUrl(fileServiceClient.getFileUrl(user.getProfilePic()).getData());
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
 
@@ -136,9 +137,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public ApiResponse<UserResponse> getCurrentUser() {
         User currentUser = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         UserResponse userResponse = userMapper.toUserResponse(currentUser);
-//        userResponse.setProfilePicUrl(getProfilePicUrl(currentUser.getProfilePic()));
+        String profilePicUrl = fileServiceClient.getFileUrl(
+                (currentUser.getProfilePic() != null) ? currentUser.getProfilePic() : "").getData();
+        userResponse.setProfilePicUrl(profilePicUrl);
         userResponse.setRoles(null);
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
