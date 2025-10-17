@@ -12,10 +12,10 @@ import java.time.LocalDateTime;
 @Component
 public class EmailUtils {
 
-    @Value("${front-end.user-url}")
+    @Value("${frontend.user-url}")
     private String userUrl;
 
-    @Value("${front-end.cms-url}")
+    @Value("${frontend.cms-url}")
     private String adminUrl;
 
     private static EmailUtils instance;
@@ -85,7 +85,6 @@ public class EmailUtils {
 //    }
 
     public String buildUserResetPasswordEmail(String token, LocalDateTime expiryAt) {
-        System.out.println("User URL: " + userUrl);
         return """
                     <html>
                       <body style="font-family: Arial, sans-serif; color: #333;">
@@ -93,7 +92,7 @@ public class EmailUtils {
                         <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
                         <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu:</p>
                         <p><a href="%s/reset-password?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
-                        <p>Liên kết này sẽ hết hạn sau %s.</p>
+                        <p>Liên kết này sẽ hết hạn sau %s. phút</p>
                         <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
                         <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
                       </body>
@@ -109,7 +108,7 @@ public class EmailUtils {
                 <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản quản trị của bạn.</p>
                 <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu:</p>
                 <p><a href="%s/reset-password?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
-                <p>Liên kết này sẽ hết hạn sau %s.</p>
+                <p>Liên kết này sẽ hết hạn sau %s. phút</p>
                 <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
                 <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
               </body>
@@ -125,7 +124,7 @@ public class EmailUtils {
                 <p>Cảm ơn bạn đã đăng ký tài khoản tại Nhà Thuốc Pharmacy.</p>
                 <p>Vui lòng nhấp vào liên kết dưới đây để xác thực tài khoản của bạn:</p>
                 <p><a href="%s/verify-account?token=%s" style="color: #007bff;">Xác thực tài khoản</a></p>
-                <p>Liên kết này sẽ hết hạn sau %s.</p>
+                <p>Liên kết này sẽ hết hạn sau %s. phút</p>
                 <p>Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
                 <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
               </body>
@@ -133,10 +132,4 @@ public class EmailUtils {
         """.formatted(userUrl, token, expiryAt.toLocalTime().toString());
     }
 
-    public static EmailUtils getInstance() {
-        if (instance == null) {
-            instance = new EmailUtils();
-        }
-        return instance;
-    }
 }

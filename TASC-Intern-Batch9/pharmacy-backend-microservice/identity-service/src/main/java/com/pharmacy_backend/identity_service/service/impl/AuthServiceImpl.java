@@ -11,7 +11,7 @@ import com.pharmacy_backend.common.enums.PartitionKeyEnum;
 import com.pharmacy_backend.common.enums.TopicEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.exceptions.ValidationException;
-import com.pharmacy_backend.common.kafka.event.CartEvent;
+import com.pharmacy_backend.common.kafka.event.UserForgotPasswordEvent;
 import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
@@ -67,6 +67,11 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Email hoặc mật khẩu không chính xác");
         }
 
+        if(!user.isVerified()) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR,
+                    "Tài khoản chưa được kích hoạt, vui lòng kiểm tra email để xác thực");
+        }
+
         AuthResponse authResponse = new AuthResponse();
         authResponse.setToken(jwtAuthenticationProvider.generateToken(user));
         return ApiResponse.buildOkResponse(authResponse, "Đăng nhập thành công");
@@ -104,7 +109,7 @@ public class AuthServiceImpl implements AuthService {
         handleSaveOutboxEvent(event);
 
         String token = jwtAuthenticationProvider.generateVerificationToken(user);
-        Long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
+        long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
 
         UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
                 user.getEmail(),
@@ -119,8 +124,12 @@ public class AuthServiceImpl implements AuthService {
                 .data(userVerifyAccountEvent).
                 build();
 
-        //send message queue to notification-service to send verify email
         handleSaveOutboxEvent(verifyEvent);
+        try {
+            redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
+        } catch (ParseException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
         return ApiResponse.buildCreatedResponse(null, "Đăng ký thành công," +
                 " vui lòng kiểm tra email để xác thực tài khoản");
     }
@@ -164,7 +173,9 @@ public class AuthServiceImpl implements AuthService {
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
+        user.setTokenVersion(user.getTokenVersion());
         redisService.removeResetPasswordToken(jti);
+        redisService.storeUserVersion(user.getId(), user.getTokenVersion());
         return ApiResponse.buildOkResponse(
                 null,
                 "Đặt lại mật khẩu thành công"
@@ -178,11 +189,27 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         String token = jwtAuthenticationProvider.generatePasswordResetToken(user);
+        UserForgotPasswordEvent userForgotPasswordEvent = new UserForgotPasswordEvent();
+        userForgotPasswordEvent.setEmail(user.getEmail());
+        userForgotPasswordEvent.setResetPasswordToken(token);
+        userForgotPasswordEvent.setExpiryAt(jwtAuthenticationProvider.getTokenExpiry(token));
+        userForgotPasswordEvent.setUser(isUser);
+
+        Event<UserForgotPasswordEvent> event = Event.<UserForgotPasswordEvent>builder()
+                .source(appName)
+                .key(String.format("%s-%d", PartitionKeyEnum.USER.getName(), user.getId()))
+                .eventType(EventTypeEnum.PASSWORD_RESET.getName())
+                .data(userForgotPasswordEvent)
+                .build();
+
+        handleSaveOutboxEvent(event);
+
         Long expiryTime = DateUtils.convertToMillis(
                 jwtAuthenticationProvider.getTokenExpiry(token)
         );
         redisService.storeResetPasswordToken(
                 jwtAuthenticationProvider.getJWTID(token), expiryTime);
+
 //        emailService.sendResetEmail(user.getEmail(), token, jwtAuthenticationProvider.getTokenExpiry(token), isUser);
         return ApiResponse.buildOkResponse(null,
                 "Gửi email thành công, vui lòng kiểm tra email để đặt lại mật khẩu");
@@ -204,7 +231,9 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu mới không khớp");
         }
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
+        redisService.storeUserVersion(user.getId(), user.getTokenVersion());
         return ApiResponse.buildOkResponse(null, "Đổi mật khẩu thành công");
     }
 
@@ -249,13 +278,43 @@ public class AuthServiceImpl implements AuthService {
         );
     }
 
-    protected void handleSaveOutboxEvent(User user, String eventType, String payload) {
-        OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateType("USER");
-        outboxEvent.setAggregateId(String.format("USER-%d", user.getId()));
-        outboxEvent.setEventType(eventType);
-        outboxEvent.setPayload(payload);
-        outboxRepository.save(outboxEvent);
+    @Override
+    public ApiResponse<Void> resendVerificationToken(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+                ErrorCode.USER_NOT_FOUND.getMessage()));
+
+        if(user.isVerified()) {
+            throw new CustomException(ErrorCode.USER_ALREADY_VERIFIED,
+                    HttpStatus.BAD_REQUEST, "Tài khoản đã được xác thực");
+        } else {
+            String token = jwtAuthenticationProvider.generateVerificationToken(user);
+            long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
+
+            UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
+                    user.getEmail(),
+                    token,
+                    DateUtils.convertToLocalDateTime(new Date(System.currentTimeMillis() + expiryTime))
+            );
+
+            Event<UserVerifyAccountEvent> verifyEvent = Event.<UserVerifyAccountEvent>builder()
+                    .source(appName)
+                    .eventType(EventTypeEnum.USER_VERIFIED.getName())
+                    .key(String.format("%s-%d", PartitionKeyEnum.USER, user.getId()))
+                    .data(userVerifyAccountEvent).
+                    build();
+
+            handleSaveOutboxEvent(verifyEvent);
+            try {
+                redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
+            } catch (ParseException e) {
+                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
+            }
+            return ApiResponse.<Void>builder()
+                    .status(HttpStatus.OK.value())
+                    .message("Đã gửi lại email xác thực thành công, vui lòng kiểm tra email")
+                    .data(null)
+                    .build();
+        }
     }
 
     public void handleSaveOutboxEvent(Event<?> event) {

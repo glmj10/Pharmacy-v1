@@ -47,10 +47,9 @@ public class JWTAuthenticationFilter implements WebFilter {
                     return handleUnauthorized(exchange, "Phiên đăng nhập đã hết hạn");
                 }
 
-//                Long userId = Long.valueOf(signedJWT.getJWTClaimsSet().getClaim("id").toString());
-//                if (jwtBlacklistService.isTokenVersionHasUpdated(token, userVersion)) {
-//                    return handleUnauthorized(exchange, "Phiên đăng nhập đã được cập nhật, vui lòng đăng nhập lại.");
-//                }
+                if(jwtBlacklistService.isTokenVersionHasUpdated(token)) {
+                    return handleUnauthorized(exchange, "Phiên đăng nhập đã được câp nhật. Vui lòng đăng nhập lại.");
+                }
 
             } catch (ParseException e) {
                 return handleUnauthorized(exchange, "Token định dạng không hợp lệ");

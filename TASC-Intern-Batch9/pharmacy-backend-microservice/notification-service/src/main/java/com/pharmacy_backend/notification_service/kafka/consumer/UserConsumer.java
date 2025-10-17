@@ -7,13 +7,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
 import com.pharmacy_backend.common.enums.TopicEnum;
 import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.common.kafka.event.UserForgotPasswordEvent;
 import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.notification_service.service.EmailService;
+import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
+
+import java.io.UnsupportedEncodingException;
 
 @Component
 @RequiredArgsConstructor
@@ -24,7 +28,7 @@ public class UserConsumer {
     @KafkaListener(topics = "${spring.kafka.consumer.topic.user-topic}",
             groupId = "${spring.kafka.consumer.group-id}",
             concurrency = "${spring.kafka.consumer.concurrency}" )
-    public void consumeUserCreatedEvent(String message, Acknowledgment acknowledgment) {
+    public void consumeUserEvent(String message, Acknowledgment acknowledgment) {
         try {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if (event.getEventType().equalsIgnoreCase(EventTypeEnum.USER_VERIFIED.getName())) {
@@ -34,10 +38,19 @@ public class UserConsumer {
                         userVerifyAccountEvent.getVerificationToken(),
                         userVerifyAccountEvent.getExpiryAt());
             }
-        } catch (JsonProcessingException e) {
+
+            if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PASSWORD_RESET.getName())) {
+                UserForgotPasswordEvent userForgotPasswordEvent = objectMapper.convertValue(event.getData(),
+                        UserForgotPasswordEvent.class);
+                emailService.sendResetEmail(userForgotPasswordEvent.getEmail(),
+                        userForgotPasswordEvent.getResetPasswordToken(), userForgotPasswordEvent.getExpiryAt(),
+                        userForgotPasswordEvent.isUser());
+            }
+
+            acknowledgment.acknowledge();
+        } catch (JsonProcessingException | MessagingException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        acknowledgment.acknowledge();
     }
 
     @KafkaListener(topics = "test-topic", groupId = "notification-service")
@@ -46,4 +59,5 @@ public class UserConsumer {
         System.out.println("Received message: " + response);
         ack.acknowledge();
     }
+
 }
