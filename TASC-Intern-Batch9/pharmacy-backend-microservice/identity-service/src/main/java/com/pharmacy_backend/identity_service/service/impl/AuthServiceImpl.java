@@ -251,19 +251,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if(profilePic != null) {
-            // Only delete old profile pic if it exists
+            fileServiceClient.deleteFile((user.getProfilePic() != null) ? user.getProfilePic() : "");
+            ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic, FileCategoryEnum.AVATAR.name());
             if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
                 fileServiceClient.deleteFile(user.getProfilePic());
-            }
-            ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic, FileCategoryEnum.AVATAR.name());
-            if(fileResponse.getStatus() != HttpStatus.OK.value() && fileResponse.getStatus() != HttpStatus.CREATED.value()) {
-                throw new CustomException(ErrorCode.FILE_STORAGE_ERROR, "Lỗi lưu trữ ảnh đại diện");
             }
             user.setProfilePic(fileResponse.getData().getId().toString());
         }
 
         UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
-        // Only get profile pic URL if it exists
         if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
             String profilePicUrl = fileServiceClient.getFileUrl(user.getProfilePic()).getData();
             userResponse.setProfilePicUrl(profilePicUrl);
