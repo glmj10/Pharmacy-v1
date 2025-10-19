@@ -1,4 +1,4 @@
-package com.pharmacy_backend.identity_service.dto.response;
+package com.pharmacy_backend.common.dto.response;
 
 import lombok.AccessLevel;
 import lombok.Builder;

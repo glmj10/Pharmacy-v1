@@ -35,8 +35,6 @@ public class OutboxServiceImpl implements OutboxService {
                 outboxRepository.save(event);
             } catch (Exception e) {
                 log.error("Failed to publish event with ID {}: {}", event.getId(), e.getMessage());
-                event.setEventStatus(EventStatusEnum.FAILED);
-                outboxRepository.save(event);
             }
         }
     }

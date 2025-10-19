@@ -1,6 +1,6 @@
-package com.pharmacy_backend.category_service.service;
+package com.pharmacy_backend.blog_service.service;
 
-import com.pharmacy_backend.category_service.config.FeignClientConfig;
+import com.pharmacy_backend.blog_service.config.FeignClientConfig;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import org.springframework.cloud.openfeign.FeignClient;

@@ -1,19 +1,31 @@
 package com.pharmacy_backend.category_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pharmacy_backend.category_service.dto.request.CategoryRequest;
 import com.pharmacy_backend.category_service.dto.response.CategoryParentAndChildResponse;
 import com.pharmacy_backend.category_service.dto.response.CategoryResponse;
 import com.pharmacy_backend.category_service.entity.Category;
+import com.pharmacy_backend.category_service.entity.OutboxEvent;
+import com.pharmacy_backend.category_service.entity.Type;
 import com.pharmacy_backend.category_service.mapper.CategoryMapper;
 import com.pharmacy_backend.category_service.mapper.TypeMapper;
 import com.pharmacy_backend.category_service.repository.CategoryRepository;
+import com.pharmacy_backend.category_service.repository.OutboxRepository;
 import com.pharmacy_backend.category_service.repository.TypeRepository;
 import com.pharmacy_backend.category_service.service.CategoryService;
 import com.pharmacy_backend.category_service.service.FileServiceClient;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
-import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
+import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.CategoryEvent;
+import com.pharmacy_backend.common.kafka.event.base.Event;
+import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.utils.SlugUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -28,6 +40,11 @@ public class CategoryServiceImpl implements CategoryService {
     private final FileServiceClient fileServiceClient;
     private final TypeRepository typeRepository;
     private final TypeMapper typeMapper;
+    private final ObjectMapper objectMapper;
+    private final OutboxRepository outboxRepository;
+
+    @Value("${spring.application.name}")
+    private String appName;
 
     @Transactional
     @Override
@@ -46,10 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với slug: " + parentSlug));
 
         response.setParent(categoryMapper.toCategoryResponse(parentCategory));
-        FileMetadata parentFileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(parentCategory.getThumbnail()))
-                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Thumbnail không tồn tại"));
-        response.getParent().setThumbnail(parentFileMetadata.getUrl());
+        response.getParent().setThumbnail(getThumbnailUrl(parentCategory.getThumbnail()));
 
         List<Category> childCategories = categoryRepository.findByParent(parentCategory);
 
@@ -57,11 +71,8 @@ public class CategoryServiceImpl implements CategoryService {
                 .map(
                         category -> {
                             CategoryResponse childResponse = categoryMapper.toCategoryResponse(category);
-                            FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(category.getThumbnail()))
-                                    .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                                            HttpStatus.NOT_FOUND, "Thumbnail không tồn tại"));
                             childResponse.setType(typeMapper.toTypeResponse(category.getType()));
-                            childResponse.setThumbnail(fileMetadata.getUrl());
+                            childResponse.setThumbnail(getThumbnailUrl(category.getThumbnail()));
                             childResponse.setParentId(parentCategory.getId());
                             return childResponse;
                         }
@@ -81,11 +92,8 @@ public class CategoryServiceImpl implements CategoryService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID: " + id));
 
         CategoryResponse response = categoryMapper.toCategoryResponse(category);
-        FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(category.getThumbnail()))
-                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Thumbnail không tồn tại"));
 
-        response.setThumbnail(fileMetadata.getUrl());
+        response.setThumbnail(getThumbnailUrl(category.getThumbnail()));
         response.setType(typeMapper.toTypeResponse(category.getType()));
         return ApiResponse.buildOkResponse(
                 response,
@@ -104,9 +112,9 @@ public class CategoryServiceImpl implements CategoryService {
                     HttpStatus.BAD_REQUEST, "Thumbnail không được để trống");
         }
 
-        ApiResponse<FileMetadataResponse> thumbnailResponse = fileMetadataService.storeFile(thumbnail,
-                "CATEGORY");
-        category.setThumbnail(thumbnailResponse.getData().getId().toString());
+        ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
+                FileCategoryEnum.CATEGORY.getSubDirectory());
+        category.setThumbnail(thumbnailResponse.getData().getFileUrl());
         Type type = typeRepository.findByCode(request.getType())
                 .orElseThrow(() -> new CustomException(ErrorCode.TYPE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy loại danh mục với code: " + request.getType()));
@@ -118,6 +126,23 @@ public class CategoryServiceImpl implements CategoryService {
             category.setParent(parentCategory);
         }
         Category savedCategory = categoryRepository.save(category);
+
+        CategoryEvent categoryEvent = CategoryEvent.builder()
+                .categoryId(savedCategory.getId())
+                .name(savedCategory.getName())
+                .typeName(type.getName())
+                .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getId() : null)
+                .slug(savedCategory.getSlug())
+                .build();
+
+        Event<CategoryEvent> event = Event.<CategoryEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.CATEGORY.getName(), savedCategory.getId()))
+                .eventType(EventTypeEnum.CATEGORY_CREATED.getName())
+                .data(categoryEvent)
+                .source(appName)
+                .build();
+
+        handleSaveOutboxEvent(event);
 
         CategoryResponse response = categoryMapper.toCategoryResponse(savedCategory);
         return ApiResponse.buildCreatedResponse(
@@ -137,10 +162,11 @@ public class CategoryServiceImpl implements CategoryService {
         updatedCategory.setSlug(createSlug(updatedCategory.getName()));
         updatedCategory.setModifiedBy(SecurityUtils.getCurrentUserId());
 
-        if (thumbnail != null && !thumbnail.isEmpty()) {
-            fileMetadataService.deleteFile(existingCategory.getThumbnail());
-            ApiResponse<FileMetadataResponse> thumbnailResponse = fileMetadataService.storeFile(thumbnail, "CATEGORY");
-            updatedCategory.setThumbnail(thumbnailResponse.getData().getId().toString());
+        if (thumbnail != null) {
+            fileServiceClient.deleteFile(existingCategory.getThumbnail());
+            ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
+                    FileCategoryEnum.CATEGORY.getSubDirectory());
+            updatedCategory.setThumbnail(thumbnailResponse.getData().getFileUrl());
         }
 
         if(request.getParentId() != null) {
@@ -153,6 +179,23 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         Category savedCategory = categoryRepository.save(updatedCategory);
+
+        CategoryEvent categoryEvent = CategoryEvent.builder()
+                .categoryId(savedCategory.getId())
+                .name(savedCategory.getName())
+                .typeName(savedCategory.getType().getName())
+                .parentId(savedCategory.getParent() != null ? savedCategory.getParent().getId() : null)
+                .slug(savedCategory.getSlug())
+                .build();
+
+        Event<CategoryEvent> event = Event.<CategoryEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.CATEGORY.getName(), savedCategory.getId()))
+                .eventType(EventTypeEnum.CATEGORY_UPDATED.getName())
+                .data(categoryEvent)
+                .source(appName)
+                .build();
+
+        handleSaveOutboxEvent(event);
 
         CategoryResponse response = categoryMapper.toCategoryResponse(savedCategory);
         return ApiResponse.buildOkResponse(
@@ -174,8 +217,28 @@ public class CategoryServiceImpl implements CategoryService {
                     HttpStatus.BAD_REQUEST, "Không thể xóa danh mục có danh mục con");
         }
 
-        fileMetadataService.deleteFile(category.getThumbnail());
+        if(category.getThumbnail() != null && !category.getThumbnail().isEmpty()) {
+            fileServiceClient.deleteFile(category.getThumbnail());
+        }
+
         categoryRepository.delete(category);
+
+        CategoryEvent categoryEvent = CategoryEvent.builder()
+                .categoryId(category.getId())
+                .name(category.getName())
+                .typeName(category.getType().getName())
+                .parentId(category.getParent() != null ? category.getParent().getId() : null)
+                .slug(category.getSlug())
+                .build();
+
+        Event<CategoryEvent> event = Event.<CategoryEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.CATEGORY.getName(), category.getId()))
+                .eventType(EventTypeEnum.CATEGORY_DELETED.getName())
+                .data(categoryEvent)
+                .source(appName)
+                .build();
+
+        handleSaveOutboxEvent(event);
 
         return ApiResponse.buildOkResponse(
                 null,
@@ -227,10 +290,8 @@ public class CategoryServiceImpl implements CategoryService {
         for (Category category : allCategories) {
             CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
             categoryResponse.setChildren(new ArrayList<>());
-            String thumbnailUrl = fileServiceClient.getFileUrl()
-            FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(category.getThumbnail()))
-                            .orElse(null);
-            categoryResponse.setThumbnail(fileMetadata != null ? fileMetadata.getUrl() : null);
+            String url =  getThumbnailUrl(category.getThumbnail());
+            categoryResponse.setThumbnail(url);
 
             categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
             idToCategoryMap.put(category.getId(), categoryResponse);
@@ -251,4 +312,28 @@ public class CategoryServiceImpl implements CategoryService {
 
         return roots;
     }
+
+    private String getThumbnailUrl(String uuid) {
+        if(uuid != null && !uuid.isEmpty()) {
+            return String.valueOf(fileServiceClient.getFileUrl(uuid).getData());
+        }
+        return null;
+    }
+
+    public void handleSaveOutboxEvent(Event<?> event) {
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateType(PartitionKeyEnum.CATEGORY.getName());
+        outboxEvent.setAggregateId(event.getKey());
+        outboxEvent.setEventType(event.getEventType());
+        outboxEvent.setTopic(TopicEnum.CATEGORY_TOPIC.getName());
+        try {
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxRepository.save(outboxEvent);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    e.getMessage());
+        }
+    }
+
+
 }

@@ -7,7 +7,7 @@ import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.identity_service.dto.request.ChangeUserRoleRequest;
 import com.pharmacy_backend.identity_service.dto.request.UserSearchCriteria;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
-import com.pharmacy_backend.identity_service.dto.response.PageResponse;
+import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.identity_service.entity.Role;
 import com.pharmacy_backend.identity_service.entity.User;
 import com.pharmacy_backend.identity_service.mapper.UserMapper;
@@ -19,14 +19,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

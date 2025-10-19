@@ -1,7 +1,7 @@
 package com.pharmacy_backend.category_service.mapper;
 
-import com.project.pharmacy.dto.response.TypeResponse;
-import com.project.pharmacy.entity.Type;
+import com.pharmacy_backend.category_service.dto.response.TypeResponse;
+import com.pharmacy_backend.category_service.entity.Type;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")

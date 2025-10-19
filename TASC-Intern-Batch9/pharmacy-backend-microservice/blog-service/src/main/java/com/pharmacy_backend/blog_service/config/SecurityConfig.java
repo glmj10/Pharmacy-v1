@@ -1,4 +1,4 @@
-package com.pharmacy_backend.category_service.config;
+package com.pharmacy_backend.blog_service.config;
 
 import com.pharmacy_backend.category_service.security.CustomAccessDeniedHandler;
 import com.pharmacy_backend.common.config.EndpointConfig;

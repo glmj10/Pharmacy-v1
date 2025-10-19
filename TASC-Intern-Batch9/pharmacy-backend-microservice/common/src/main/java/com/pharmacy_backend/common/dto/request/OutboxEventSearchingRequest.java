@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OutboxEventSearchingRequest {
-
     private Long aggregateId;
     private String aggregateType;
 }

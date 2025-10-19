@@ -3,7 +3,7 @@ package com.pharmacy_backend.identity_service.controller;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.identity_service.dto.request.ChangeUserRoleRequest;
 import com.pharmacy_backend.identity_service.dto.request.UserSearchCriteria;
-import com.pharmacy_backend.identity_service.dto.response.PageResponse;
+import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
 import com.pharmacy_backend.identity_service.service.UserService;
 import jakarta.validation.Valid;
