@@ -12,3 +12,5 @@ file:
   service:
     name: file-service
     url: ${FILE_SERVICE_URL:http://localhost:6969}
+outbox:
+  cron-job-rate-ms: ${OUTBOX_CRON_JOB_RATE_MS:5000}

@@ -26,4 +26,11 @@ public interface FileServiceClient {
 
     @GetMapping(value = "/files/file-url")
     ApiResponse<String> getFileUrl(@RequestParam(required = false) String uuid);
+
+    default String getFilelUrl(String uuid) {
+        if(uuid != null && !uuid.isEmpty()) {
+            return String.valueOf(getFileUrl(uuid).getData());
+        }
+        return null;
+    }
 }

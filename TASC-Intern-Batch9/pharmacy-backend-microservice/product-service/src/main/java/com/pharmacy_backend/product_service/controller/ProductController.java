@@ -1,14 +1,109 @@
 package com.pharmacy_backend.product_service.controller;
 
+import com.pharmacy_backend.common.dto.response.ApiResponse;
+import com.pharmacy_backend.common.dto.response.PageResponse;
+import com.pharmacy_backend.product_service.dto.request.ProductCMSFilterRequest;
+import com.pharmacy_backend.product_service.dto.request.ProductFilterCustomerRequest;
+import com.pharmacy_backend.product_service.dto.request.ProductRequest;
+import com.pharmacy_backend.product_service.dto.response.ProductResponse;
+import com.pharmacy_backend.product_service.service.ProductService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-@Controller
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/products")
 public class ProductController {
+    private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<String> testEndpoint() {
-        return ResponseEntity.ok("Product Service is up and running!");
+    public ResponseEntity<ApiResponse<PageResponse<List<ProductResponse>>>> getAllActiveProducts(@RequestParam(defaultValue = "1", required = false) int pageIndex,
+                                                                                                 @RequestParam(defaultValue = "10", required = false) int pageSize,
+                                                                                                 @ModelAttribute ProductFilterCustomerRequest filterRequest) {
+        ApiResponse<PageResponse<List<ProductResponse>>> response = productService.getAllActiveProduct(pageIndex, pageSize, filterRequest);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/rank/suggestions/top15")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getTop15ProductsByNumberOfLikes() {
+        ApiResponse<List<ProductResponse>> response = productService.getTop15ProductsByNumberOfLikes();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @GetMapping("/cms")
+    public ResponseEntity<ApiResponse<PageResponse<List<ProductResponse>>>> getAllCMSProducts(@RequestParam(defaultValue = "1", required = false) int pageIndex,
+                                                                                    @RequestParam(defaultValue = "10", required = false) int pageSize,
+                                                                                    @ModelAttribute ProductCMSFilterRequest filterRequest) {
+        ApiResponse<PageResponse<List<ProductResponse>>> response = productService.getAllCMSProduct(pageIndex, pageSize, filterRequest);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
+        ApiResponse<ProductResponse> response = productService.getProductById(id);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/slug/{slug}")
+    public ResponseEntity<ApiResponse<ProductResponse>> getProductBySlug(@PathVariable String slug) {
+        ApiResponse<ProductResponse> response = productService.getProductBySlug(slug);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PostMapping
+    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@RequestPart("product") @Valid ProductRequest request,
+                                                                       @RequestParam("thumbnail") MultipartFile thumbnail,
+                                                                       @RequestParam(value = "images", required = false)
+                                                                          List<MultipartFile> images) {
+        ApiResponse<ProductResponse> response = productService.createProduct(request, thumbnail, images);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(@PathVariable Long id,
+                                                                       @RequestPart("product") @Valid ProductRequest request,
+                                                                       @RequestParam(value = "thumbnail", required = false) MultipartFile thumbnail,
+                                                                       @RequestParam(value = "images", required = false)
+                                                                          List<MultipartFile> images) {
+        ApiResponse<ProductResponse> response = productService.updateProduct(id, request, thumbnail, images);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PutMapping("/status/{id}")
+    public ResponseEntity<ApiResponse<ProductResponse>> changeProductStatus(@PathVariable Long id,
+                                                                            @RequestBody Boolean active) {
+        ApiResponse<ProductResponse> response = productService.changeProductStatus(id, active);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteProduct(@PathVariable Long id) {
+        ApiResponse<Void> response = productService.deleteProduct(id);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @GetMapping("/statistic/total")
+    public ResponseEntity<ApiResponse<Long>> getTotalProduct() {
+        ApiResponse<Long> response = productService.getTotalProduct();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/brand/suggestions/top15")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> get15ProductByBrand(@RequestParam Long brandId) {
+        ApiResponse<List<ProductResponse>> response = productService.get15ProductByBrand(brandId);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

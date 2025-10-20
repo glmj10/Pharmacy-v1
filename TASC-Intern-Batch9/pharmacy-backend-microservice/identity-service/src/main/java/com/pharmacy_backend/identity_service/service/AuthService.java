@@ -25,5 +25,4 @@ public interface AuthService {
     ApiResponse<Void> logout(String bearerToken) throws ParseException;
     ApiResponse<AuthResponse> refreshToken(RefreshRequest request) throws ParseException, JOSEException;
     ApiResponse<Void> resendVerificationToken(String email);
-
 }

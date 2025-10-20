@@ -4,12 +4,17 @@ import lombok.Getter;
 
 @Getter
 public enum RedisKeyTypeEnum {
-    INVALIDATED_JWT,
-    RESET_PASSWORD_TOKEN,
-    VERIFICATION_TOKEN,
-    USER_VERSION;
+    INVALIDATED_JWT("INVALIDATED_JWT"),
+    RESET_PASSWORD_TOKEN("RESET_PASSWORD_TOKEN"),
+    VERIFICATION_TOKEN("VERIFICATION_TOKEN"),
+    USER_VERSION("USER_VERSION"),
+    PRODUCT_DETAIL("PRODUCT_DETAIL"),
+    PRODUCT_RELATED("PRODUCT_RELATED"),
+    WISHLIST("WISHLIST");
 
-    public String getKey() {
-        return this.name();
+    private final String key;
+    RedisKeyTypeEnum(String key) {
+        this.key = key;
     }
+
 }

@@ -30,6 +30,6 @@ public class ProductResponse {
     Boolean inWishlist;
     Long numberOfLikes;
     BrandResponse brand;
-//    List<CategoryResponse> categories;
+    List<CategoryResponse> categories;
     List<ProductImageResponse> images;
 }

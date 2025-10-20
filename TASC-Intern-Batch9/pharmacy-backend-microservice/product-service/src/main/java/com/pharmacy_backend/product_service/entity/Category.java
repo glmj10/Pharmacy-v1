@@ -24,6 +24,9 @@ public class Category extends BaseModifyEntity {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "parent")
     List<Category> child = new ArrayList<>();
 
+    @ManyToMany(mappedBy = "categories", cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    List<Product> products = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "parent_id")
     Category parent;
