@@ -1,6 +1,6 @@
 package com.pharmacy_backend.blog_service.config;
 
-import com.pharmacy_backend.category_service.security.CustomAccessDeniedHandler;
+import com.pharmacy_backend.blog_service.security.CustomAccessDeniedHandler;
 import com.pharmacy_backend.common.config.EndpointConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

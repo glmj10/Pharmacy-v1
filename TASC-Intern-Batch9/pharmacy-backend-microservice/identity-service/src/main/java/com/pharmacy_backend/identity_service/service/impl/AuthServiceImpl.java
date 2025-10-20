@@ -212,7 +212,6 @@ public class AuthServiceImpl implements AuthService {
         redisService.storeResetPasswordToken(
                 jwtAuthenticationProvider.getJWTID(token), expiryTime);
 
-//        emailService.sendResetEmail(user.getEmail(), token, jwtAuthenticationProvider.getTokenExpiry(token), isUser);
         return ApiResponse.buildOkResponse(null,
                 "Gửi email thành công, vui lòng kiểm tra email để đặt lại mật khẩu");
     }
@@ -252,7 +251,8 @@ public class AuthServiceImpl implements AuthService {
 
         if(profilePic != null) {
             fileServiceClient.deleteFile((user.getProfilePic() != null) ? user.getProfilePic() : "");
-            ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic, FileCategoryEnum.AVATAR.name());
+            ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic,
+                    FileCategoryEnum.AVATAR.name());
             if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
                 fileServiceClient.deleteFile(user.getProfilePic());
             }

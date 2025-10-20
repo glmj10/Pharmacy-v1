@@ -10,7 +10,7 @@ import lombok.*;
 public class CategoryEvent {
     private Long categoryId;
     private String name;
-    private String typeName;
+    private String typeCode;
     private Long parentId;
     private String slug;
 }

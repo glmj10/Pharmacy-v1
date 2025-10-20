@@ -19,7 +19,8 @@ public class CategoryEventServiceImpl implements CategoryEventService {
         Category category = new Category();
         category.setId(event.getCategoryId());
         category.setName(event.getName());
-        category.setSlug(category.getSlug());
+        category.setSlug(event.getSlug());
+        category.setTypeCode(event.getTypeCode());
         categoryRepository.save(category);
     }
 
@@ -29,6 +30,7 @@ public class CategoryEventServiceImpl implements CategoryEventService {
         category.setId(event.getCategoryId());
         category.setName(event.getName());
         category.setSlug(category.getSlug());
+        category.setTypeCode(event.getTypeCode());
         categoryRepository.save(category);
     }
 
@@ -38,6 +40,7 @@ public class CategoryEventServiceImpl implements CategoryEventService {
         category.setId(event.getCategoryId());
         category.setName(event.getName());
         category.setSlug(category.getSlug());
+        category.setTypeCode(event.getTypeCode());
         categoryRepository.delete(category);
     }
 }

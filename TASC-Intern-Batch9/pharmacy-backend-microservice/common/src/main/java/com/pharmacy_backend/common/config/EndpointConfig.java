@@ -31,6 +31,7 @@ public class EndpointConfig {
             "/files/download/{uuid}",
             "/blogs",
             "/blogs/slug/{slug}",
+            "/files/file-url"
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

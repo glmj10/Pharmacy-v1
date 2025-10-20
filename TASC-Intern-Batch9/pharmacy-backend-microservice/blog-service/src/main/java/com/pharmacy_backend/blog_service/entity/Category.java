@@ -20,8 +20,9 @@ public class Category {
     Long id;
     String name;
     String slug;
+    @Column(name = "type_code")
+    String typeCode;
 
     @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
     List<Blog> blogs = new ArrayList<>();
 }

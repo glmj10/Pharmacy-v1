@@ -1,10 +1,7 @@
 package com.pharmacy_backend.blog_service.entity;
 
 import com.pharmacy_backend.common.entity.base.BaseModifyEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -21,6 +18,7 @@ public class Blog extends BaseModifyEntity {
     String thumbnail;
     Integer priority = 0;
 
+    @JoinColumn(name = "category_id")
     @ManyToOne
     Category category;
 

@@ -12,12 +12,16 @@ public interface BrandMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "slug", ignore = true)
-//    @Mapping(target = "products", ignore = true)
+    @Mapping(target = "products", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Brand toBrand(BrandRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "slug", ignore = true)
-//    @Mapping(target = "products", ignore = true)
+    @Mapping(target = "products", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Brand toBrandUpdateFromRequest(BrandRequest request, @MappingTarget Brand brand);
 
     BrandResponse toBrandResponse(Brand brand);

@@ -81,7 +81,7 @@ public enum ErrorCode {
     INVALID_PAYMENT_STATUS("Trạng thái thanh toán không hợp lệ"),
 
     CONTACT_NOT_FOUND("Yêu cầu tư vấn không tồn tại"),
-
+    MISSING_REQUEST_PART("Thiếu phần yêu cầu"),
     ILLEGAL_STATE("Trạng thái không hợp lệ")
     ,
     ;

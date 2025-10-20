@@ -24,6 +24,6 @@ public class Brand extends BaseEntity {
     @Column(unique = true)
     String slug;
 
-//    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "brand")
-//    List<Product> products = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "brand")
+    List<Product> products = new ArrayList<>();
 }
