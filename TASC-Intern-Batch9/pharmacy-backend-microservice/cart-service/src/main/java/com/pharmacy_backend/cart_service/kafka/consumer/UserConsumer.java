@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 public class UserConsumer {
     private final ObjectMapper objectMapper;
     private final UserService userService;
-    private final CartService cartService;
 
     @KafkaListener(topics = "test-topic", groupId = "cart-service")
     public void consume(String message, Acknowledgment ack) throws JsonProcessingException {

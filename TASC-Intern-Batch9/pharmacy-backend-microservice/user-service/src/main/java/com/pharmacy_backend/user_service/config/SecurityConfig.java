@@ -1,7 +1,7 @@
 package com.pharmacy_backend.user_service.config;
 
 import com.pharmacy_backend.common.config.EndpointConfig;
-import com.pharmacy_backend.identity_service.security.CustomAccessDeniedHandler;
+import com.pharmacy_backend.user_service.security.CustomAccessDeniedHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
