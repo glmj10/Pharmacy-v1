@@ -1,3 +1,4 @@
+
 package com.pharmacy_backend.user_service.entity;
 
 import com.pharmacy_backend.common.entity.base.BaseEntity;
