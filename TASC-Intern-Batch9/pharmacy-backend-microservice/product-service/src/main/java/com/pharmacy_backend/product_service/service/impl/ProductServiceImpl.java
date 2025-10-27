@@ -271,6 +271,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
+                .quantity(product.getQuantity())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
@@ -324,6 +325,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
+                .quantity(product.getQuantity())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
@@ -359,6 +361,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
+                .quantity(product.getQuantity())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
@@ -390,6 +393,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
+                .quantity(product.getQuantity())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()

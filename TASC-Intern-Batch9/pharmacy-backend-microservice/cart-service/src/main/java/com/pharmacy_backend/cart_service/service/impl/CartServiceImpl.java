@@ -29,7 +29,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @Transactional
@@ -88,10 +87,6 @@ public class CartServiceImpl implements CartService {
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND,
                         "Người dùng không hợp lệ"));
-        if(request.getQuantity() <= 0) {
-            throw new CustomException(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST,
-                    "Số lượng sản phẩm phải lớn hơn 0");
-        }
 
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,

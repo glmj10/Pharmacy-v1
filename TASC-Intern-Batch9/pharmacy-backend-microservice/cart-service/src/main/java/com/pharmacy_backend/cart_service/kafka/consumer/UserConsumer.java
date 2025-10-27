@@ -3,12 +3,9 @@ package com.pharmacy_backend.cart_service.kafka.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pharmacy_backend.cart_service.service.CartService;
-import com.pharmacy_backend.cart_service.service.UserService;
 import com.pharmacy_backend.common.enums.CategoryTypeEnum;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
 import com.pharmacy_backend.common.kafka.event.CategoryEvent;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import lombok.RequiredArgsConstructor;
 

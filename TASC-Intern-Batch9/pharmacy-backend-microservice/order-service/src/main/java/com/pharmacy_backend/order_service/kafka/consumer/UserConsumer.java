@@ -1,4 +1,4 @@
-package com.pharmacy_backend.user_service.kafka.consumer;
+package com.pharmacy_backend.order_service.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
 import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
-import com.pharmacy_backend.user_service.service.UserService;
+import com.pharmacy_backend.order_service.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;

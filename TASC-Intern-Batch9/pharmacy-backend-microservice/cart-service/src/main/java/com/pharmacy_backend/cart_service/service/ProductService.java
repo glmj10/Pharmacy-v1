@@ -6,4 +6,5 @@ public interface ProductService {
     void createProduct(ProductEvent productEvent);
     void updateProduct(ProductEvent productEvent);
     void deleteProduct(Long productId);
+    void changeProductStatus(Long productId, Boolean active);
 }

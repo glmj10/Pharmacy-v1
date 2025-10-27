@@ -18,7 +18,7 @@ public class ProfileConsumer {
     private final ObjectMapper objectMapper;
     private final ProfileEventService profileEventService;
 
-    @KafkaListener(topics = "${spring.kafka.consumer.topic.user-topic}",
+    @KafkaListener(topics = "${spring.kafka.consumer.topic.profile-topic}",
             groupId = "${spring.kafka.consumer.group-id}",
             concurrency = "${spring.kafka.consumer.concurrency}" )
     public void consumeProfileEvent(String message, Acknowledgment acknowledgment) {

@@ -42,7 +42,7 @@ public class ProductConsumer {
             }
 
             if (eventType.equalsIgnoreCase(EventTypeEnum.PRODUCT_DELETED.getName())) {
-                productService.deleteProduct(productEvent.getProductId());
+                productService.changeProductStatus(productEvent.getProductId(), false);
                 log.info("Consumed PRODUCT_DELETED event: {}", message);
             }
 

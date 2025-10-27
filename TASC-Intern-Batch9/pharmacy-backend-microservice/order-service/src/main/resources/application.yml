@@ -12,7 +12,11 @@ spring:
     consumer:
       group-id: order-service
       topic:
-        user-topic: PROFILE_TOPIC
+        user-topic: USER_TOPIC
+        profile-topic: PROFILE_TOPIC
         payment-topic: PAYMENT_TOPIC
+cart:
+  service:
+    name: cart-service
 outbox:
   cron-job-rate-ms: ${OUTBOX_CRON_JOB_RATE_MS:5000}
