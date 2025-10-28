@@ -18,6 +18,10 @@ public enum EventTypeEnum {
     ORDER_CREATED,
     ORDER_UPDATED,
     ORDER_DELETED,
+    ORDER_RESERVED,
+    ORDER_RELEASED,
+    ORDER_RESERVATION_FAILED,
+    ORDER_CANCELLED,
     PASSWORD_RESET;
 
     public String getName() {

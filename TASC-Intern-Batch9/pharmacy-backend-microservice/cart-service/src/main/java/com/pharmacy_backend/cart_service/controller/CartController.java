@@ -35,8 +35,8 @@ public class CartController {
     }
 
     @GetMapping("/item/checkout")
-    public ResponseEntity<ApiResponse<List<CartResponse>>> getCartItemToCheckout() {
-        ApiResponse<List<CartResponse>> response = cartService.getCartItemsForCheckout();
+    public ResponseEntity<ApiResponse<CartResponse>> getCartItemToCheckout() {
+        ApiResponse<CartResponse> response = cartService.getCartItemsForCheckout();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

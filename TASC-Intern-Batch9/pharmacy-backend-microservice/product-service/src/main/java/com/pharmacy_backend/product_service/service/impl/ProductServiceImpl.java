@@ -2,8 +2,10 @@ package com.pharmacy_backend.product_service.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pharmacy_backend.common.dto.request.ProductNeedToCheckStockRequest;
 import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
+import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.ProductEvent;
@@ -36,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
     final ProductRedisService productRedisService;
     final ObjectMapper objectMapper;
     final OutboxRepository outboxRepository;
+    final StockRepository stockRepository;
 
     @Value("${spring.application.name}")
     private String appName;
@@ -254,10 +258,13 @@ public class ProductServiceImpl implements ProductService {
         product.setCategories(categories);
         product.setCreatedBy(SecurityUtils.getCurrentUserId());
         product.setModifiedBy(SecurityUtils.getCurrentUserId());
+        images.add(0, thumbnail);
         List<ProductImageResponse> productImages = productImageService.createProductImages(product, images);
 
         product = productRepository.createProduct(product);
-        images.add(0, thumbnail);
+
+        Stock stock = new Stock(product);
+        stockRepository.save(stock);
 
         ProductResponse productResponse = productMapper.toProductResponse(product);
         productResponse.setImages(productImages);
@@ -383,6 +390,7 @@ public class ProductServiceImpl implements ProductService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
         fileServiceClient.deleteFile(product.getThumbnail());
         productImageService.deleteProductImagesByProduct(product);
+        stockRepository.deleteByProduct(product);
         productRepository.deleteProduct(id);
 
         ProductEvent productEvent = ProductEvent.builder()
@@ -481,6 +489,7 @@ public class ProductServiceImpl implements ProductService {
 
         return ApiResponse.buildOkResponse(productResponses, "Lấy 15 sản phẩm cùng thương hiệu thành công");
     }
+
 
 
     private String createSlug(String name) {

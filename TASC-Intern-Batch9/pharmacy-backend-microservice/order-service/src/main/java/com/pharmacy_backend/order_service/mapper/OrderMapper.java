@@ -21,7 +21,6 @@ public interface OrderMapper {
     @Mapping(target = "orderDetails", ignore = true)
     @Mapping(target = "status", constant = "PENDING")
     @Mapping(target = "paymentStatus", constant = "PENDING")
-    @Mapping(target = "cart", ignore = true)
     Order toOrder(OrderRequest request);
 
     OrderDetailResponse toOrderDetailResponse(OrderDetail orderDetail);

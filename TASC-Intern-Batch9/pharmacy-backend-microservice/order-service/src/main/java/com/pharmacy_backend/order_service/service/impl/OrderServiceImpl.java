@@ -1,33 +1,32 @@
 package com.pharmacy_backend.order_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pharmacy_backend.common.dto.request.ReserveRequest;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.common.enums.ErrorCode;
-import com.pharmacy_backend.common.enums.OrderStatusEnum;
-import com.pharmacy_backend.common.enums.PaymentMethodEnum;
-import com.pharmacy_backend.common.enums.PaymentStatusEnum;
+import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
+import com.pharmacy_backend.common.dto.response.ReserveResponse;
+import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.OrderDetailEvent;
+import com.pharmacy_backend.common.kafka.event.OrderReserveEvent;
+import com.pharmacy_backend.common.kafka.event.ProductEvent;
+import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.utils.StateUtils;
 import com.pharmacy_backend.order_service.dto.request.OrderFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.OrderRequest;
-import com.pharmacy_backend.order_service.dto.response.OrderDetailResponse;
-import com.pharmacy_backend.order_service.dto.response.OrderResponse;
-import com.pharmacy_backend.order_service.dto.response.ProductResponse;
-import com.pharmacy_backend.order_service.entity.Order;
-import com.pharmacy_backend.order_service.entity.OrderDetail;
-import com.pharmacy_backend.order_service.entity.Profile;
-import com.pharmacy_backend.order_service.entity.User;
+import com.pharmacy_backend.order_service.dto.response.*;
+import com.pharmacy_backend.order_service.entity.*;
 import com.pharmacy_backend.order_service.mapper.OrderMapper;
 import com.pharmacy_backend.order_service.mapper.ProductMapper;
-import com.pharmacy_backend.order_service.repository.OrderDetailRepository;
-import com.pharmacy_backend.order_service.repository.OrderRepository;
-import com.pharmacy_backend.order_service.repository.ProfileRepository;
-import com.pharmacy_backend.order_service.repository.UserRepository;
+import com.pharmacy_backend.order_service.repository.*;
+import com.pharmacy_backend.order_service.service.CartServiceClient;
 import com.pharmacy_backend.order_service.service.OrderService;
+import com.pharmacy_backend.order_service.service.ProductServiceClient;
 import com.pharmacy_backend.order_service.specification.OrderSpecification;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +43,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -61,9 +61,16 @@ public class OrderServiceImpl implements OrderService {
     final ProductMapper productMapper;
     final RedisTemplate<String, Object> redisTemplate;
     final ObjectMapper objectMapper;
+    final CartServiceClient cartServiceClient;
+    final ProductServiceClient productServiceClient;
+    final ProductRepository productRepository;
+    final OutboxRepository outboxRepository;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
+
+    @Value("${spring.application.name}")
+    private String appName;
 
     @Transactional
     @Override
@@ -216,34 +223,65 @@ public class OrderServiceImpl implements OrderService {
         order.setCustomerPhoneNumber(profile.getPhoneNumber());
         order.setCustomerAddress(profile.getAddress());
         order.setUser(user);
-        order.setTotalPrice(cart.getTotalPrice());
 
+        ApiResponse<CartResponse> cartResponse = cartServiceClient.getCartItemToCheckout();
+        List<CartItemResponse> cartItems = cartResponse.getData().getCartItems();
+        if(cartItems.isEmpty()) {
+            throw new CustomException(ErrorCode.CART_EMPTY,
+                    HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
+        }
+
+        ApiResponse<ReserveResponse> reserveResponse = productServiceClient.reserveProduct(
+                cartItems.stream()
+                        .map(cartItem -> {
+                            ReserveRequest reserveRequest = new ReserveRequest();
+                            reserveRequest.setProductId(cartItem.getProduct().getId());
+                            reserveRequest.setQuantity(cartItem.getQuantity());
+                            return reserveRequest;
+                        })
+                        .toList()
+        );
+
+        if(reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
+            throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED
+                    , (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null
+                    , reserveResponse.getMessage()
+            );
+        }
+
+        long totalPrice = 0;
+
+        for(ProductCheckResponse productCheckResponse: reserveResponse.getData().getProductCheckResponses()) {
+            totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
+        }
+
+        order.setTotalPrice(totalPrice);
         switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
             case VNPAY -> {
-                order = orderRepository.save(order);
-                createOrderDetails(order, cart);
-                HttpServletRequest servletRequest = SecurityUtils.getCurrentHttpServletRequest();
-                String paymentUrl = vnPayService.createPaymentUrl(order, servletRequest);
-                return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
+                order.setPaymentMethod(PaymentMethodEnum.VNPAY);
+//                order = orderRepository.save(order);
+//                createOrderDetails(order, cart);
+//                HttpServletRequest servletRequest = SecurityUtils.getCurrentHttpServletRequest();
+//                String paymentUrl = vnPayService.createPaymentUrl(order, servletRequest);
+//                return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
+                return ApiResponse.buildOkResponse(null, "Chức năng VNPAY đang được phát triển");
             }
+
             case MOMO -> {
                 // Gọi MoMoService nếu có
                 return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
             }
+
             case COD -> {
+                order.setPaymentMethod(PaymentMethodEnum.COD);
                 order = orderRepository.save(order);
-                createOrderDetails(order, cart);
+                createOrderDetails(order, cartItems);
             }
             default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
                     HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
         }
 
-        try {
-            emailService.sendOrderConfirmationEmail(order, user.getEmail());
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.FAILED_TO_SEND_EMAIL,
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Gửi email thất bại: " + e.getMessage());
-        }
+        //send email for COD order if have EmailService
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setPaymentStatus(order.getPaymentStatus().name());
@@ -256,23 +294,62 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
+
         try {
+            if(!StateUtils.isValidTransition(order.getStatus(), OrderStatusEnum.valueOf(status.toUpperCase()))) {
+                throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
+                        HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái đơn hàng từ "
+                        + order.getStatus() + " sang " + status);
+            }
             order.setStatus(OrderStatusEnum.valueOf(status.toUpperCase()));
         } catch (RuntimeException e) {
             throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
                     HttpStatus.BAD_REQUEST, "Trạng thái đơn hàng không hợp lệ: " + status);
         }
+
         orderRepository.save(order);
+
+        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng với ID: " + id));
+
+        OrderReserveEvent orderReserveEvent = OrderReserveEvent.builder()
+                .orderId(order.getId())
+                .totalPrice(order.getTotalPrice())
+                .build();
+
+        List<OrderDetailEvent> orderDetailEvents = orderDetails.stream().map(
+                orderDetail -> new OrderDetailEvent(orderDetail.getQuantity(),
+                        orderDetail.getProduct().getId())
+        ).toList();
+
+        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+
+        Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                .data(orderReserveEvent)
+                .source(appName)
+                .build();
+
+        if(status.equalsIgnoreCase(OrderStatusEnum.CANCELLED.name())) {
+            event.setEventType(EventTypeEnum.ORDER_CANCELLED.getName());
+        } else {
+            event.setEventType(EventTypeEnum.ORDER_RELEASED.getName());
+        }
+
+        handleSaveOutboxEvent(event);
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         return ApiResponse.buildOkResponse(orderResponse, "Cập nhật trạng thái đơn hàng thành công");
     }
+
 
     @Override
     public ApiResponse<OrderResponse> changePaymentStatus(Long id, String paymentStatus) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
+
         try {
             order.setPaymentStatus(PaymentStatusEnum.valueOf(paymentStatus.toUpperCase()));
         } catch (RuntimeException e) {
@@ -341,7 +418,7 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildOkResponse(null, "Hủy đơn hàng thành công");
     }
 
-    @Scheduled(cron = "0 * * * * *")
+    @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void scheduleCancelPendingOrders() {
         int canceledOrders = orderRepository.cancelPendingOrders(orderCancelMinutes);
@@ -351,38 +428,19 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    void createOrderDetails(Order order, Cart cart) {
-        List<CartItem> cartItems = cartItemRepository.findAllByCartAndSelected(cart, true);
-        if (cartItems.isEmpty()) {
-            throw new CustomException(ErrorCode.CART_EMPTY,
-                    HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
+    void createOrderDetails(Order order, List<CartItemResponse> cartItemResponses) {
+        List<OrderDetail> orderDetails = new ArrayList<>();
+        for(CartItemResponse cartItemResponse: cartItemResponses) {
+            OrderDetail orderDetail = new OrderDetail();
+            orderDetail.setOrder(order);
+            orderDetail.setProduct(productRepository.findById(cartItemResponse.getProduct().getId()).orElse(null));
+            orderDetail.setQuantity(cartItemResponse.getQuantity());
+            orderDetail.setPriceAtOrder(cartItemResponse.getProduct().getPriceNew());
+            orderDetails.add(orderDetail);
         }
-
-        for (CartItem cartItem : cartItems) {
-            if(cartItem.isProductAvailable()) {
-                OrderDetail orderDetail = OrderDetail.builder()
-                        .order(order)
-                        .product(cartItem.getProduct())
-                        .quantity(cartItem.getQuantity())
-                        .priceAtOrder(cartItem.getProduct().getPriceNew())
-                        .build();
-
-                order.getOrderDetails().add(orderDetail);
-                Product product = cartItem.getProduct();
-                product.setQuantity(product.getQuantity() - cartItem.getQuantity());
-            } else {
-                throw new CustomException(ErrorCode.PRODUCT_OUT_OF_STOCK,
-                        HttpStatus.BAD_REQUEST,
-                        "Sản phẩm " + cartItem.getProduct().getTitle() + " không đủ số lượng trong kho");
-            }
-        }
-        cartItemRepository.removeAll(cartItems);
-        cart.setTotalPrice(cart.getTotalPrice() - cartItems.stream()
-                .mapToLong(cartItem
-                        -> (long) cartItem.getQuantity() * cartItem.getProduct().getPriceNew())
-                .sum());
-        cartRepository.updateCart(cart);
+        orderDetailRepository.saveAll(orderDetails);
     }
+
 
     private String buildCacheKey(OrderFilterRequest filterRequest, int pageIndex, int pageSize) {
         String orderStatus = filterRequest.getOrderStatus() != null ? filterRequest.getOrderStatus() : "ALL";
@@ -395,5 +453,20 @@ public class OrderServiceImpl implements OrderService {
         return String.format("ORDER_FILTER:pageIndex=%s:pageSize=%s" +
                         ":orderStatus=%s:paymentStatus=%s:customerPhoneNumber=%s:fromDate=%s:toDate=%s"
         ,pageIndex, pageSize, orderStatus, paymentStatus, customerPhoneNumber, fromDate, toDate);
+    }
+
+    public void handleSaveOutboxEvent(Event<?> event) {
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateType(PartitionKeyEnum.ORDER.getName());
+        outboxEvent.setAggregateId(event.getKey());
+        outboxEvent.setEventType(event.getEventType());
+        outboxEvent.setTopic(TopicEnum.ORDER_TOPIC.getName());
+        try {
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxRepository.save(outboxEvent);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    e.getMessage());
+        }
     }
 }

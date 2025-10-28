@@ -16,7 +16,7 @@ public interface CartService {
     ApiResponse<Void> clearCart();
     ApiResponse<CartItemResponse> changeItemSelection(Long itemId, Boolean status);
     ApiResponse<List<CartItemResponse>> selectAllItems(Boolean status);
-    ApiResponse<List<CartResponse>> getCartItemsForCheckout();
+    ApiResponse<CartResponse> getCartItemsForCheckout();
     ApiResponse<Long> getTotalItemsInCart();
     Cart createCart(Long userId);
 }

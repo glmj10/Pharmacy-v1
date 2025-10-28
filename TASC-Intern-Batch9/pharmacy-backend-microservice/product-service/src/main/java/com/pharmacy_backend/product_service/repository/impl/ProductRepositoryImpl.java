@@ -515,4 +515,17 @@ public class ProductRepositoryImpl implements ProductRepository {
         String sql = "SELECT * FROM products WHERE active = ?";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), active);
     }
+
+    @Override
+    public List<Product> findByIdIn(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM products WHERE id IN (");
+        String placeholders = String.join(",", ids.stream().map(id -> "?").toArray(String[]::new));
+        sql.append(placeholders).append(")");
+
+        return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), ids.toArray());
+    }
 }

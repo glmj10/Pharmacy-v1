@@ -35,4 +35,5 @@ public interface ProductRepository {
 
     List<Product> updateAll(List<Product> products);
     List<Product> findAll(boolean active);
+    List<Product> findByIdIn(List<Long> ids);
 }

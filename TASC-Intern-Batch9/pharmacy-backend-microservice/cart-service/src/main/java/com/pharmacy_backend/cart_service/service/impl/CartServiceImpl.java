@@ -312,7 +312,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public ApiResponse<List<CartResponse>> getCartItemsForCheckout() {
+    public ApiResponse<CartResponse> getCartItemsForCheckout() {
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
@@ -343,12 +343,8 @@ public class CartServiceImpl implements CartService {
                 .toList();
 
         CartResponse response = new CartResponse(cart.getId(), cart.getTotalPrice(), itemResponses);
-        return ApiResponse.<List<CartResponse>>builder()
-                .status(HttpStatus.OK.value())
-                .message("Lấy danh sách sản phẩm trong giỏ hàng thành công")
-                .data(List.of(response))
-                .timestamp(LocalDateTime.now())
-                .build();
+        return ApiResponse.buildOkResponse(response,
+                "Lấy danh sách sản phẩm đã chọn trong giỏ hàng thành công");
     }
 
     @Override

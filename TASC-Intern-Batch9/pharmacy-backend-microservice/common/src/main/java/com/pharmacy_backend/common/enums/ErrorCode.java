@@ -19,7 +19,10 @@ public enum ErrorCode {
     INVALID_CREDENTIALS("Thông tin đăng nhập không hợp lệ"),
     PRODUCT_NOT_FOUND("Sản phẩm không tồn tại"),
     PRODUCT_INACTIVE("Sản phẩm không hoạt động"),
+    PRODUCT_RESERVATION_FAILED("Đặt sản phẩm không thành công"),
+
     INSUFFICIENT_STOCK("Số lượng trong kho không đủ"),
+
     ORDER_NOT_FOUND("Đơn hàng không tồn tại"),
     PAYMENT_FAILED("Thanh toán không thành công"),
 
@@ -82,8 +85,10 @@ public enum ErrorCode {
 
     CONTACT_NOT_FOUND("Yêu cầu tư vấn không tồn tại"),
     MISSING_REQUEST_PART("Thiếu phần yêu cầu"),
-    ILLEGAL_STATE("Trạng thái không hợp lệ")
-    ,
+    ILLEGAL_STATE("Trạng thái không hợp lệ"),
+    STOCK_NOT_FOUND("Kho hàng không tồn tại"),
+
+
     ;
 
     private final String message;
@@ -92,4 +97,7 @@ public enum ErrorCode {
         this.message = message;
     }
 
+    public String getName() {
+        return this.name();
+    }
 }

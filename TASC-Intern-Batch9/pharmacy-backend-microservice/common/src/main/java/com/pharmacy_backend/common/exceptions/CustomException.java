@@ -14,9 +14,11 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class CustomException extends RuntimeException{
     ErrorCode errorCode;
     HttpStatus httpStatus;
+    Object data;
     Map<String, Object> details;
 
     public CustomException(ErrorCode errorCode) {
@@ -44,6 +46,14 @@ public class CustomException extends RuntimeException{
         super(customMessage);
         this.errorCode = errorCode;
         this.httpStatus = httpStatus;
+        this.details = new HashMap<>();
+    }
+
+    public CustomException(ErrorCode errorCode, Object data, String customMessage) {
+        super(customMessage);
+        this.errorCode = errorCode;
+        this.httpStatus = HttpStatus.BAD_REQUEST;
+        this.data = data;
         this.details = new HashMap<>();
     }
 

@@ -13,6 +13,7 @@ spring:
       group-id: order-service
       topic:
         user-topic: USER_TOPIC
+        product-topic: PRODUCT_TOPIC
         profile-topic: PROFILE_TOPIC
         payment-topic: PAYMENT_TOPIC
 cart:
