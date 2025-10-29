@@ -365,6 +365,7 @@ public class OrderServiceImpl implements OrderService {
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
                 .data(orderReserveEvent)
                 .source(appName)
+                .eventType(EventTypeEnum.ORDER_RELEASED.getName())
                 .build();
 
         if(status.equalsIgnoreCase(OrderStatusEnum.CANCELLED.name())) {
@@ -448,8 +449,34 @@ public class OrderServiceImpl implements OrderService {
                     HttpStatus.BAD_REQUEST, "Chỉ có thể hủy đơn hàng đang ở trạng thái Đang chờ xử lý");
         }
 
+
         order.setStatus(OrderStatusEnum.CANCELLED);
         orderRepository.save(order);
+
+        OrderReserveEvent orderReserveEvent = OrderReserveEvent.builder()
+                .orderId(order.getId())
+                .totalPrice(order.getTotalPrice())
+                .build();
+
+        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng với ID: " + id));
+
+        List<OrderDetailEvent> orderDetailEvents = orderDetails.stream().map(
+                orderDetail -> new OrderDetailEvent(orderDetail.getQuantity(),
+                        orderDetail.getProduct().getId())
+        ).toList();
+
+        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+
+        Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                .data(orderReserveEvent)
+                .source(appName)
+                .eventType(EventTypeEnum.ORDER_CANCELLED.getName())
+                .build();
+
+        handleSaveOutboxEvent(event);
 
         return ApiResponse.buildOkResponse(null, "Hủy đơn hàng thành công");
     }
