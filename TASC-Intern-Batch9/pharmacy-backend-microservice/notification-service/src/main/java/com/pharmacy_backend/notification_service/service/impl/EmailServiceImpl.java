@@ -2,9 +2,9 @@ package com.pharmacy_backend.notification_service.service.impl;
 
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.notification_service.service.EmailService;
 import com.pharmacy_backend.notification_service.utils.EmailUtils;
-import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,7 +13,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
 
 @Service
@@ -24,6 +23,15 @@ public class EmailServiceImpl implements EmailService {
 
     private final EmailUtils emailUtils;
     private final JavaMailSender mailSender;
+
+    @Override
+    public void sendOrderConfirmationEmail(OrderEvent order) {
+        String subject = "Xác nhận đơn hàng #" + order.getOrderId();
+        String html = EmailUtils.buildOrderConfirmationEmail(order,
+                EmailUtils.buildOrderDetailRow(order.getOrderDetailEventList()));
+
+        send(order.getUserEmail(), subject, html);
+    }
 
     @Override
     public void sendResetEmail(String email, String token, LocalDateTime expiryAt, Boolean isUser){
@@ -59,4 +67,5 @@ public class EmailServiceImpl implements EmailService {
                     HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi gửi email" + e.getMessage());
         }
     }
+
 }

@@ -1,4 +1,4 @@
-package com.pharmacy_backend.order_service.service.impl;
+package com.pharmacy.payment_service.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -11,8 +11,8 @@ import com.pharmacy_backend.common.dto.response.ReserveResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.OrderDetailEvent;
-import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.common.kafka.event.OrderReserveEvent;
+import com.pharmacy_backend.common.kafka.event.ProductEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.utils.StateUtils;
@@ -282,42 +282,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
         //send email for COD order if have EmailService
-        OrderEvent orderEvent = OrderEvent.builder()
-                .orderId(order.getId())
-                .customerName(order.getCustomerName())
-                .customerPhoneNumber(order.getCustomerPhoneNumber())
-                .customerAddress(order.getCustomerAddress())
-                .userEmail(user.getEmail())
-                .totalPrice(order.getTotalPrice())
-                .createdAt(order.getCreatedAt())
-                .build();
-
-        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
-        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
-                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng"));
-
-        for(OrderDetail orderDetail: orderDetails) {
-            OrderDetailEvent orderDetailEvent = OrderDetailEvent.builder()
-                    .priceAtOrder(orderDetail.getPriceAtOrder())
-                    .productId(orderDetail.getProduct().getId())
-                    .quantity(orderDetail.getQuantity())
-                    .title(orderDetail.getProduct().getTitle())
-                    .build();
-
-            orderDetailEvents.add(orderDetailEvent);
-        }
-
-        orderEvent.setOrderDetailEventList(orderDetailEvents);
-
-        Event<OrderEvent> event = Event.<OrderEvent>builder()
-                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
-                .eventType(EventTypeEnum.ORDER_CREATED.getName())
-                .data(orderEvent)
-                .source(appName)
-                .build();
-
-        handleSaveOutboxEvent(event);
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setPaymentStatus(order.getPaymentStatus().name());

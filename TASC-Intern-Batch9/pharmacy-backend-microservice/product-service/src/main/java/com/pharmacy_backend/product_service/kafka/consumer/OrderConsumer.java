@@ -27,7 +27,7 @@ public class OrderConsumer {
     @KafkaListener(topics = "${spring.kafka.consumer.topic.order-topic}",
             groupId = "${spring.kafka.consumer.group-id}",
             concurrency = "${spring.kafka.consumer.concurrency}" )
-    public void consumeUserCreatedEvent(String message, Acknowledgment acknowledgment) {
+    public void consumeOrderEvent(String message, Acknowledgment acknowledgment) {
         try {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.ORDER_RELEASED.getName())) {
@@ -37,7 +37,7 @@ public class OrderConsumer {
                 List<ReserveRequest> reserveRequestList = orderDetailEventList.stream()
                         .map(orderDetailEvent -> ReserveRequest.builder()
                                 .productId(orderDetailEvent.getProductId())
-                                .quantity(orderDetailEvent.getQuantity())
+                                .quantity((int) orderDetailEvent.getQuantity())
                                 .build())
                         .toList();
                 stockService.reserveProduct(reserveRequestList);
@@ -51,7 +51,7 @@ public class OrderConsumer {
                 List<ReserveRequest> reserveRequestList = orderDetailEventList.stream()
                         .map(orderDetailEvent -> ReserveRequest.builder()
                                 .productId(orderDetailEvent.getProductId())
-                                .quantity(orderDetailEvent.getQuantity())
+                                .quantity((int) orderDetailEvent.getQuantity())
                                 .build())
                         .toList();
                 stockService.releaseStock(reserveRequestList);
