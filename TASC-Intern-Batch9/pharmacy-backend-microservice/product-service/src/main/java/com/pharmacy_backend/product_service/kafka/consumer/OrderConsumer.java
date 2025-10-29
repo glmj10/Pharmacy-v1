@@ -40,7 +40,7 @@ public class OrderConsumer {
                                 .quantity((int) orderDetailEvent.getQuantity())
                                 .build())
                         .toList();
-                stockService.reserveProduct(reserveRequestList);
+                stockService.releaseStock(reserveRequestList);
                 log.info("Consume order event: {}", event);
             }
 

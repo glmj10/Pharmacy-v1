@@ -2,7 +2,6 @@ package com.pharmacy_backend.product_service.controller;
 
 import com.pharmacy_backend.common.dto.request.ReserveRequest;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
-import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
 import com.pharmacy_backend.common.dto.response.ReserveResponse;
 import com.pharmacy_backend.product_service.service.StockService;
 import lombok.RequiredArgsConstructor;
