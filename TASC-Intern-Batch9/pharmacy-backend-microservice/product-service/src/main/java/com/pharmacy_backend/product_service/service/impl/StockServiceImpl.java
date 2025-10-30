@@ -61,7 +61,7 @@ public class StockServiceImpl implements StockService {
             }
 
             product.setQuantity(product.getQuantity() - reserveRequest.getQuantity());
-            stock.increaseReservedStock(stock.getReservedStock() + reserveRequest.getQuantity());
+            stock.increaseReservedStock(Long.valueOf(reserveRequest.getQuantity()));
 
             productRepository.updateProduct(product.getId() , product);
             stockRepository.save(stock);
@@ -107,7 +107,7 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public void releaseStock(List<ReserveRequest> reserveRequestList) {
+    public ApiResponse<Void> releaseStock(List<ReserveRequest> reserveRequestList) {
         List<Stock> stocks = new ArrayList<>();
         for (ReserveRequest reserveRequest : reserveRequestList) {
             Product product = productRepository.findById(reserveRequest.getProductId())
@@ -125,6 +125,8 @@ public class StockServiceImpl implements StockService {
         
 
         stockRepository.saveAll(stocks);
+
+        return ApiResponse.buildOkResponse(null, "Đã giải phóng kho hàng");
     }
 
 }

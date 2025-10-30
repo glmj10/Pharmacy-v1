@@ -12,10 +12,10 @@ spring:
     consumer:
       group-id: order-service
       topic:
+        payment-topic: PAYMENT_TOPIC
         user-topic: USER_TOPIC
         product-topic: PRODUCT_TOPIC
         profile-topic: PROFILE_TOPIC
-        payment-topic: PAYMENT_TOPIC
 cart:
   service:
     name: cart-service

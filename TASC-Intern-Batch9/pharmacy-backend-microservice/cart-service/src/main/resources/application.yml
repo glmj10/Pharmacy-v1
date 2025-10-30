@@ -15,4 +15,3 @@ spring:
       topic:
         user-topic: USER_TOPIC
         product-topic: PRODUCT_TOPIC
-        order-topic: ORDER_TOPIC

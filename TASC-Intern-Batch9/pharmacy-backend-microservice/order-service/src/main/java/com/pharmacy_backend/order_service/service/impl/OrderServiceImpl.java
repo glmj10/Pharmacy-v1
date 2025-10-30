@@ -3,6 +3,7 @@ package com.pharmacy_backend.order_service.service.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pharmacy_backend.common.dto.request.PaymentRequest;
 import com.pharmacy_backend.common.dto.request.ReserveRequest;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
@@ -25,6 +26,7 @@ import com.pharmacy_backend.order_service.mapper.ProductMapper;
 import com.pharmacy_backend.order_service.repository.*;
 import com.pharmacy_backend.order_service.service.CartServiceClient;
 import com.pharmacy_backend.order_service.service.OrderService;
+import com.pharmacy_backend.order_service.service.PaymentServiceClient;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
 import com.pharmacy_backend.order_service.specification.OrderSpecification;
 import jakarta.transaction.Transactional;
@@ -65,6 +67,7 @@ public class OrderServiceImpl implements OrderService {
     final ProductServiceClient productServiceClient;
     final ProductRepository productRepository;
     final OutboxRepository outboxRepository;
+    final PaymentServiceClient paymentServiceClient;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
@@ -75,17 +78,17 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public ApiResponse<PageResponse<List<OrderResponse>>> getAllOrders(int pageIndex, int pageSize, OrderFilterRequest filterRequest) {
-        if(pageIndex <= 0) {
+        if (pageIndex <= 0) {
             pageIndex = 1;
         }
-        if(pageSize <= 0) {
+        if (pageSize <= 0) {
             pageSize = 10;
         }
 
         String key = buildCacheKey(filterRequest, pageIndex, pageSize);
         Object cached = redisTemplate.opsForValue().get(key);
 
-        if(cached != null) {
+        if (cached != null) {
             try {
                 String json = (String) cached;
                 return objectMapper.readValue(json, new TypeReference<>() {
@@ -99,20 +102,20 @@ public class OrderServiceImpl implements OrderService {
                 .and(OrderSpecification.hasCustomerPhoneNumber(filterRequest.getCustomerPhoneNumber()))
                 .and(OrderSpecification.hasOrderId(filterRequest.getId()));
 
-        if(filterRequest.getOrderStatus() != null) {
+        if (filterRequest.getOrderStatus() != null) {
             orderSpecification = orderSpecification.and(OrderSpecification.hasStatus(
                     OrderStatusEnum.valueOf(filterRequest.getOrderStatus().toUpperCase()).toString())
             );
         }
 
-        if(filterRequest.getPaymentStatus() != null) {
+        if (filterRequest.getPaymentStatus() != null) {
             orderSpecification = orderSpecification.and(OrderSpecification.hasPaymentStatus(
                     PaymentStatusEnum.valueOf(filterRequest.getPaymentStatus().toUpperCase()).toString())
             );
         }
 
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
-        Page<Order> orderPage = orderRepository.findAll(orderSpecification ,pageable);
+        Page<Order> orderPage = orderRepository.findAll(orderSpecification, pageable);
 
         List<OrderResponse> orderResponses = orderPage.getContent().stream()
                 .map(order -> {
@@ -146,11 +149,11 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public ApiResponse<PageResponse<List<OrderResponse>>> getMyOrders(int pageIndex, int pageSize, String status) {
-        if(pageIndex <= 0) {
+        if (pageIndex <= 0) {
             pageIndex = 1;
         }
 
-        if(pageSize <= 0) {
+        if (pageSize <= 0) {
             pageSize = 10;
         }
 
@@ -163,7 +166,7 @@ public class OrderServiceImpl implements OrderService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy người dùng với ID: " + userId));
 
         Page<Order> orders;
-        if(status != null && !status.isEmpty()) {
+        if (status != null && !status.isEmpty()) {
             OrderStatusEnum orderStatus = OrderStatusEnum.valueOf(status.toUpperCase());
             orders = orderRepository.findByUserAndStatus(user, orderStatus, pageable);
         } else {
@@ -226,7 +229,7 @@ public class OrderServiceImpl implements OrderService {
 
         ApiResponse<CartResponse> cartResponse = cartServiceClient.getCartItemToCheckout();
         List<CartItemResponse> cartItems = cartResponse.getData().getCartItems();
-        if(cartItems.isEmpty()) {
+        if (cartItems.isEmpty()) {
             throw new CustomException(ErrorCode.CART_EMPTY,
                     HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
         }
@@ -242,7 +245,7 @@ public class OrderServiceImpl implements OrderService {
                         .toList()
         );
 
-        if(reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
+        if (reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
             throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED
                     , (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null
                     , reserveResponse.getMessage()
@@ -251,37 +254,13 @@ public class OrderServiceImpl implements OrderService {
 
         long totalPrice = 0;
 
-        for(ProductCheckResponse productCheckResponse: reserveResponse.getData().getProductCheckResponses()) {
+        for (ProductCheckResponse productCheckResponse : reserveResponse.getData().getProductCheckResponses()) {
             totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
         }
 
         order.setTotalPrice(totalPrice);
-        switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
-            case VNPAY -> {
-                order.setPaymentMethod(PaymentMethodEnum.VNPAY);
-//                order = orderRepository.save(order);
-//                createOrderDetails(order, cart);
-//                HttpServletRequest servletRequest = SecurityUtils.getCurrentHttpServletRequest();
-//                String paymentUrl = vnPayService.createPaymentUrl(order, servletRequest);
-//                return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
-                return ApiResponse.buildOkResponse(null, "Chức năng VNPAY đang được phát triển");
-            }
 
-            case MOMO -> {
-                // Gọi MoMoService nếu có
-                return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
-            }
 
-            case COD -> {
-                order.setPaymentMethod(PaymentMethodEnum.COD);
-                order = orderRepository.save(order);
-                createOrderDetails(order, cartItems);
-            }
-            default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
-                    HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
-        }
-
-        //send email for COD order if have EmailService
         OrderEvent orderEvent = OrderEvent.builder()
                 .orderId(order.getId())
                 .customerName(order.getCustomerName())
@@ -292,23 +271,7 @@ public class OrderServiceImpl implements OrderService {
                 .createdAt(order.getCreatedAt())
                 .build();
 
-        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
-        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
-                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng"));
-
-        for(OrderDetail orderDetail: orderDetails) {
-            OrderDetailEvent orderDetailEvent = OrderDetailEvent.builder()
-                    .priceAtOrder(orderDetail.getPriceAtOrder())
-                    .productId(orderDetail.getProduct().getId())
-                    .quantity(orderDetail.getQuantity())
-                    .title(orderDetail.getProduct().getTitle())
-                    .build();
-
-            orderDetailEvents.add(orderDetailEvent);
-        }
-
-        orderEvent.setOrderDetailEventList(orderDetailEvents);
+        List<OrderDetailEvent> orderDetailEvents;
 
         Event<OrderEvent> event = Event.<OrderEvent>builder()
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
@@ -317,7 +280,52 @@ public class OrderServiceImpl implements OrderService {
                 .source(appName)
                 .build();
 
+
+        switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
+            case VNPAY -> {
+                order.setPaymentMethod(PaymentMethodEnum.VNPAY);
+                order = orderRepository.save(order);
+                List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
+                orderDetailEvents = mapToOrderDetailEvents(orderDetails);
+                orderEvent.setOrderDetailEventList(orderDetailEvents);
+
+                PaymentRequest paymentRequest = PaymentRequest.builder()
+                        .orderId(order.getId())
+                        .totalPrice(order.getTotalPrice())
+                        .paymentMethodEnum(PaymentMethodEnum.VNPAY)
+                        .build();
+
+                // Tạo URL thanh toán VNPAY
+                ApiResponse<String> paymentResponse = paymentServiceClient.createPaymentUrl(paymentRequest);
+
+                if (paymentResponse.getStatus() != HttpStatus.OK.value()) {
+                    throw new CustomException(ErrorCode.PAYMENT_URL_CREATION_FAILED,
+                            HttpStatus.INTERNAL_SERVER_ERROR, paymentResponse.getMessage());
+                }
+
+                String paymentUrl = paymentResponse.getData();
+
+                return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
+            }
+
+            case MOMO -> {
+                // Gọi MoMoService nếu có
+                return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
+            }
+
+            case COD -> {
+                order.setPaymentMethod(PaymentMethodEnum.COD);
+                order = orderRepository.save(order);
+                List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
+                orderDetailEvents = mapToOrderDetailEvents(orderDetails);
+                orderEvent.setOrderDetailEventList(orderDetailEvents);
+            }
+            default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
+                    HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
+        }
+
         handleSaveOutboxEvent(event);
+
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setPaymentStatus(order.getPaymentStatus().name());
@@ -331,12 +339,13 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
 
+        if (!StateUtils.isValidTransition(order.getStatus(), OrderStatusEnum.valueOf(status.toUpperCase()))) {
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
+                    HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái đơn hàng từ "
+                    + order.getStatus() + " sang " + status);
+        }
+
         try {
-            if(!StateUtils.isValidTransition(order.getStatus(), OrderStatusEnum.valueOf(status.toUpperCase()))) {
-                throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
-                        HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái đơn hàng từ "
-                        + order.getStatus() + " sang " + status);
-            }
             order.setStatus(OrderStatusEnum.valueOf(status.toUpperCase()));
         } catch (RuntimeException e) {
             throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
@@ -365,16 +374,17 @@ public class OrderServiceImpl implements OrderService {
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
                 .data(orderReserveEvent)
                 .source(appName)
-                .eventType(EventTypeEnum.ORDER_RELEASED.getName())
                 .build();
 
-        if(status.equalsIgnoreCase(OrderStatusEnum.CANCELLED.name())) {
+        if (status.equalsIgnoreCase(OrderStatusEnum.CANCELLED.name())) {
             event.setEventType(EventTypeEnum.ORDER_CANCELLED.getName());
+            handleSaveOutboxEvent(event);
         } else {
-            event.setEventType(EventTypeEnum.ORDER_RELEASED.getName());
+            if(order.getPaymentMethod() == PaymentMethodEnum.COD) {
+                event.setEventType(EventTypeEnum.ORDER_RELEASED.getName());
+                handleSaveOutboxEvent(event);
+            }
         }
-
-        handleSaveOutboxEvent(event);
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         return ApiResponse.buildOkResponse(orderResponse, "Cập nhật trạng thái đơn hàng thành công");
@@ -387,13 +397,57 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
 
+        if(!StateUtils.isValidPaymentTransition(order.getPaymentStatus(),
+                PaymentStatusEnum.valueOf(paymentStatus.toUpperCase()))) {
+            throw new CustomException(ErrorCode.INVALID_PAYMENT_STATUS,
+                    HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái thanh toán từ "
+                    + order.getPaymentStatus() + " sang " + paymentStatus);
+        }
+
         try {
             order.setPaymentStatus(PaymentStatusEnum.valueOf(paymentStatus.toUpperCase()));
         } catch (RuntimeException e) {
+            log.error("Lỗi khi chuyển đổi trạng thái thanh toán: {}", e.getMessage());
             throw new CustomException(ErrorCode.INVALID_PAYMENT_STATUS,
                     HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ: " + paymentStatus);
         }
+
+        if(paymentStatus.equalsIgnoreCase(PaymentStatusEnum.FAILED.getName())) {
+            order.setStatus(OrderStatusEnum.CANCELLED);
+        }
+
         orderRepository.save(order);
+
+        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
+                .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng với ID: " + id));
+
+        OrderReserveEvent orderReserveEvent = OrderReserveEvent.builder()
+                .orderId(order.getId())
+                .totalPrice(order.getTotalPrice())
+                .build();
+
+        List<OrderDetailEvent> orderDetailEvents = orderDetails.stream().map(
+                orderDetail -> new OrderDetailEvent(orderDetail.getQuantity(),
+                        orderDetail.getProduct().getId())
+        ).toList();
+
+        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+
+        Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                .data(orderReserveEvent)
+                .source(appName)
+                .build();
+
+        if (order.getPaymentStatus().getName().equalsIgnoreCase(PaymentStatusEnum.FAILED.getName())) {
+            event.setEventType(EventTypeEnum.ORDER_CANCELLED.getName());
+        } else {
+            event.setEventType(EventTypeEnum.ORDER_RELEASED.getName());
+        }
+
+        handleSaveOutboxEvent(event);
+
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         return ApiResponse.buildOkResponse(
@@ -491,9 +545,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    void createOrderDetails(Order order, List<CartItemResponse> cartItemResponses) {
+    List<OrderDetail> createOrderDetails(Order order, List<CartItemResponse> cartItemResponses) {
         List<OrderDetail> orderDetails = new ArrayList<>();
-        for(CartItemResponse cartItemResponse: cartItemResponses) {
+        for (CartItemResponse cartItemResponse : cartItemResponses) {
             OrderDetail orderDetail = new OrderDetail();
             orderDetail.setOrder(order);
             orderDetail.setProduct(productRepository.findById(cartItemResponse.getProduct().getId()).orElse(null));
@@ -502,6 +556,8 @@ public class OrderServiceImpl implements OrderService {
             orderDetails.add(orderDetail);
         }
         orderDetailRepository.saveAll(orderDetails);
+
+        return orderDetails;
     }
 
 
@@ -515,7 +571,7 @@ public class OrderServiceImpl implements OrderService {
 
         return String.format("ORDER_FILTER:pageIndex=%s:pageSize=%s" +
                         ":orderStatus=%s:paymentStatus=%s:customerPhoneNumber=%s:fromDate=%s:toDate=%s"
-        ,pageIndex, pageSize, orderStatus, paymentStatus, customerPhoneNumber, fromDate, toDate);
+                , pageIndex, pageSize, orderStatus, paymentStatus, customerPhoneNumber, fromDate, toDate);
     }
 
     public void handleSaveOutboxEvent(Event<?> event) {
@@ -531,5 +587,17 @@ public class OrderServiceImpl implements OrderService {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
                     e.getMessage());
         }
+    }
+
+    private List<OrderDetailEvent> mapToOrderDetailEvents(List<OrderDetail> orderDetails) {
+        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
+        for (OrderDetail orderDetail : orderDetails) {
+            OrderDetailEvent orderDetailEvent = new OrderDetailEvent();
+            orderDetailEvent.setProductId(orderDetail.getProduct().getId());
+            orderDetailEvent.setQuantity(orderDetail.getQuantity());
+            orderDetailEvent.setPriceAtOrder(orderDetail.getPriceAtOrder());
+            orderDetailEvents.add(orderDetailEvent);
+        }
+        return orderDetailEvents;
     }
 }

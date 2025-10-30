@@ -22,6 +22,10 @@ public enum EventTypeEnum {
     ORDER_RELEASED,
     ORDER_RESERVATION_FAILED,
     ORDER_CANCELLED,
+    PAYMENT_COMPLETED,
+    PAYMENT_FAILED,
+    PAYMENT_REFUNDED,
+
     PASSWORD_RESET;
 
     public String getName() {

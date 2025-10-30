@@ -5,6 +5,7 @@ import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.ReserveResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
@@ -14,4 +15,7 @@ public interface ProductServiceClient {
 
     @PostMapping("/reservations/reserve")
     ApiResponse<ReserveResponse> reserveProduct(@RequestBody List<ReserveRequest> reserveRequestList);
+
+    @PutMapping("/reservations/release")
+    ApiResponse<Void> releaseProduct(@RequestBody List<ReserveRequest> reserveRequestList);
 }

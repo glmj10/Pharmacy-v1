@@ -1,6 +1,6 @@
 package com.pharmacy.payment_service.config;
 
-import com.pharmacy_backend.order_service.service.OutboxService;
+import com.pharmacy.payment_service.service.OutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

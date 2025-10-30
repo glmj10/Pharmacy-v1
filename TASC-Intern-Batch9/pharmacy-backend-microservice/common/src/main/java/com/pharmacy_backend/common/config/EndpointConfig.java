@@ -14,7 +14,7 @@ public class EndpointConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-ui.html",
-
+            "/payments/test",
     };
 
     public static final String[] PUBLIC_GET_ENDPOINTS = {

@@ -88,6 +88,8 @@ public enum ErrorCode {
     ILLEGAL_STATE("Trạng thái không hợp lệ"),
     STOCK_NOT_FOUND("Kho hàng không tồn tại"),
 
+    PAYMENT_URL_CREATION_FAILED("Tạo URL thanh toán không thành công")
+
 
     ;
 
