@@ -24,9 +24,6 @@ import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -65,7 +62,6 @@ public class ProductServiceImpl implements ProductService {
         }
 
         List<Product> products = productRepository.findAll(pageSize, (pageIndex - 1) * pageSize, filterRequest);
-
 
         List<ProductResponse> productResponses = products
                 .stream()

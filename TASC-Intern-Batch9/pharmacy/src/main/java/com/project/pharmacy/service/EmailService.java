@@ -15,5 +15,4 @@ public interface EmailService {
             throws MessagingException, UnsupportedEncodingException;
 
     void sendVerificationEmail(String email, String token, LocalDateTime expiryAt);
-    ApiResponse<Void> resendVerificationEmail(String email);
 }

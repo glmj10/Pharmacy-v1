@@ -47,11 +47,11 @@ public class AuthController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PostMapping("/send-verification-email")
-    public ResponseEntity<ApiResponse<Void>> sendVerifyEmail(@RequestParam String email) {
-        ApiResponse<Void> response = emailService.resendVerificationEmail(email);
-        return ResponseEntity.status(response.getStatus()).body(response);
-    }
+//    @PostMapping("/send-verification-email")
+//    public ResponseEntity<ApiResponse<Void>> sendVerifyEmail(@RequestParam String email) {
+//        ApiResponse<Void> response = emailService.sendVerificationEmail(email);
+//        return ResponseEntity.status(response.getStatus()).body(response);
+//    }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestHeader("Authorization") String bearerToken)

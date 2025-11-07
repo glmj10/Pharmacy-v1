@@ -1,8 +1,6 @@
 package oop;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 public abstract class Abstractx {
     public static void main(String[] args) {
@@ -15,6 +13,8 @@ public abstract class Abstractx {
         for(Integer i : b.list) {
             System.out.print(i + " ");
         }
+
+        Map<String, Object> map = new HashMap<>();
     }
 }
 

@@ -66,30 +66,6 @@ public class EmailServiceImpl implements EmailService {
         send(email, subject, html);
     }
 
-    @Transactional
-    @Override
-    public ApiResponse<Void> resendVerificationEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-                        HttpStatus.BAD_REQUEST, "Người dùng không tồn tại"));
-        if(user.isVerified()) {
-            throw new CustomException(ErrorCode.USER_ALREADY_VERIFIED,
-                    HttpStatus.BAD_REQUEST, "Tài khoản đã được xác thực");
-        } else {
-            String token = jwtAuthenticationProvider.generateVerificationToken(user);
-            sendVerificationEmail(email, token, jwtAuthenticationProvider.getTokenExpiry(token));
-            VerificationToken verificationToken = new VerificationToken();
-            verificationToken.setToken(token);
-            verificationToken.setUser(user);
-            verificationToken.setExpiryAt(jwtAuthenticationProvider.getTokenExpiry(token));
-            verificationTokenRepository.save(verificationToken);
-            return ApiResponse.<Void>builder()
-                    .status(HttpStatus.OK.value())
-                    .message("Đã gửi lại email xác thực thành công, vui lòng kiểm tra email")
-                    .data(null)
-                    .build();
-        }
-    }
 
     public void send(String to, String subject, String body) {
         try {
