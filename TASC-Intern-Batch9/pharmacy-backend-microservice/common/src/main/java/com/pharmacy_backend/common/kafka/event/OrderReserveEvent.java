@@ -15,6 +15,6 @@ import java.util.List;
 public class OrderReserveEvent {
     Long orderId;
     Long totalPrice;
-    List<OrderDetailEvent> orderDetailEvents;
+    List<OrderDetailEvent> orderDetailEventList;
 }
 

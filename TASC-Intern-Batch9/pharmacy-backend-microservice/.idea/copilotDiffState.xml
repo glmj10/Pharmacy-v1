@@ -19,15 +19,6 @@
             </PendingDiffInfo>
           </value>
         </entry>
-        <entry key="$PROJECT_DIR$/../../../spring/config-repo/payment-service/payment-service-uat.yml">
-          <value>
-            <PendingDiffInfo>
-              <option name="filePath" value="$PROJECT_DIR$/../../../spring/config-repo/payment-service/payment-service-uat.yml" />
-              <option name="originalContent" value="server:&#10;  servlet:&#10;    encoding:&#10;      charset: UTF-8&#10;      force: true&#10;      enabled: true&#10;spring:&#10;  application:&#10;    name: payment-service&#10;  jpa:&#10;    hibernate:&#10;      ddl-auto: update&#10;    properties:&#10;      hibernate:&#10;        format_sql: true&#10;    show-sql: true&#10;    open-in-view: false&#10;    defer-datasource-initialization: true&#10;  sql:&#10;    init:&#10;      mode: always" />
-              <option name="updatedContent" value="server:&#13;&#10;  servlet:&#13;&#10;    encoding:&#13;&#10;      charset: UTF-8&#13;&#10;      force: true&#13;&#10;      enabled: true&#13;&#10;spring:&#13;&#10;  application:&#13;&#10;    name: payment-service&#13;&#10;  jpa:&#13;&#10;    hibernate:&#13;&#10;      ddl-auto: update&#13;&#10;    properties:&#13;&#10;      hibernate:&#13;&#10;        format_sql: true&#13;&#10;    show-sql: true&#13;&#10;    open-in-view: false&#13;&#10;    defer-datasource-initialization: true&#13;&#10;  sql:&#13;&#10;    init:&#13;&#10;      mode: always&#13;&#10;jwt:&#13;&#10;  secret: ${JWT_SECRET}&#13;&#10;  expiration: ${JWT_EXPIRATION:3600}&#13;&#10;  reset-password:&#13;&#10;    expiration: ${JWT_RESET_PASSWORD_EXPIRATION:600}&#13;&#10;  refresh:&#13;&#10;    expiration: ${JWT_REFRESH_EXPIRATION:86400}&#13;&#10;  verify:&#13;&#10;    expiration: ${JWT_VERIFICATION_EXPIRATION:600}" />
-            </PendingDiffInfo>
-          </value>
-        </entry>
       </map>
     </option>
   </component>

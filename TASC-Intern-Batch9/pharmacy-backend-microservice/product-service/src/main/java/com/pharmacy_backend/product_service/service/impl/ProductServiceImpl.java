@@ -2,10 +2,8 @@ package com.pharmacy_backend.product_service.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pharmacy_backend.common.dto.request.ProductNeedToCheckStockRequest;
 import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.ProductEvent;
@@ -26,6 +24,7 @@ import com.pharmacy_backend.product_service.repository.*;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import com.pharmacy_backend.product_service.service.ProductService;
+import com.pharmacy_backend.product_service.service.StockCacheService;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -35,10 +34,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +55,7 @@ public class ProductServiceImpl implements ProductService {
     final ObjectMapper objectMapper;
     final OutboxRepository outboxRepository;
     final StockRepository stockRepository;
+    final StockCacheService stockCacheService;
 
     @Value("${spring.application.name}")
     private String appName;
@@ -76,7 +73,6 @@ public class ProductServiceImpl implements ProductService {
         }
 
         List<Product> products = productRepository.findAll(pageSize, (pageIndex - 1) * pageSize, filterRequest);
-
         List<ProductResponse> productResponses = products
                 .stream()
                 .map(product -> {
@@ -193,6 +189,8 @@ public class ProductServiceImpl implements ProductService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug));
         ProductResponse productResponse = productRedisService.getCachedProductDetail(slug);
         if(productResponse != null) {
+            Integer stockResponse = stockCacheService.getStock(productResponse.getId());
+            productResponse.setQuantity(stockResponse);
             User user;
             Long userId = SecurityUtils.getCurrentUserId();
             if(userId != null) {
@@ -224,6 +222,8 @@ public class ProductServiceImpl implements ProductService {
             } else {
                 productResponse.setInWishlist(false);
             }
+            productRedisService.cacheProductDetail(product);
+            stockCacheService.setStock(product.getId(), product.getQuantity());
         }
 
         return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
@@ -289,7 +289,6 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         handleSaveOutboxEvent(event);
-
         return ApiResponse.buildCreatedResponse(productResponse, "Thêm sản phẩm thành công");
     }
 
@@ -343,6 +342,8 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         handleSaveOutboxEvent(event);
+        productRedisService.deleteCachedProductDetail(product.getSlug());
+        stockCacheService.deleteStock(product.getId());
         return ApiResponse.buildOkResponse(productResponse, "Cập nhật sản phẩm thành công");
     }
 
@@ -379,6 +380,8 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         handleSaveOutboxEvent(event);
+        productRedisService.deleteCachedProductDetail(product.getSlug());
+        stockCacheService.deleteStock(product.getId());
 
         return ApiResponse.buildOkResponse(productResponse, "Cập nhật trạng thái sản phẩm thành công");
     }
@@ -412,6 +415,8 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         handleSaveOutboxEvent(event);
+        productRedisService.deleteCachedProductDetail(product.getSlug());
+        stockCacheService.deleteStock(product.getId());
 
         return ApiResponse.buildOkResponse(null, "Xoá sản phẩm thành công");
     }

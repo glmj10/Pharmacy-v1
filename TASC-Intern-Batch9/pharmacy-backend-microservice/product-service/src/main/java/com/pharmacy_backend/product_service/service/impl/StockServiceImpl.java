@@ -106,6 +106,7 @@ public class StockServiceImpl implements StockService {
         stockRepository.saveAll(stocks);
     }
 
+
     @Override
     public ApiResponse<Void> releaseStock(List<ReserveRequest> reserveRequestList) {
         List<Stock> stocks = new ArrayList<>();

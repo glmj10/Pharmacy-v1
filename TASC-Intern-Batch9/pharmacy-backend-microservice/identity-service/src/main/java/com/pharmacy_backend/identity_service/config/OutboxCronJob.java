@@ -1,6 +1,6 @@
 package com.pharmacy_backend.identity_service.config;
 
-import com.pharmacy_backend.identity_service.service.OutboxService;
+import com.pharmacy_backend.common.service.OutboxService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

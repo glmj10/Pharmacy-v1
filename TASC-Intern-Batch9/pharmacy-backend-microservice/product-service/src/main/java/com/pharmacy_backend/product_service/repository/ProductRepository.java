@@ -5,6 +5,7 @@ import com.pharmacy_backend.product_service.dto.request.ProductFilterCustomerReq
 import com.pharmacy_backend.product_service.entity.Brand;
 import com.pharmacy_backend.product_service.entity.Product;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,4 +37,10 @@ public interface ProductRepository {
     List<Product> updateAll(List<Product> products);
     List<Product> findAll(boolean active);
     List<Product> findByIdIn(List<Long> ids);
+
+    Long findMaxId();
+    Long findMinId();
+
+    List<Product> findAllFromRange(Long startId, Long endId);
+    List<Product> findAllByUpdatedAtBefore(int intervalSeconds);
 }

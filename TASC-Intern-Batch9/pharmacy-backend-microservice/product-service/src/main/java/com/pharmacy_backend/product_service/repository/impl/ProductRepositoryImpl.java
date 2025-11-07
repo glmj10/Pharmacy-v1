@@ -528,4 +528,30 @@ public class ProductRepositoryImpl implements ProductRepository {
 
         return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), ids.toArray());
     }
+
+    @Override
+    public Long findMaxId() {
+        String sql = "SELECT MAX(id) FROM products";
+        Long maxId = jdbcTemplate.queryForObject(sql, Long.class);
+        return maxId != null ? maxId : 0L;
+    }
+
+    @Override
+    public Long findMinId() {
+        String sql = "SELECT MIN(id) FROM products";
+        Long minId = jdbcTemplate.queryForObject(sql, Long.class);
+        return minId != null ? minId : 0L;
+    }
+
+    @Override
+    public List<Product> findAllFromRange(Long startId, Long endId) {
+        String sql = "SELECT * FROM products WHERE id BETWEEN ? AND ? and active = true";
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), startId, endId);
+    }
+
+    @Override
+    public List<Product> findAllByUpdatedAtBefore(int intervalSeconds) {
+        String sql = "SELECT * FROM products WHERE updated_at <= NOW() - INTERVAL ? SECOND AND active = true";
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), intervalSeconds);
+    }
 }

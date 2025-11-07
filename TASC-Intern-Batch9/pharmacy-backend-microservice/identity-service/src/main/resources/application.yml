@@ -8,6 +8,11 @@ spring:
     import: optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}
   profiles:
     active: ${SPRING_PROFILES_ACTIVE}
+  kafka:
+    producer:
+      properties:
+        enable.idempotence: true
+
 outbox:
   cron-job-rate-ms: ${OUTBOX_CRON_JOB_RATE_MS:5000}
 file:

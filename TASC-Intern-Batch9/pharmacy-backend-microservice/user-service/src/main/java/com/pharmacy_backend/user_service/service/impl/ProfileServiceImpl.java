@@ -11,6 +11,7 @@ import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.ProfileEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.service.OutboxService;
 import com.pharmacy_backend.user_service.dto.request.ProfileRequest;
 import com.pharmacy_backend.user_service.dto.response.ProfileResponse;
 import com.pharmacy_backend.user_service.entity.OutboxEvent;
@@ -39,8 +40,7 @@ public class ProfileServiceImpl implements ProfileService {
     final ProfileRepository profileRepository;
     final ProfileMapper profileMapper;
     final UserRepository userRepository;
-    final OutboxEventRepository outboxEventRepository;
-    final ObjectMapper objectMapper;
+    final OutboxService outboxService;
 
     @Value("${spring.application.name}")
     String appName;
@@ -87,7 +87,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .data(profileEvent)
                 .build();
 
-        handleSaveProfileEvent(profileEventEvent);
+        outboxService.handleSaveOutboxEvent(profileEventEvent);
 
         ProfileResponse response = profileMapper.toProfileResponse(profile);
 
@@ -127,7 +127,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .data(profileEvent)
                 .build();
 
-        handleSaveProfileEvent(profileEventEvent);
+        outboxService.handleSaveOutboxEvent(profileEventEvent);
 
         ProfileResponse response = profileMapper.toProfileResponse(profile);
 
@@ -163,7 +163,7 @@ public class ProfileServiceImpl implements ProfileService {
                 .data(profileEvent)
                 .build();
 
-        handleSaveProfileEvent(profileEventEvent);
+        outboxService.handleSaveOutboxEvent(profileEventEvent);
 
         return ApiResponse.buildOkResponse(null, "Xóa địa chỉ thành công");
     }
@@ -184,18 +184,4 @@ public class ProfileServiceImpl implements ProfileService {
         return ApiResponse.buildOkResponse(response, "Lấy thông tin địa chỉ thành công");
     }
 
-    private void handleSaveProfileEvent(Event<ProfileEvent> event) {
-        OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateType(PartitionKeyEnum.PROFILE.getName());
-        outboxEvent.setAggregateId(event.getKey());
-        outboxEvent.setEventType(event.getEventType());
-        outboxEvent.setTopic(TopicEnum.PROFILE_TOPIC.getName());
-        try {
-            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
-            outboxEventRepository.save(outboxEvent);
-        } catch (JsonProcessingException e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    e.getMessage());
-        }
-    }
 }

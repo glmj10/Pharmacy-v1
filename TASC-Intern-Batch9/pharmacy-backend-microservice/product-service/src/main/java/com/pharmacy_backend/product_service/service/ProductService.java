@@ -1,9 +1,7 @@
 package com.pharmacy_backend.product_service.service;
 
-import com.pharmacy_backend.common.dto.request.ProductNeedToCheckStockRequest;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
 import com.pharmacy_backend.product_service.dto.request.ProductCMSFilterRequest;
 import com.pharmacy_backend.product_service.dto.request.ProductFilterCustomerRequest;
 import com.pharmacy_backend.product_service.dto.request.ProductRequest;
@@ -11,7 +9,6 @@ import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Set;
 
 public interface ProductService {
     ApiResponse<PageResponse<List<ProductResponse>>> getAllCMSProduct(int pageIndex,

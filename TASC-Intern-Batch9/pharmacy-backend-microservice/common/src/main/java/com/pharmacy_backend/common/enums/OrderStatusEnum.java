@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum OrderStatusEnum {
-    PENDING, SHIPPING, CANCELLED, DELIVERED;
+    PENDING, SHIPPING, CANCELLED, DELIVERED, FAILED;
 
     public String getName() {
         return this.name();

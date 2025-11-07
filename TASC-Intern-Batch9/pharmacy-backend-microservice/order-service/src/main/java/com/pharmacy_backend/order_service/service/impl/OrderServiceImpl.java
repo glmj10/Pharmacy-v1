@@ -211,7 +211,6 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildOkResponse(orderDetailResponses, "Lấy chi tiết đơn hàng thành công");
     }
 
-    @Transactional
     @Override
     public ApiResponse<?> createOrder(OrderRequest request) {
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
@@ -220,6 +219,12 @@ public class OrderServiceImpl implements OrderService {
         Profile profile = profileRepository.findUserProfile(user.getId(), request.getProfileId())
                 .orElseThrow(() -> new CustomException(ErrorCode.PROFILE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy thông tin nhận hàng với ID: " + request.getProfileId()));
+
+        if(!request.getPaymentMethod().equalsIgnoreCase(PaymentMethodEnum.VNPAY.name()) &&
+                !request.getPaymentMethod().equalsIgnoreCase(PaymentMethodEnum.COD.name())) {
+            throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
+                    HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
+        }
 
         Order order = orderMapper.toOrder(request);
         order.setCustomerName(profile.getFullName());
@@ -234,15 +239,17 @@ public class OrderServiceImpl implements OrderService {
                     HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
         }
 
+        List<ReserveRequest> reserveRequests = cartItems.stream()
+                .map(cartItem -> {
+                    ReserveRequest reserveRequest = new ReserveRequest();
+                    reserveRequest.setProductId(cartItem.getProduct().getId());
+                    reserveRequest.setQuantity(cartItem.getQuantity());
+                    return reserveRequest;
+                })
+                .toList();
+
         ApiResponse<ReserveResponse> reserveResponse = productServiceClient.reserveProduct(
-                cartItems.stream()
-                        .map(cartItem -> {
-                            ReserveRequest reserveRequest = new ReserveRequest();
-                            reserveRequest.setProductId(cartItem.getProduct().getId());
-                            reserveRequest.setQuantity(cartItem.getQuantity());
-                            return reserveRequest;
-                        })
-                        .toList()
+                reserveRequests
         );
 
         if (reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
@@ -280,52 +287,61 @@ public class OrderServiceImpl implements OrderService {
                 .source(appName)
                 .build();
 
+        try {
+            switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
+                case VNPAY -> {
+                    order.setPaymentMethod(PaymentMethodEnum.VNPAY);
+                    order = orderRepository.save(order);
+                    List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
+                    orderDetailEvents = OrderService.mapToOrderDetailEvents(orderDetails);
+                    orderEvent.setOrderDetailEventList(orderDetailEvents);
 
-        switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
-            case VNPAY -> {
-                order.setPaymentMethod(PaymentMethodEnum.VNPAY);
-                order = orderRepository.save(order);
-                List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
-                orderDetailEvents = mapToOrderDetailEvents(orderDetails);
-                orderEvent.setOrderDetailEventList(orderDetailEvents);
+                    PaymentRequest paymentRequest = PaymentRequest.builder()
+                            .orderId(order.getId())
+                            .totalPrice(order.getTotalPrice())
+                            .paymentMethodEnum(PaymentMethodEnum.VNPAY)
+                            .build();
 
-                PaymentRequest paymentRequest = PaymentRequest.builder()
-                        .orderId(order.getId())
-                        .totalPrice(order.getTotalPrice())
-                        .paymentMethodEnum(PaymentMethodEnum.VNPAY)
-                        .build();
+                    // Tạo URL thanh toán VNPAY
+                    ApiResponse<String> paymentResponse = paymentServiceClient.createPaymentUrl(paymentRequest);
 
-                // Tạo URL thanh toán VNPAY
-                ApiResponse<String> paymentResponse = paymentServiceClient.createPaymentUrl(paymentRequest);
+                    if (paymentResponse.getStatus() != HttpStatus.OK.value()) {
+                        throw new CustomException(ErrorCode.PAYMENT_URL_CREATION_FAILED,
+                                HttpStatus.INTERNAL_SERVER_ERROR, paymentResponse.getMessage());
+                    }
 
-                if (paymentResponse.getStatus() != HttpStatus.OK.value()) {
-                    throw new CustomException(ErrorCode.PAYMENT_URL_CREATION_FAILED,
-                            HttpStatus.INTERNAL_SERVER_ERROR, paymentResponse.getMessage());
+                    String paymentUrl = paymentResponse.getData();
+
+                    return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
                 }
 
-                String paymentUrl = paymentResponse.getData();
+                case MOMO -> {
+                    // Gọi MoMoService nếu có
+                    return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
+                }
 
-                return ApiResponse.buildOkResponse(paymentUrl, "Chuyển hướng đến VNPAY");
+                case COD -> {
+                    order.setPaymentMethod(PaymentMethodEnum.COD);
+                    order = orderRepository.save(order);
+                    List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
+                    orderDetailEvents = OrderService.mapToOrderDetailEvents(orderDetails);
+                    orderEvent.setOrderDetailEventList(orderDetailEvents);
+                    handleSaveOutboxEvent(event);
+                }
+                default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD);
             }
-
-            case MOMO -> {
-                // Gọi MoMoService nếu có
-                return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
-            }
-
-            case COD -> {
-                order.setPaymentMethod(PaymentMethodEnum.COD);
-                order = orderRepository.save(order);
-                List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
-                orderDetailEvents = mapToOrderDetailEvents(orderDetails);
-                orderEvent.setOrderDetailEventList(orderDetailEvents);
-            }
-            default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
-                    HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
+        } catch (RuntimeException e) {
+            log.error("Lỗi khi xử lý phương thức thanh toán: {}", e.getMessage());
+            event.setEventType(EventTypeEnum.ORDER_FAILED.getName());
+            List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
+                    cartItems);
+            orderEvent.setOrderDetailEventList(orderDetailEventsFromCart);
+            handleSaveOutboxEvent(event);
+            order.setStatus(OrderStatusEnum.FAILED);
+            orderRepository.save(order);
+            throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi trong quá trình tạo đơn hàng");
         }
-
-        handleSaveOutboxEvent(event);
-
 
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setPaymentStatus(order.getPaymentStatus().name());
@@ -544,7 +560,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    @Transactional
     List<OrderDetail> createOrderDetails(Order order, List<CartItemResponse> cartItemResponses) {
         List<OrderDetail> orderDetails = new ArrayList<>();
         for (CartItemResponse cartItemResponse : cartItemResponses) {
@@ -589,15 +604,27 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private List<OrderDetailEvent> mapToOrderDetailEvents(List<OrderDetail> orderDetails) {
-        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
-        for (OrderDetail orderDetail : orderDetails) {
-            OrderDetailEvent orderDetailEvent = new OrderDetailEvent();
-            orderDetailEvent.setProductId(orderDetail.getProduct().getId());
-            orderDetailEvent.setQuantity(orderDetail.getQuantity());
-            orderDetailEvent.setPriceAtOrder(orderDetail.getPriceAtOrder());
-            orderDetailEvents.add(orderDetailEvent);
-        }
-        return orderDetailEvents;
-    }
+//    public List<OrderDetailEvent> mapToOrderDetailEvents(List<OrderDetail> orderDetails) {
+//        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
+//        for (OrderDetail orderDetail : orderDetails) {
+//            OrderDetailEvent orderDetailEvent = new OrderDetailEvent();
+//            orderDetailEvent.setProductId(orderDetail.getProduct().getId());
+//            orderDetailEvent.setQuantity(orderDetail.getQuantity());
+//            orderDetailEvent.setPriceAtOrder(orderDetail.getPriceAtOrder());
+//            orderDetailEvents.add(orderDetailEvent);
+//        }
+//        return orderDetailEvents;
+//    }
+
+//    public List<OrderDetailEvent> mapToOrderDetailEventsFromCartItems(List<CartItemResponse> cartItems) {
+//        List<OrderDetailEvent> orderDetailEvents = new ArrayList<>();
+//        for (CartItemResponse cartItem : cartItems) {
+//            OrderDetailEvent orderDetailEvent = new OrderDetailEvent();
+//            orderDetailEvent.setProductId(cartItem.getProduct().getId());
+//            orderDetailEvent.setQuantity(cartItem.getQuantity());
+//            orderDetailEvent.setPriceAtOrder(cartItem.getProduct().getPriceNew());
+//            orderDetailEvents.add(orderDetailEvent);
+//        }
+//        return orderDetailEvents;
+//    }
 }

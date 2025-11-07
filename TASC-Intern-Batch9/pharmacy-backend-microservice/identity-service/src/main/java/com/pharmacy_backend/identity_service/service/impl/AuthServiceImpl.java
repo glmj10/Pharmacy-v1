@@ -1,7 +1,5 @@
 package com.pharmacy_backend.identity_service.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.SignedJWT;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
@@ -13,6 +11,7 @@ import com.pharmacy_backend.common.kafka.event.UserForgotPasswordEvent;
 import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.service.OutboxService;
 import com.pharmacy_backend.common.utils.DateUtils;
 import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
@@ -51,11 +50,10 @@ public class AuthServiceImpl implements AuthService {
     final UserRepository userRepository;
     final RoleRepository roleRepository;
     final JWTAuthenticationProvider jwtAuthenticationProvider;
-    final ObjectMapper objectMapper;
-    final OutboxRepository outboxRepository;
     final RedisService redisService;
     final UserMapper userMapper;
     final FileServiceClient fileServiceClient;
+    final OutboxService outboxService;
 
     @Value("${spring.application.name}")
     String appName;
@@ -108,7 +106,7 @@ public class AuthServiceImpl implements AuthService {
                 .data(userCreatedEvent).
                 build();
         //send message queue to profile-service, cart-service to create profile for new user
-        handleSaveOutboxEvent(event);
+        outboxService.handleSaveOutboxEvent(event);
 
         String token = jwtAuthenticationProvider.generateVerificationToken(user);
         long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
@@ -126,7 +124,7 @@ public class AuthServiceImpl implements AuthService {
                 .data(userVerifyAccountEvent).
                 build();
 
-        handleSaveOutboxEvent(verifyEvent);
+        outboxService.handleSaveOutboxEvent(verifyEvent);
         try {
             redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
         } catch (ParseException e) {
@@ -204,7 +202,7 @@ public class AuthServiceImpl implements AuthService {
                 .data(userForgotPasswordEvent)
                 .build();
 
-        handleSaveOutboxEvent(event);
+        outboxService.handleSaveOutboxEvent(event);
 
         Long expiryTime = DateUtils.convertToMillis(
                 jwtAuthenticationProvider.getTokenExpiry(token)
@@ -329,7 +327,7 @@ public class AuthServiceImpl implements AuthService {
                     .data(userVerifyAccountEvent).
                     build();
 
-            handleSaveOutboxEvent(verifyEvent);
+            outboxService.handleSaveOutboxEvent(verifyEvent);
             try {
                 redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
             } catch (ParseException e) {
@@ -340,21 +338,6 @@ public class AuthServiceImpl implements AuthService {
                     .message("Đã gửi lại email xác thực thành công, vui lòng kiểm tra email")
                     .data(null)
                     .build();
-        }
-    }
-
-    public void handleSaveOutboxEvent(Event<?> event) {
-        OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateType(PartitionKeyEnum.USER.getName());
-        outboxEvent.setAggregateId(event.getKey());
-        outboxEvent.setEventType(event.getEventType());
-        outboxEvent.setTopic(TopicEnum.USER_TOPIC.getName());
-        try {
-            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
-            outboxRepository.save(outboxEvent);
-        } catch (JsonProcessingException e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    e.getMessage());
         }
     }
 }

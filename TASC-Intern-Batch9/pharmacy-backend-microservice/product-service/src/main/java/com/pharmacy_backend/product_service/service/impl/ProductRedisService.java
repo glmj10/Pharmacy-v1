@@ -15,18 +15,20 @@ import com.pharmacy_backend.product_service.repository.CategoryRepository;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductRedisService {
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
     private final ObjectMapper objectMapper;
     private final ProductMapper productMapper;
     private final FileServiceClient fileServiceClient;
@@ -39,25 +41,68 @@ public class ProductRedisService {
         ProductResponse productResponse = buildProductResponse(product);
         String key = RedisKeyTypeEnum.PRODUCT_DETAIL.getKey() + ":" + productResponse.getSlug();
         try {
-            String json = objectMapper.writeValueAsString(productResponse);
-            redisTemplate.opsForValue().set(key, json);
+            redisTemplate.opsForValue().set(key, productResponse,
+                RedisKeyTypeEnum.PRODUCT_DETAIL.getDuration(), TimeUnit.SECONDS);
+            log.debug("Successfully cached product detail for slug: {}", productResponse.getSlug());
         } catch (Exception e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Failed to cache product data");
+            log.error("Failed to cache product data for slug: {}, error: {}", productResponse.getSlug(), e.getMessage());
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Failed to cache product data: " + e.getMessage());
         }
     }
 
     public ProductResponse getCachedProductDetail(String slug) {
-        String key = RedisKeyTypeEnum.PRODUCT_DETAIL.getKey() + ":" + slug;
-        String productJson = redisTemplate.opsForValue().get(key);
-        if (productJson != null) {
-            try {
-                return objectMapper.readValue(productJson, ProductResponse.class);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Failed to parse cached product data");
+        String key = String.format("%s:%s", RedisKeyTypeEnum.PRODUCT_DETAIL.getKey(), slug);
+
+        try {
+            log.debug("Attempting to retrieve cached product for key: {}", key);
+            log.debug("ValueSerializer: {}", redisTemplate.getValueSerializer().getClass().getName());
+
+            Object cachedObject = redisTemplate.opsForValue().get(key);
+
+            if (cachedObject != null) {
+                log.debug("Found cached object of type: {}", cachedObject.getClass().getName());
+
+                if (cachedObject instanceof ProductResponse) {
+                    log.debug("Successfully retrieved ProductResponse from cache for slug: {}", slug);
+                    return (ProductResponse) cachedObject;
+                } else {
+                    try {
+                        ProductResponse converted = objectMapper.convertValue(cachedObject, ProductResponse.class);
+                        log.debug("Successfully converted cached object to ProductResponse for slug: {}", slug);
+                        return converted;
+                    } catch (Exception convertException) {
+                        log.warn("Failed to convert cached object to ProductResponse for slug: {}, error: {}",
+                            slug, convertException.getMessage());
+                        deleteCachedProductDetail(slug);
+                        return null;
+                    }
+                }
             }
+
+            log.debug("No cached data found for slug: {}", slug);
+            return null;
+
+        } catch (Exception e) {
+            log.error("Error retrieving cached product for slug: {}, error: {}", slug, e.getMessage(), e);
+            try {
+                deleteCachedProductDetail(slug);
+                log.info("Deleted corrupted cache for slug: {}", slug);
+            } catch (Exception deleteException) {
+                log.warn("Failed to delete corrupted cache for slug: {}, error: {}", slug, deleteException.getMessage());
+            }
+            return null;
         }
-        return null;
+    }
+
+    public void deleteCachedProductDetail(String slug) {
+        String key = RedisKeyTypeEnum.PRODUCT_DETAIL.getKey() + ":" + slug;
+        try {
+            Boolean deleted = redisTemplate.delete(key);
+            log.debug("Cache deletion for slug: {} - success: {}", slug, deleted);
+        } catch (Exception e) {
+            log.error("Failed to delete cache for slug: {}, error: {}", slug, e.getMessage());
+        }
     }
 
     public ProductResponse buildProductResponse(Product product) {

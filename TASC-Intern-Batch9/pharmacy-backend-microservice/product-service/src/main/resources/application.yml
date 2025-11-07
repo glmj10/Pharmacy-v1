@@ -22,3 +22,15 @@ file:
 
 outbox:
   cron-job-rate-ms: ${OUTBOX_CRON_JOB_RATE_MS:5000}
+
+cache:
+  warm-up:
+    enable: true
+    batch-size: 50
+  product:
+    modified-time:
+      ttl: 15 # seconds
+async:
+  core-pool-size: 10
+  max-pool-size: 20
+  queue-capacity: 100

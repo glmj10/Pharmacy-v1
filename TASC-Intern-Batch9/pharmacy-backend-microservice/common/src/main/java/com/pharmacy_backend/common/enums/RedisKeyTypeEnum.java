@@ -10,11 +10,25 @@ public enum RedisKeyTypeEnum {
     USER_VERSION("USER_VERSION"),
     PRODUCT_DETAIL("PRODUCT_DETAIL"),
     PRODUCT_RELATED("PRODUCT_RELATED"),
-    WISHLIST("WISHLIST");
+    WISHLIST("WISHLIST"),
+    PRODUCT_STOCK("PRODUCT_STOCK");
 
     private final String key;
     RedisKeyTypeEnum(String key) {
         this.key = key;
     }
+
+    public long getDuration() {
+        return switch (this) {
+            case INVALIDATED_JWT -> 60 * 60L; // 1 hour
+            case RESET_PASSWORD_TOKEN -> 15 * 60L; // 15 minutes
+            case VERIFICATION_TOKEN -> 24 * 60 * 60L; // 24 hours
+            case USER_VERSION, WISHLIST -> 7 * 24 * 60 * 60L; // 7 days
+            case PRODUCT_DETAIL, PRODUCT_RELATED -> 6 * 60 * 60L; // 6 hours
+            case PRODUCT_STOCK -> 0L;
+        };
+    }
+
+
 
 }

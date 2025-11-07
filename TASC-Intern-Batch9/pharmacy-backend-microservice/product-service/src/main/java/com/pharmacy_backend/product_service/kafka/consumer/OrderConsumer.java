@@ -33,7 +33,7 @@ public class OrderConsumer {
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.ORDER_RELEASED.getName())) {
                 OrderReserveEvent orderReserveEvent = objectMapper.convertValue(event.getData(),
                         OrderReserveEvent.class);
-                List<OrderDetailEvent> orderDetailEventList = orderReserveEvent.getOrderDetailEvents();
+                List<OrderDetailEvent> orderDetailEventList = orderReserveEvent.getOrderDetailEventList();
                 List<ReserveRequest> reserveRequestList = orderDetailEventList.stream()
                         .map(orderDetailEvent -> ReserveRequest.builder()
                                 .productId(orderDetailEvent.getProductId())
@@ -44,10 +44,11 @@ public class OrderConsumer {
                 log.info("Consume order event: {}", event);
             }
 
-            if(event.getEventType().equalsIgnoreCase(EventTypeEnum.ORDER_CANCELLED.getName())) {
+            if(event.getEventType().equalsIgnoreCase(EventTypeEnum.ORDER_CANCELLED.getName())
+            ||  event.getEventType().equalsIgnoreCase(EventTypeEnum.ORDER_FAILED.getName())) {
                 OrderReserveEvent orderReserveEvent = objectMapper.convertValue(event.getData(),
                         OrderReserveEvent.class);
-                List<OrderDetailEvent> orderDetailEventList = orderReserveEvent.getOrderDetailEvents();
+                List<OrderDetailEvent> orderDetailEventList = orderReserveEvent.getOrderDetailEventList();
                 List<ReserveRequest> reserveRequestList = orderDetailEventList.stream()
                         .map(orderDetailEvent -> ReserveRequest.builder()
                                 .productId(orderDetailEvent.getProductId())
