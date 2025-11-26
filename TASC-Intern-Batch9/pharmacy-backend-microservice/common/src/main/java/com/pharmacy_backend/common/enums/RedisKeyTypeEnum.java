@@ -6,12 +6,14 @@ import lombok.Getter;
 public enum RedisKeyTypeEnum {
     INVALIDATED_JWT("INVALIDATED_JWT"),
     RESET_PASSWORD_TOKEN("RESET_PASSWORD_TOKEN"),
+    RESET_PASSWORD_OTP("RESET_PASSWORD_OTP"),
     VERIFICATION_TOKEN("VERIFICATION_TOKEN"),
     USER_VERSION("USER_VERSION"),
     PRODUCT_DETAIL("PRODUCT_DETAIL"),
-    PRODUCT_RELATED("PRODUCT_RELATED"),
+    RELATED_PRODUCTS("RELATED_PRODUCTS"),
     WISHLIST("WISHLIST"),
-    PRODUCT_STOCK("PRODUCT_STOCK");
+    PRODUCT_STOCK("PRODUCT_STOCK"),
+    LAST_RUN_TIME("LAST_RUN_TIME");
 
     private final String key;
     RedisKeyTypeEnum(String key) {
@@ -24,8 +26,9 @@ public enum RedisKeyTypeEnum {
             case RESET_PASSWORD_TOKEN -> 15 * 60L; // 15 minutes
             case VERIFICATION_TOKEN -> 24 * 60 * 60L; // 24 hours
             case USER_VERSION, WISHLIST -> 7 * 24 * 60 * 60L; // 7 days
-            case PRODUCT_DETAIL, PRODUCT_RELATED -> 6 * 60 * 60L; // 6 hours
-            case PRODUCT_STOCK -> 0L;
+            case PRODUCT_DETAIL, RELATED_PRODUCTS -> 6 * 60 * 60L; // 6 hours
+            case PRODUCT_STOCK, LAST_RUN_TIME -> 0L;
+            case RESET_PASSWORD_OTP -> 5 * 60L; // 5 minutes
         };
     }
 

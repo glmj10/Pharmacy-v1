@@ -2,11 +2,8 @@ package com.pharmacy_backend.notification_service.kafka.consumer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
-import com.pharmacy_backend.common.enums.TopicEnum;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
 import com.pharmacy_backend.common.kafka.event.UserForgotPasswordEvent;
 import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
@@ -43,8 +40,7 @@ public class UserConsumer {
                 UserForgotPasswordEvent userForgotPasswordEvent = objectMapper.convertValue(event.getData(),
                         UserForgotPasswordEvent.class);
                 emailService.sendResetEmail(userForgotPasswordEvent.getEmail(),
-                        userForgotPasswordEvent.getResetPasswordToken(), userForgotPasswordEvent.getExpiryAt(),
-                        userForgotPasswordEvent.isUser());
+                        userForgotPasswordEvent.getOtp(), userForgotPasswordEvent.getExpiryMinutes());
             }
 
             acknowledgment.acknowledge();

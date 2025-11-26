@@ -5,6 +5,7 @@ import lombok.Getter;
 @Getter
 public enum EventTypeEnum {
     USER_CREATED,
+    USER_UPDATED,
     PROFILE_CREATED,
     PROFILE_UPDATED,
     PROFILE_DELETED,

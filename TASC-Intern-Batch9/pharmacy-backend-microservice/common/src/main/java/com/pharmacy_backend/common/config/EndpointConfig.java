@@ -19,6 +19,7 @@ public class EndpointConfig {
 
     public static final String[] PUBLIC_GET_ENDPOINTS = {
             "/products",
+            "/products/related/{productId}",
             "/products/slug/{slug}",
             "/products/rank/suggestions/top15",
             "/categories/**",

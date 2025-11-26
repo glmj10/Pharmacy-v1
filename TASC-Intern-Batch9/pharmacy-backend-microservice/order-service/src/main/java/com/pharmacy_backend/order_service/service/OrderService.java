@@ -32,6 +32,7 @@ public interface OrderService {
         for (OrderDetail orderDetail : orderDetails) {
             OrderDetailEvent orderDetailEvent = new OrderDetailEvent();
             orderDetailEvent.setProductId(orderDetail.getProduct().getId());
+            orderDetailEvent.setTitle(orderDetail.getProduct().getTitle());
             orderDetailEvent.setQuantity(orderDetail.getQuantity());
             orderDetailEvent.setPriceAtOrder(orderDetail.getPriceAtOrder());
             orderDetailEvents.add(orderDetailEvent);

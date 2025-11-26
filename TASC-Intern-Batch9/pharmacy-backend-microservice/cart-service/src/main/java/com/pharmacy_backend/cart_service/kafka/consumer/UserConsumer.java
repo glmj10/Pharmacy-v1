@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.cart_service.service.UserService;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.common.kafka.event.UserEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +27,9 @@ public class UserConsumer {
         try {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.USER_CREATED.getName())) {
-                UserCreatedEvent userCreatedEvent = objectMapper.convertValue(event.getData(),
-                        UserCreatedEvent.class);
-                userService.createUserAndCreateCart(userCreatedEvent.getUserId(), userCreatedEvent.getEmail());
+                UserEvent userEvent = objectMapper.convertValue(event.getData(),
+                        UserEvent.class);
+                userService.createUserAndCreateCart(userEvent.getUserId(), userEvent.getEmail());
                 log.info("Consumed USER_CREATED event: {}", message);
             }
             acknowledgment.acknowledge();

@@ -3,6 +3,7 @@ package com.pharmacy_backend.product_service.repository;
 import com.pharmacy_backend.product_service.dto.request.ProductCMSFilterRequest;
 import com.pharmacy_backend.product_service.dto.request.ProductFilterCustomerRequest;
 import com.pharmacy_backend.product_service.entity.Brand;
+import com.pharmacy_backend.product_service.entity.Category;
 import com.pharmacy_backend.product_service.entity.Product;
 
 import java.time.LocalDateTime;
@@ -43,4 +44,7 @@ public interface ProductRepository {
 
     List<Product> findAllFromRange(Long startId, Long endId);
     List<Product> findAllByUpdatedAtBefore(int intervalSeconds);
+
+
+    List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId);
 }

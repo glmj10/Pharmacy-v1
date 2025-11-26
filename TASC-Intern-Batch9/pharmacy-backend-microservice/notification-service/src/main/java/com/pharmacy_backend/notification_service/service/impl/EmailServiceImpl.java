@@ -34,14 +34,10 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendResetEmail(String email, String token, LocalDateTime expiryAt, Boolean isUser){
+    public void sendResetEmail(String email, String otp, int expiryMinutes){
         String subject = "Yêu cầu đặt lại mật khẩu";
         String html;
-        if(isUser) {
-            html = emailUtils.buildUserResetPasswordEmail(token, expiryAt);
-        } else {
-            html = emailUtils.buildAdminResetPasswordEmail(token, expiryAt);
-        }
+        html = emailUtils.buildResetPasswordEmail(otp, expiryMinutes);
         send(email, subject, html);
     }
 

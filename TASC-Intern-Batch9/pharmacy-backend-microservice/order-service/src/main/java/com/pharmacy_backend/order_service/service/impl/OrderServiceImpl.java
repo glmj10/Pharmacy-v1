@@ -384,7 +384,7 @@ public class OrderServiceImpl implements OrderService {
                         orderDetail.getProduct().getId())
         ).toList();
 
-        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+        orderReserveEvent.setOrderDetailEventList(orderDetailEvents);
 
         Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
@@ -448,7 +448,7 @@ public class OrderServiceImpl implements OrderService {
                         orderDetail.getProduct().getId())
         ).toList();
 
-        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+        orderReserveEvent.setOrderDetailEventList(orderDetailEvents);
 
         Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
@@ -537,7 +537,7 @@ public class OrderServiceImpl implements OrderService {
                         orderDetail.getProduct().getId())
         ).toList();
 
-        orderReserveEvent.setOrderDetailEvents(orderDetailEvents);
+        orderReserveEvent.setOrderDetailEventList(orderDetailEvents);
 
         Event<OrderReserveEvent> event = Event.<OrderReserveEvent>builder()
                 .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))

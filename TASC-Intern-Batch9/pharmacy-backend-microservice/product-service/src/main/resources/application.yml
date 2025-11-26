@@ -14,7 +14,10 @@ spring:
       topic:
         user-topic: USER_TOPIC
         order-topic: ORDER_TOPIC
-
+    producer:
+      properties:
+        reconnect-backoff-ms: 1000
+        reconnect-backoff-max-ms: 10000
 file:
   service:
     name: file-service

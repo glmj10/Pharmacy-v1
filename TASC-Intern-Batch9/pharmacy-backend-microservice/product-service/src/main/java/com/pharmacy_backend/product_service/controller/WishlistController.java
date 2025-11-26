@@ -1,12 +1,11 @@
-package com.project.pharmacy.controller;
+package com.pharmacy_backend.product_service.controller;
 
-import com.project.pharmacy.dto.response.ApiResponse;
-import com.project.pharmacy.dto.response.ProductResponse;
-import com.project.pharmacy.service.WishlistService;
+import com.pharmacy_backend.common.dto.response.ApiResponse;
+import com.pharmacy_backend.product_service.dto.response.ProductResponse;
+import com.pharmacy_backend.product_service.service.WishlistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

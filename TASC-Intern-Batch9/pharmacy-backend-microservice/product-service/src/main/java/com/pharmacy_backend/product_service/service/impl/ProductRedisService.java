@@ -105,9 +105,72 @@ public class ProductRedisService {
         }
     }
 
+    public void cacheRelatedProducts(long productId, List<String> relatedProductSLugs){
+        try {
+            String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
+            redisTemplate.opsForValue().set(key, relatedProductSLugs,
+                RedisKeyTypeEnum.RELATED_PRODUCTS.getDuration(), TimeUnit.SECONDS);
+            log.debug("Successfully cached related products for key: {}", key);
+        } catch (Exception e) {
+            log.error("Failed to cache related product for productId: {}, error: {}", productId, e.getMessage());
+        }
+    }
+
+    public List<String> getCachedRelatedProducts(long productId) {
+        String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
+        try {
+            Object cachedObject = redisTemplate.opsForValue().get(key);
+            if (cachedObject != null && cachedObject instanceof List) {
+                log.debug("Successfully retrieved cached related products for key: {}", key);
+                return (List<String>) cachedObject;
+            }
+            log.debug("No cached related products found for key: {}", key);
+            return null;
+        } catch (Exception e) {
+            log.error("Error retrieving cached related products for productId: {}, error: {}", productId, e.getMessage());
+            return null;
+        }
+    }
+
+    public List<ProductResponse> getMultipleCachedProductDetails(List<String> slugs) {
+        try {
+            List<String> keys = slugs.stream()
+                    .map(slug -> RedisKeyTypeEnum.PRODUCT_DETAIL.getKey() + ":" + slug)
+                    .collect(Collectors.toList());
+
+            List<Object> cachedObjects = redisTemplate.opsForValue().multiGet(keys);
+
+            if (cachedObjects == null) {
+                log.debug("No cached data found for provided slugs.");
+                return List.of();
+            }
+
+            List<ProductResponse> productResponses = cachedObjects.stream()
+                    .filter(obj -> obj instanceof ProductResponse)
+                    .map(obj -> (ProductResponse) obj)
+                    .collect(Collectors.toList());
+
+            log.debug("Successfully retrieved {} cached product details.", productResponses.size());
+            return productResponses;
+
+        } catch (Exception e) {
+            log.error("Error retrieving multiple cached product details, error: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    public void deleteCachedRelatedProducts(long productId) {
+        String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
+        try {
+            Boolean deleted = redisTemplate.delete(key);
+            log.debug("Related products cache deletion for productId: {} - success: {}", productId, deleted);
+        } catch (Exception e) {
+            log.error("Failed to delete related products cache for productId: {}, error: {}", productId, e.getMessage());
+        }
+    }
+
     public ProductResponse buildProductResponse(Product product) {
         ProductResponse productResponse = productMapper.toProductResponse(product);
-        productResponse.setThumbnailUrl(getThumbnailUrl(product.getThumbnail()));
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
         List<Category> categories = categoryRepository.findAllByProductsContains(product);

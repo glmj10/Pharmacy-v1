@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserForgotPasswordEvent {
     private String email;
-    private String resetPasswordToken;
-    private LocalDateTime expiryAt;
+    private String otp;
     private boolean isUser;
+    private int expiryMinutes;
 }

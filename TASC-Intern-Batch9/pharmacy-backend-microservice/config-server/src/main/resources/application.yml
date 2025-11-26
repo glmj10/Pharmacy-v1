@@ -25,3 +25,4 @@ eureka:
     fetch-registry: false
   instance:
     hostname: localhost
+    lease-renewal-interval-in-seconds: 10

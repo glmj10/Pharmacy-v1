@@ -1,9 +1,8 @@
-package com.project.pharmacy.service;
+package com.pharmacy_backend.product_service.service;
 
 
-import com.project.pharmacy.dto.response.ApiResponse;
-import com.project.pharmacy.dto.response.ProductResponse;
-import com.project.pharmacy.entity.Product;
+import com.pharmacy_backend.common.dto.response.ApiResponse;
+import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 
 import java.util.List;
 

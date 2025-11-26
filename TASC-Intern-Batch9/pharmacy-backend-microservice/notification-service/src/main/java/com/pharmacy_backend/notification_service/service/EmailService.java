@@ -10,7 +10,7 @@ public interface EmailService {
     void sendOrderConfirmationEmail(OrderEvent order)
             throws MessagingException, UnsupportedEncodingException;
 
-    void sendResetEmail(String email, String token, LocalDateTime expiryAt, Boolean isUser)
+    void sendResetEmail(String email, String otp, int expiryMinutes)
             throws MessagingException, UnsupportedEncodingException;
 
     void sendVerificationEmail(String email, String token, LocalDateTime expiryAt);

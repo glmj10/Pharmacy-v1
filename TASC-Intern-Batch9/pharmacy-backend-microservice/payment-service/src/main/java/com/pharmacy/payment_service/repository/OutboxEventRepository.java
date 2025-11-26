@@ -2,6 +2,7 @@ package com.pharmacy.payment_service.repository;
 
 import com.pharmacy.payment_service.entity.OutboxEvent;
 import com.pharmacy_backend.common.enums.EventStatusEnum;
+import com.pharmacy_backend.common.enums.EventTypeEnum;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

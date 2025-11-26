@@ -34,7 +34,6 @@ public class ProductImageServiceImpl implements ProductImageService {
                 .stream()
                 .map(productImage -> {
                     ProductImageResponse response = productImageMapper.toProductImageResponse(productImage);
-                    response.setImageUrl(fileServiceClient.getFilelUrl(productImage.getImageUUID()));
 
                     return response;
                 })

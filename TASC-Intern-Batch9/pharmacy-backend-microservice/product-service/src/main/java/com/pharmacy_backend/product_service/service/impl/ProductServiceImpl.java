@@ -84,9 +84,6 @@ public class ProductServiceImpl implements ProductService {
                                     .map(categoryMapper::toCategoryResponse)
                                     .collect(Collectors.toList())
                     );
-                    response.setThumbnailUrl(
-                            fileServiceClient.getFilelUrl(product.getThumbnail())
-                    );
 
                     return response;
                 })
@@ -142,9 +139,6 @@ public class ProductServiceImpl implements ProductService {
                     } else {
                         response.setInWishlist(false);
                     }
-                    response.setThumbnailUrl(
-                            fileServiceClient.getFilelUrl(product.getThumbnail())
-                    );
 
                     return response;
                 })
@@ -172,7 +166,6 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
         ProductResponse productResponse = productMapper.toProductResponse(product);
-        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
         productResponse.setImportPrice(product.getImportPrice());
@@ -184,30 +177,34 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public ApiResponse<ProductResponse> getProductBySlug(String slug) {
-        Product product = productRepository.findBySlug(slug)
-                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug));
         ProductResponse productResponse = productRedisService.getCachedProductDetail(slug);
         if(productResponse != null) {
             Integer stockResponse = stockCacheService.getStock(productResponse.getId());
             productResponse.setQuantity(stockResponse);
-            User user;
-            Long userId = SecurityUtils.getCurrentUserId();
-            if(userId != null) {
-                user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-                                HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
-                Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-                productResponse.setInWishlist(isInWishList);
-            } else {
-                productResponse.setInWishlist(false);
-            }
+//            User user;
+//            Long userId = SecurityUtils.getCurrentUserId();
+//            if(userId != null) {
+//                user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+//                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+//                                HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+//                Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+//                productResponse.setInWishlist(isInWishList);
+//            } else {
+//                productResponse.setInWishlist(false);
+//            }
             return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
         } else {
+            Product product = productRepository.findBySlug(slug)
+                    .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
+                            HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug));
+            if(!product.getActive()) {
+                throw new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với slug: " + slug);
+            }
             productResponse = productMapper.toProductResponse(product);
-            productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
             productResponse.setImages(productImageService.getProductImagesByProduct(product));
             productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+            productResponse.setDescription(product.getDescription());
             List<Category> categories = categoryRepository.findAllByProductsContains(product);
             productResponse.setCategories(categories.stream()
                     .map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
@@ -268,13 +265,11 @@ public class ProductServiceImpl implements ProductService {
 
         ProductResponse productResponse = productMapper.toProductResponse(product);
         productResponse.setImages(productImages);
-        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
 
         ProductEvent productEvent = ProductEvent.builder()
                 .productId(product.getId())
                 .title(product.getTitle())
                 .slug(product.getSlug())
-                .thumbnailUrl(productResponse.getThumbnailUrl())
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
@@ -321,13 +316,11 @@ public class ProductServiceImpl implements ProductService {
 
         ProductResponse productResponse = productMapper.toProductResponse(product);
         productResponse.setImages(productImages);
-        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
 
         ProductEvent productEvent = ProductEvent.builder()
                 .productId(product.getId())
                 .title(product.getTitle())
                 .slug(product.getSlug())
-                .thumbnailUrl(productResponse.getThumbnailUrl())
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
@@ -342,8 +335,6 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         handleSaveOutboxEvent(event);
-        productRedisService.deleteCachedProductDetail(product.getSlug());
-        stockCacheService.deleteStock(product.getId());
         return ApiResponse.buildOkResponse(productResponse, "Cập nhật sản phẩm thành công");
     }
 
@@ -359,13 +350,11 @@ public class ProductServiceImpl implements ProductService {
 
         ProductResponse productResponse = productMapper.toProductResponse(product);
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
-        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
 
         ProductEvent productEvent = ProductEvent.builder()
                 .productId(product.getId())
                 .title(product.getTitle())
                 .slug(product.getSlug())
-                .thumbnailUrl(productResponse.getThumbnailUrl())
                 .priceNew(product.getPriceNew())
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
@@ -382,6 +371,7 @@ public class ProductServiceImpl implements ProductService {
         handleSaveOutboxEvent(event);
         productRedisService.deleteCachedProductDetail(product.getSlug());
         stockCacheService.deleteStock(product.getId());
+        productRedisService.deleteCachedRelatedProducts(product.getId());
 
         return ApiResponse.buildOkResponse(productResponse, "Cập nhật trạng thái sản phẩm thành công");
     }
@@ -451,7 +441,6 @@ public class ProductServiceImpl implements ProductService {
                     } else {
                         response.setInWishlist(false);
                     }
-                    response.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
                     return response;
                 })
                 .toList();
@@ -486,7 +475,6 @@ public class ProductServiceImpl implements ProductService {
                     } else {
                         response.setInWishlist(false);
                     }
-                    response.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
 
                     return response;
                 })
@@ -495,6 +483,31 @@ public class ProductServiceImpl implements ProductService {
         return ApiResponse.buildOkResponse(productResponses, "Lấy 15 sản phẩm cùng thương hiệu thành công");
     }
 
+    @Override
+    public ApiResponse<List<ProductResponse>> getRelatedProducts(Long productId) {
+        List<String> relatedProductSlugs = productRedisService.getCachedRelatedProducts(productId);
+        if(relatedProductSlugs != null) {
+            List<ProductResponse> relatedProducts = productRedisService.getMultipleCachedProductDetails(relatedProductSlugs);
+            return ApiResponse.buildOkResponse(relatedProducts, "Lấy sản phẩm liên quan thành công");
+        } else {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
+                            HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + productId));
+            List<Product> relatedProducts = productRepository.findTop20ByCategoriesInAndIdNotAndActiveTrue(
+                    product.getCategories(), product.getId());
+            List<ProductResponse> relatedProductResponses = relatedProducts.stream()
+                    .map(p -> {
+                        ProductResponse response = productMapper.toProductResponse(p);
+                        return response;
+                    })
+                    .toList();
+            List<String> slugsToCache = relatedProductResponses.stream()
+                    .map(ProductResponse::getSlug)
+                    .collect(Collectors.toList());
+            productRedisService.cacheRelatedProducts(productId, slugsToCache);
+            return ApiResponse.buildOkResponse(relatedProductResponses, "Lấy sản phẩm liên quan thành công");
+        }
+    }
 
 
     private String createSlug(String name) {
@@ -507,27 +520,27 @@ public class ProductServiceImpl implements ProductService {
         return slug;
     }
 
-    private ProductResponse buildProductResponse(Product product) {
-        ProductResponse productResponse = productMapper.toProductResponse(product);
-        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
-        productResponse.setImages(productImageService.getProductImagesByProduct(product));
-        productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
-        List<Category> categories = categoryRepository.findAllByProductsContains(product);
-        productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
-        User user;
-        Long userId = SecurityUtils.getCurrentUserId();
-        if(userId != null) {
-            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-                            HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
-            Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-            productResponse.setInWishlist(isInWishList);
-        } else {
-            productResponse.setInWishlist(false);
-        }
-
-        return productResponse;
-    }
+//    private ProductResponse buildProductResponse(Product product) {
+//        ProductResponse productResponse = productMapper.toProductResponse(product);
+//        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
+//        productResponse.setImages(productImageService.getProductImagesByProduct(product));
+//        productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+//        List<Category> categories = categoryRepository.findAllByProductsContains(product);
+//        productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
+//        User user;
+//        Long userId = SecurityUtils.getCurrentUserId();
+//        if(userId != null) {
+//            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+//                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+//                            HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+//            Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+//            productResponse.setInWishlist(isInWishList);
+//        } else {
+//            productResponse.setInWishlist(false);
+//        }
+//
+//        return productResponse;
+//    }
 
     public void handleSaveOutboxEvent(Event<?> event) {
         OutboxEvent outboxEvent = new OutboxEvent();

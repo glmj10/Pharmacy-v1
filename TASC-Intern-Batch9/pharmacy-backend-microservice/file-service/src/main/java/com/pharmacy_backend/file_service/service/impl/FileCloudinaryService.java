@@ -13,6 +13,7 @@ import com.pharmacy_backend.file_service.service.FileMetadataService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Service
 @Slf4j
-public class FileMetadataServiceImpl implements FileMetadataService {
+public class FileCloudinaryService implements FileMetadataService {
 
     private final FileMetadataRepository fileMetadataRepository;
     private final Cloudinary cloudinary;

@@ -53,18 +53,42 @@ public class PaymentConsumer {
                     .orElseThrow(() -> new RuntimeException(
                             "Order not found for orderId: " + paymentEvent.getOrderId())
                     );
+
+            List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
+                    .orElseThrow(() -> new RuntimeException(
+                            "Order details not found for orderId: " + paymentEvent.getOrderId())
+                    );
+
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PAYMENT_COMPLETED.getName())) {
                 orderService.changePaymentStatus(paymentEvent.getOrderId(), paymentEvent.getPaymentStatus());
+
+                OrderEvent orderEvent = OrderEvent.builder()
+                        .orderId(order.getId())
+                        .customerName(order.getCustomerName())
+                        .customerPhoneNumber(order.getCustomerPhoneNumber())
+                        .customerAddress(order.getCustomerAddress())
+                        .totalPrice(order.getTotalPrice())
+                        .createdAt(order.getCreatedAt())
+                        .userEmail(order.getUser().getEmail())
+                        .build();
+
+                List<OrderDetailEvent> orderDetailEvents = OrderService.mapToOrderDetailEvents(orderDetails);
+
+                orderEvent.setOrderDetailEventList(orderDetailEvents);
+
+                Event<OrderEvent> eventFailed = Event.<OrderEvent>builder()
+                        .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                        .eventType(EventTypeEnum.ORDER_CREATED.getName())
+                        .data(orderEvent)
+                        .source(appName)
+                        .build();
+
+                outboxService.handleSaveEvent(eventFailed);
                 log.info("Received PAYMENT_COMPLETED event for orderId: {}", paymentEvent.getOrderId());
             }
 
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PAYMENT_FAILED.getName())) {
                 orderService.changePaymentStatus(paymentEvent.getOrderId(), paymentEvent.getPaymentStatus());
-
-                List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
-                        .orElseThrow(() -> new RuntimeException(
-                                "Order details not found for orderId: " + paymentEvent.getOrderId())
-                        );
 //
 //                List<ReserveRequest> reserveRequests = orderDetails.stream()
 //                        .map(od -> ReserveRequest.builder()
@@ -98,8 +122,6 @@ public class PaymentConsumer {
 
                 outboxService.handleSaveEvent(eventFailed);
 
-
-                log.info("Received PAYMENT_COMPLETED event for orderId: {}", paymentEvent.getOrderId());
             }
 
             acknowledgment.acknowledge();

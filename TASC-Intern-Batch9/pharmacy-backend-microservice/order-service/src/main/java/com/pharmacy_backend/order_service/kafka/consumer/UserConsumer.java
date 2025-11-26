@@ -4,16 +4,18 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.common.kafka.event.UserEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.order_service.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class UserConsumer {
     private final ObjectMapper objectMapper;
     private final UserService userService;
@@ -25,10 +27,11 @@ public class UserConsumer {
         try {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.USER_CREATED.getName())) {
-                UserCreatedEvent userCreatedEvent = objectMapper.convertValue(event.getData(),
-                        UserCreatedEvent.class);
-                userService.createUser(userCreatedEvent.getUserId(), userCreatedEvent.getEmail());
-                System.out.println("Received user event: " + event);
+                UserEvent userEvent = objectMapper.convertValue(event.getData(),
+                        UserEvent.class);
+                userService.createUser(userEvent.getUserId(),
+                        userEvent.getEmail(), userEvent.getProfilePicUrl());
+                log.info("received user event: {}", event);
             }
             acknowledgment.acknowledge();
         } catch (JsonProcessingException e) {

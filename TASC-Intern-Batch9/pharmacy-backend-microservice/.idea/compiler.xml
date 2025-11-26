@@ -19,7 +19,7 @@
         </processorPath>
         <module name="common" />
       </profile>
-      <profile name="Annotation profile for payment-service" enabled="true">
+      <profile name="Annotation profile for file-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -36,8 +36,8 @@
         <module name="user-service" />
         <module name="order-service" />
         <module name="blog-service" />
-        <module name="identity-service" />
         <module name="file-service" />
+        <module name="identity-service" />
         <module name="notification-service" />
       </profile>
     </annotationProcessing>

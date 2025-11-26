@@ -30,4 +30,5 @@ public interface ProductService {
     ApiResponse<Long> getTotalProduct();
     ApiResponse<List<ProductResponse>> getTop15ProductsByNumberOfLikes();
     ApiResponse<List<ProductResponse>> get15ProductByBrand(Long brandId);
+    ApiResponse<List<ProductResponse>> getRelatedProducts(Long productId);
 }

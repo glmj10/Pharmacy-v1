@@ -267,7 +267,14 @@ public class CategoryServiceImpl implements CategoryService {
                 .orElseThrow(() -> new CustomException(ErrorCode.TYPE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy loại danh mục BLOG"));
         List<Category> categories = categoryRepository.findByType(type);
-        List<CategoryResponse> response = buildTree(categories);
+        List<CategoryResponse> response = categories.stream()
+                .map(category -> {
+                    CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
+                    categoryResponse.setThumbnail(getThumbnailUrl(category.getThumbnail()));
+                    categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
+                    return categoryResponse;
+                })
+                .toList();
         return ApiResponse.buildOkResponse(
                 response,
                 "Lấy danh mục bài viết thành công"

@@ -39,14 +39,14 @@ public class ProductRepositoryImpl implements ProductRepository {
         Brand brand = null;
         Category category = null;
 
-        if(filterRequest.getBrandId() != null) {
+        if (filterRequest.getBrandId() != null) {
             sql.append(" JOIN brands b ON p.brand_id = b.id");
             brand = brandRepository.findById(filterRequest.getBrandId())
                     .orElseThrow(() -> new CustomException(ErrorCode.BRAND_NOT_FOUND,
                             HttpStatus.NOT_FOUND, "Không tìm thấy thương hiệu"));
         }
 
-        if(filterRequest.getCategoryId() != null) {
+        if (filterRequest.getCategoryId() != null) {
             sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
             sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findById(filterRequest.getCategoryId())
@@ -76,17 +76,17 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterRequest.isActive());
         }
 
-        if(filterRequest.getPriceFrom() != null) {
+        if (filterRequest.getPriceFrom() != null) {
             sql.append(" AND price_new >= ?");
             params.add(filterRequest.getPriceFrom());
         }
 
-        if(filterRequest.getPriceTo() != null) {
+        if (filterRequest.getPriceTo() != null) {
             sql.append(" AND price_new <= ?");
             params.add(filterRequest.getPriceTo());
         }
 
-        if(filterRequest.isAscending() != null) {
+        if (filterRequest.isAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterRequest.isAscending()) ? "ASC" : "DESC");
         } else {
@@ -107,7 +107,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         Brand brand = null;
         Category category = null;
 
-        if(filterCustomerRequest.getBrand() != null) {
+        if (filterCustomerRequest.getBrand() != null) {
             sql.append(" JOIN brands b ON p.brand_id = b.id");
             brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
             if (brand == null) {
@@ -115,7 +115,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             }
         }
 
-        if(filterCustomerRequest.getCategory() != null) {
+        if (filterCustomerRequest.getCategory() != null) {
             sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
             sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findBySlug(filterCustomerRequest.getCategory())
@@ -145,17 +145,17 @@ public class ProductRepositoryImpl implements ProductRepository {
         sql.append(" AND active = ?");
         params.add(true);
 
-        if(filterCustomerRequest.getPriceFrom() != null) {
+        if (filterCustomerRequest.getPriceFrom() != null) {
             sql.append(" AND price_new >= ?");
             params.add(filterCustomerRequest.getPriceFrom());
         }
 
-        if(filterCustomerRequest.getPriceTo() != null) {
+        if (filterCustomerRequest.getPriceTo() != null) {
             sql.append(" AND price_new <= ?");
             params.add(filterCustomerRequest.getPriceTo());
         }
 
-        if(filterCustomerRequest.isAscending() != null) {
+        if (filterCustomerRequest.isAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
         } else {
@@ -264,7 +264,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<Product> findTop15ByBrandAndActive(Brand brand, boolean b) {
         String sql = "SELECT * FROM products " +
-                    "WHERE brand_id = ? AND active = ? ORDER BY modified_at DESC LIMIT 15 ";
+                "WHERE brand_id = ? AND active = ? ORDER BY modified_at DESC LIMIT 15 ";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class),
                 brand.getId(), b);
     }
@@ -274,11 +274,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         StringBuilder sql = new StringBuilder("SELECT count(*) FROM products p");
         List<Object> params = new ArrayList<>();
 
-        if(filterRequest.getBrandId() != null) {
+        if (filterRequest.getBrandId() != null) {
             sql.append(" JOIN brands b ON p.brand_id = b.id");
         }
 
-        if(filterRequest.getCategoryId() != null) {
+        if (filterRequest.getCategoryId() != null) {
             sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
             sql.append(" JOIN categories c ON pc.category_id = c.id");
         }
@@ -305,12 +305,12 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterRequest.isActive());
         }
 
-        if(filterRequest.getPriceFrom() != null) {
+        if (filterRequest.getPriceFrom() != null) {
             sql.append(" AND price_new >= ?");
             params.add(filterRequest.getPriceFrom());
         }
 
-        if(filterRequest.getPriceTo() != null) {
+        if (filterRequest.getPriceTo() != null) {
             sql.append(" AND price_new <= ?");
             params.add(filterRequest.getPriceTo());
         }
@@ -326,7 +326,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         Brand brand = null;
         Category category = null;
 
-        if(filterCustomerRequest.getBrand() != null) {
+        if (filterCustomerRequest.getBrand() != null) {
             sql.append(" JOIN brands b ON p.brand_id = b.id");
             brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
             if (brand == null) {
@@ -334,7 +334,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             }
         }
 
-        if(filterCustomerRequest.getCategory() != null) {
+        if (filterCustomerRequest.getCategory() != null) {
             sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
             sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findBySlug(filterCustomerRequest.getCategory())
@@ -364,12 +364,12 @@ public class ProductRepositoryImpl implements ProductRepository {
         sql.append(" AND active = ?");
         params.add(true);
 
-        if(filterCustomerRequest.getPriceFrom() != null) {
+        if (filterCustomerRequest.getPriceFrom() != null) {
             sql.append(" AND price_new >= ?");
             params.add(filterCustomerRequest.getPriceFrom());
         }
 
-        if(filterCustomerRequest.getPriceTo() != null) {
+        if (filterCustomerRequest.getPriceTo() != null) {
             sql.append(" AND price_new <= ?");
             params.add(filterCustomerRequest.getPriceTo());
         }
@@ -388,14 +388,14 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Product createProduct(Product product) {
         String sql = """
-            INSERT INTO products (
-                title, active_ingredient, dosage_form, description,
-                indication, manufacturer, price_old, price_new,
-                import_price, priority, quantity, registration_number,
-                slug, thumbnail, number_of_likes, active, brand_id, product_type,
-                created_by, modified_by, created_at, modified_at, noted
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
-            """;
+                INSERT INTO products (
+                    title, active_ingredient, dosage_form, description,
+                    indication, manufacturer, price_old, price_new,
+                    import_price, priority, quantity, registration_number,
+                    slug, thumbnail, number_of_likes, active, brand_id, product_type,
+                    created_by, modified_by, created_at, modified_at, noted
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
+                """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -443,14 +443,14 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Product updateProduct(Long id, Product product) {
         String sql = """
-            UPDATE products SET 
-                title=?, active_ingredient=?, dosage_form=?, description=?,
-                indication=?, manufacturer=?, price_old=?, price_new=?,
-                import_price=?, priority=?, quantity=?, registration_number=?,
-                slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
-                modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
-            WHERE id=?
-            """;
+                UPDATE products SET 
+                    title=?, active_ingredient=?, dosage_form=?, description=?,
+                    indication=?, manufacturer=?, price_old=?, price_new=?,
+                    import_price=?, priority=?, quantity=?, registration_number=?,
+                    slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
+                    modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
+                WHERE id=?
+                """;
 
         jdbcTemplate.update(sql,
                 product.getTitle(), product.getActiveIngredient(), product.getDosageForm(),
@@ -487,14 +487,14 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<Product> updateAll(List<Product> products) {
         String sql = """
-            UPDATE products SET 
-                title=?, active_ingredient=?, dosage_form=?, description=?,
-                indication=?, manufacturer=?, price_old=?, price_new=?,
-                import_price=?, priority=?, quantity=?, registration_number=?,
-                slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
-                modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
-            WHERE id=?
-            """;
+                UPDATE products SET 
+                    title=?, active_ingredient=?, dosage_form=?, description=?,
+                    indication=?, manufacturer=?, price_old=?, price_new=?,
+                    import_price=?, priority=?, quantity=?, registration_number=?,
+                    slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
+                    modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
+                WHERE id=?
+                """;
 
         for (Product product : products) {
             jdbcTemplate.update(sql,
@@ -551,7 +551,39 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAllByUpdatedAtBefore(int intervalSeconds) {
-        String sql = "SELECT * FROM products WHERE updated_at <= NOW() - INTERVAL ? SECOND AND active = true";
+        String sql = """
+                SELECT * FROM products WHERE updated_at > NOW() - INTERVAL ? SECOND 
+                                         AND updated_at <= NOW()
+                                         AND active = true
+                """;
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), intervalSeconds);
+    }
+
+    @Override
+    public List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId) {
+        if (categories == null || categories.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        StringBuilder sql = new StringBuilder("""
+                SELECT DISTINCT p.* FROM products p
+                JOIN products_categories pc ON p.id = pc.product_id
+                WHERE pc.category_id IN (
+                """);
+
+        String placeholders = String.join(",", categories.stream().filter(
+                c -> !c.getName().equalsIgnoreCase("THUOC")
+        ).map(c -> "?").toArray(String[]::new));
+
+        sql.append(placeholders).append(") AND p.id <> ? AND p.active = true ");
+        sql.append("ORDER BY p.modified_at DESC LIMIT 20");
+
+        List<Object> params = new ArrayList<>();
+        for (Category category : categories) {
+            params.add(category.getId());
+        }
+        params.add(productId);
+
+        return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), params.toArray());
     }
 }

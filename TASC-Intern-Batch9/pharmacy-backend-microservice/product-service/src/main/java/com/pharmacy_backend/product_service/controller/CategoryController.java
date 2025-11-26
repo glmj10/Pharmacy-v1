@@ -71,7 +71,6 @@ public class CategoryController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-
     @PreAuthorize( "hasRole('ADMIN') or hasRole('STAFF')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteCategory(@PathVariable Long id) {

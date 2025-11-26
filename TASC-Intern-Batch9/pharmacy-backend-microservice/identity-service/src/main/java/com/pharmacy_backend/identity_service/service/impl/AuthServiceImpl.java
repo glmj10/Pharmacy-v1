@@ -16,12 +16,10 @@ import com.pharmacy_backend.common.utils.DateUtils;
 import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
-import com.pharmacy_backend.identity_service.entity.OutboxEvent;
 import com.pharmacy_backend.identity_service.entity.Role;
 import com.pharmacy_backend.identity_service.entity.User;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.common.kafka.event.UserEvent;
 import com.pharmacy_backend.identity_service.mapper.UserMapper;
-import com.pharmacy_backend.identity_service.repository.OutboxRepository;
 import com.pharmacy_backend.identity_service.repository.RoleRepository;
 import com.pharmacy_backend.identity_service.repository.UserRepository;
 import com.pharmacy_backend.identity_service.security.JWTAuthenticationProvider;
@@ -40,6 +38,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.Random;
 
 
 @Service
@@ -98,12 +97,17 @@ public class AuthServiceImpl implements AuthService {
         user.getRoles().add(role);
         userRepository.save(user);
 
-        UserCreatedEvent userCreatedEvent = new UserCreatedEvent(user.getId(), user.getEmail());
-        Event<UserCreatedEvent> event = Event.<UserCreatedEvent>builder()
+        UserEvent userEvent = UserEvent.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .build();
+
+        Event<UserEvent> event = Event.<UserEvent>builder()
                 .source(appName)
                 .eventType(EventTypeEnum.USER_CREATED.getName())
                 .key(String.format("%s-%d", PartitionKeyEnum.USER, user.getId()))
-                .data(userCreatedEvent).
+                .data(userEvent).
                 build();
         //send message queue to profile-service, cart-service to create profile for new user
         outboxService.handleSaveOutboxEvent(event);
@@ -154,18 +158,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException {
-        String jti = jwtAuthenticationProvider.getJWTID(request.getResetToken());
-        if(!redisService.isResetPasswordTokenValid(jti)) {
-            throw new CustomException(
-                    ErrorCode.VALIDATION_ERROR
-                    , "Token không hợp lệ hoặc đã hết hạn"
-            );
-        }
-
-        User user = userRepository.findByEmail(
-                jwtAuthenticationProvider.getUserEmail(request.getResetToken()))
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+
+//        String jti = jwtAuthenticationProvider.getJWTID(request.getOtp());
+
+        if(!redisService.isResetPasswordOtpValid(user.getId(),  request.getOtp())) {
+            throw new CustomException(
+                    ErrorCode.VALIDATION_ERROR
+                    , "otp không hợp lệ"
+            );
+        }
 
         if(!request.getPassword().equals(request.getConfirmPassword())) {
             throw new CustomException(ErrorCode.VALIDATION_ERROR, "Mật khẩu không khớp");
@@ -174,7 +178,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
         user.setTokenVersion(user.getTokenVersion());
-        redisService.removeResetPasswordToken(jti);
+        redisService.removeResetPasswordOtp(user.getId());
         redisService.storeUserVersion(user.getId(), user.getTokenVersion());
         return ApiResponse.buildOkResponse(
                 null,
@@ -188,11 +192,12 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
-        String token = jwtAuthenticationProvider.generatePasswordResetToken(user);
+//        String token = jwtAuthenticationProvider.generatePasswordResetToken(user);
+        Random rd = new Random();
+        String otp = String.format("%06d", rd.nextInt(999999));
         UserForgotPasswordEvent userForgotPasswordEvent = new UserForgotPasswordEvent();
         userForgotPasswordEvent.setEmail(user.getEmail());
-        userForgotPasswordEvent.setResetPasswordToken(token);
-        userForgotPasswordEvent.setExpiryAt(jwtAuthenticationProvider.getTokenExpiry(token));
+        userForgotPasswordEvent.setOtp(otp);
         userForgotPasswordEvent.setUser(isUser);
 
         Event<UserForgotPasswordEvent> event = Event.<UserForgotPasswordEvent>builder()
@@ -202,13 +207,8 @@ public class AuthServiceImpl implements AuthService {
                 .data(userForgotPasswordEvent)
                 .build();
 
+        redisService.storeResetPasswordOtp(user.getId(), otp);
         outboxService.handleSaveOutboxEvent(event);
-
-        Long expiryTime = DateUtils.convertToMillis(
-                jwtAuthenticationProvider.getTokenExpiry(token)
-        );
-        redisService.storeResetPasswordToken(
-                jwtAuthenticationProvider.getJWTID(token), expiryTime);
 
         return ApiResponse.buildOkResponse(null,
                 "Gửi email thành công, vui lòng kiểm tra email để đặt lại mật khẩu");
@@ -257,12 +257,31 @@ public class AuthServiceImpl implements AuthService {
             user.setProfilePic(fileResponse.getData().getId().toString());
         }
 
+        UserEvent userEvent = UserEvent.builder()
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .build();
+
+        Event<UserEvent> event = Event.<UserEvent>builder()
+                .source(appName)
+                .eventType(EventTypeEnum.USER_UPDATED.getName())
+                .key(String.format("%s-%d", PartitionKeyEnum.USER, user.getId()))
+                .data(userEvent).
+                build();
+
         UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
         if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
             String profilePicUrl = fileServiceClient.getFileUrl(user.getProfilePic()).getData();
             userResponse.setProfilePicUrl(profilePicUrl);
+
+            userEvent.setProfilePicUrl(profilePicUrl);
         }
         userResponse.setRoles(null);
+
+
+        outboxService.handleSaveOutboxEvent(event);
+
         return ApiResponse.buildOkResponse(userResponse, "Cập nhật thông tin người dùng thành công");
     }
 

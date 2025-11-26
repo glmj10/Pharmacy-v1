@@ -59,7 +59,6 @@ public class EmailUtils {
                 orderEvent.getOrderId(), orderEvent.getCreatedAt(), orderDetails, (double) orderEvent.getTotalPrice());
     }
 
-
     public static String buildOrderDetailRow(List<OrderDetailEvent> orderDetails) {
         StringBuilder rows = new StringBuilder();
         int i = 1;
@@ -82,37 +81,72 @@ public class EmailUtils {
         return rows.toString();
     }
 
-    public String buildUserResetPasswordEmail(String token, LocalDateTime expiryAt) {
+    public String buildUserResetPasswordEmail(String otp, int expiryMinutes) {
         return """
-                    <html>
-                      <body style="font-family: Arial, sans-serif; color: #333;">
-                        <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
-                        <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
-                        <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu:</p>
-                        <p><a href="%s/reset-password?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
-                        <p>Liên kết này sẽ hết hạn sau %s. phút</p>
-                        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                        <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
-                      </body>
-                    </html>
-                """.formatted(userUrl, token, expiryAt.toLocalTime().toString());
+        <html>
+          <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
+
+            <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+
+            <p>Vui lòng sử dụng mã OTP dưới đây để đặt lại mật khẩu:</p>
+
+            <h1 style="font-size: 32px; letter-spacing: 4px; color: #007bff;">%s</h1>
+
+            <p>Mã OTP sẽ hết hạn sau <b>%d phút</b>.</p>
+
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+
+            <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
+          </body>
+        </html>
+    """.formatted(otp, expiryMinutes);
     }
 
-    public String buildAdminResetPasswordEmail(String token, LocalDateTime expiryAt) {
+    public String buildResetPasswordEmail(String otp, int expiryMinutes) {
         return """
-            <html>
-              <body style="font-family: Arial, sans-serif; color: #333;">
-                <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
-                <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản quản trị của bạn.</p>
-                <p>Vui lòng nhấp vào liên kết dưới đây để đặt lại mật khẩu:</p>
-                <p><a href="%s/reset-password?token=%s" style="color: #007bff;">Đặt lại mật khẩu</a></p>
-                <p>Liên kết này sẽ hết hạn sau %s. phút</p>
-                <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-                <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
-              </body>
-            </html>
-        """.formatted(adminUrl, token, expiryAt.toLocalTime().toString());
+        <html>
+          <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
+
+            <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+
+            <p>Vui lòng sử dụng mã OTP dưới đây để đặt lại mật khẩu:</p>
+
+            <h1 style="font-size: 32px; letter-spacing: 4px; color: #007bff;">%s</h1>
+
+            <p>Mã OTP sẽ hết hạn sau <b>%d phút</b>.</p>
+
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+
+            <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
+          </body>
+        </html>
+    """.formatted(otp, expiryMinutes);
     }
+
+
+//    public String buildAdminResetPasswordEmail(String token, LocalDateTime expiryAt) {
+//        return """
+//            <html>
+//              <body style="font-family: Arial, sans-serif; color: #333;">
+//                <h2>🔒 Yêu cầu đặt lại mật khẩu</h2>
+//
+//                <p>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+//
+//                <p>Vui lòng sử dụng mã OTP dưới đây để đặt lại mật khẩu:</p>
+//
+//                <h1 style="font-size: 32px; letter-spacing: 4px; color: #007bff;">%s</h1>
+//
+//                <p>Mã OTP sẽ hết hạn sau <b>%d phút</b>.</p>
+//
+//                <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+//
+//                <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
+//              </body>
+//            </html>
+//        """.formatted(adminUrl, token, expiryAt.toLocalTime().toString());
+//    }
 
     public String buildVerifyAccountEmail(String token, LocalDateTime expiryAt) {
         return """

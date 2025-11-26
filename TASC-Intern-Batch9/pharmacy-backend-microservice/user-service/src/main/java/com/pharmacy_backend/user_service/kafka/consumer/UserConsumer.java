@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
-import com.pharmacy_backend.common.kafka.event.UserCreatedEvent;
+import com.pharmacy_backend.common.kafka.event.UserEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.user_service.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +25,9 @@ public class UserConsumer {
         try {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.USER_CREATED.getName())) {
-                UserCreatedEvent userCreatedEvent = objectMapper.convertValue(event.getData(),
-                        UserCreatedEvent.class);
-                userService.createUser(userCreatedEvent.getUserId(), userCreatedEvent.getEmail());
+                UserEvent userEvent = objectMapper.convertValue(event.getData(),
+                        UserEvent.class);
+                userService.createUser(userEvent.getUserId(), userEvent.getEmail());
                 System.out.println("Received user event: " + event);
             }
             acknowledgment.acknowledge();

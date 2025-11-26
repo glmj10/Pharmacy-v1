@@ -10,9 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResetPasswordRequest {
-    @NotEmpty(message = "Reset token không được để trống")
-    private String resetToken;
-
+    @NotEmpty(message = "otp không được để trống")
+    private String otp;
+    @NotEmpty(message = "Email không được để trống")
+    private String email;
     @NotEmpty(message = "Mật khẩu mới không được để trống")
     @Size(min = 6, message = "Mật khẩu mới phải có ít nhất 6 ký tự")
     private String password;

@@ -44,7 +44,6 @@ public class ProductController {
         ApiResponse<PageResponse<List<ProductResponse>>> response = productService.getAllCMSProduct(pageIndex, pageSize, filterRequest);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
-
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
@@ -104,6 +103,12 @@ public class ProductController {
     @GetMapping("/brand/suggestions/top15")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> get15ProductByBrand(@RequestParam Long brandId) {
         ApiResponse<List<ProductResponse>> response = productService.get15ProductByBrand(brandId);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/related/{productId}")
+    public ResponseEntity<ApiResponse<List<ProductResponse>>> getRelatedProducts(@PathVariable Long productId) {
+        ApiResponse<List<ProductResponse>> response = productService.getRelatedProducts(productId);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

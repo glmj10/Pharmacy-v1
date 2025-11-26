@@ -1,23 +1,22 @@
 package com.pharmacy_backend.product_service.entity;
 
 import com.pharmacy_backend.common.entity.base.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
-@Table(name = "product_ratings")
+@Table(name = "comments")
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ProductRating extends BaseEntity {
+public class Comment extends BaseEntity {
     String content;
-    Integer rating;
 
     @ManyToOne
     @JoinColumn(name = "product_id")
@@ -26,4 +25,11 @@ public class ProductRating extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id")
     User user;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    List<Comment> replies = new ArrayList<>();
+
+    @ManyToOne
+    @JoinColumn(name = "parent_id")
+    Comment parentComment;
 }

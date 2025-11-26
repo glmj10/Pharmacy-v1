@@ -27,15 +27,16 @@ public class ProductCronjob {
 
     @Value("${cache.product.modified-time.ttl}")
     int productModifiedTimeTTL;
-//
-//    @Scheduled(cron = "0/15 * * * * *")
-//    public void cacheModifiedProducts() {
-//        log.info("Running cron job to set all products to available");
-//        List<Product> products = productRepository.findAllByUpdatedAtBefore(productModifiedTimeTTL);
-//        products.forEach(product ->{
-//            productRedisService.cacheProductDetail(product);
-//            stockCacheService.setStock(product.getId(), product.getQuantity());
-//        });
-//        log.info("Finished caching {} products", products.size());
-//    }
+
+    @Scheduled(cron = "0/15 * * * * *")
+    public void cacheModifiedProducts() {
+        log.info("Running cron job to set all products to available");
+        List<Product> products = productRepository.findAllByUpdatedAtBefore(productModifiedTimeTTL);
+        products.forEach(product ->{
+            productRedisService.cacheProductDetail(product);
+            stockCacheService.setStock(product.getId(), product.getQuantity());
+        });
+        log.info("Finished caching {} products", products.size());
+    }
+
 }

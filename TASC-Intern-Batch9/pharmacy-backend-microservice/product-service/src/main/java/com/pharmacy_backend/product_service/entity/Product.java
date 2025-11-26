@@ -59,6 +59,9 @@ public class Product extends BaseModifyEntity {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Wishlist> wishlists = new ArrayList<>();
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    List<Comment> comments = new ArrayList<>();
+
     @ManyToOne
     @JoinColumn(name = "brand_id")
     Brand brand;

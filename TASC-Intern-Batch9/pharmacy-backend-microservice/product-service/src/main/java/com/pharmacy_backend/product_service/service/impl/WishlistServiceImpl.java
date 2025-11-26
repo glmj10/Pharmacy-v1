@@ -1,34 +1,34 @@
-package com.project.pharmacy.service.impl;
+package com.pharmacy_backend.product_service.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.pharmacy.dto.response.ApiResponse;
-import com.project.pharmacy.dto.response.ProductResponse;
-import com.project.pharmacy.entity.*;
-import com.project.pharmacy.enums.ErrorCode;
-import com.project.pharmacy.exceptions.CustomException;
-import com.project.pharmacy.mapper.ProductMapper;
-import com.project.pharmacy.repository.*;
-import com.project.pharmacy.security.SecurityUtils;
-import com.project.pharmacy.service.WishlistService;
+import com.pharmacy_backend.common.dto.response.ApiResponse;
+import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.product_service.dto.response.ProductResponse;
+import com.pharmacy_backend.product_service.entity.Product;
+import com.pharmacy_backend.product_service.entity.User;
+import com.pharmacy_backend.product_service.entity.Wishlist;
+import com.pharmacy_backend.product_service.mapper.ProductMapper;
+import com.pharmacy_backend.product_service.repository.ProductRepository;
+import com.pharmacy_backend.product_service.repository.UserRepository;
+import com.pharmacy_backend.product_service.repository.WishlistRepository;
+import com.pharmacy_backend.product_service.service.WishlistService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
-    private final ProductMapper productMapper;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
-    private final FileMetadataRepository fileMetadataRepository;
-    private final CartRepository cartRepository;
+    private final ProductRedisService productRedisService;
+//    private final CartRepository cartRepository;
 
     @Transactional
     @Override
@@ -41,14 +41,7 @@ public class WishlistServiceImpl implements WishlistService {
         List<ProductResponse> productResponses = wishlist.stream().map(
                 w -> {
                     Product product = w.getProduct();
-                    ProductResponse response = productMapper.toProductResponse(product);
-                    Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-                    response.setInWishlist(isInWishList);
-                    FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(product.getThumbnail()))
-                            .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                                    HttpStatus.NOT_FOUND, "File không tồn tại"));
-                    response.setThumbnailUrl(fileMetadata.getUrl());
-                    return response;
+                    return productRedisService.getCachedProductDetail(product.getSlug());
                 }
         ).toList();
 
@@ -139,21 +132,21 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     public ApiResponse<Void> addAllToCart() {
-        User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
-        List<Wishlist> wishlists = wishlistRepository.findAllByUser(user);
-        List<Product> wishListProducts = wishlists.stream().map(Wishlist::getProduct).toList();
-        if (wishListProducts.isEmpty()) {
-            return ApiResponse.buildOkResponse(
-                    null,
-                    "Danh sách yêu thích trống"
-            );
-        }
-
-        Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
+//        User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+//                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
+//                        HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+//        List<Wishlist> wishlists = wishlistRepository.findAllByUser(user);
+//        List<Product> wishListProducts = wishlists.stream().map(Wishlist::getProduct).toList();
+//        if (wishListProducts.isEmpty()) {
+//            return ApiResponse.buildOkResponse(
+//                    null,
+//                    "Danh sách yêu thích trống"
+//            );
+//        }
+//
+//        Cart cart = cartRepository.findByUser(user)
+//                .orElseThrow(() -> new CustomException(ErrorCode.CART_NOT_FOUND,
+//                        HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
 
         return null;
     }

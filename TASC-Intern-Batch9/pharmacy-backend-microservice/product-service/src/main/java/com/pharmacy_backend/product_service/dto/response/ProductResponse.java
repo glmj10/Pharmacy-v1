@@ -1,16 +1,20 @@
 package com.pharmacy_backend.product_service.dto.response;
 
-import lombok.AccessLevel;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
 
 @Data
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductResponse {
     Long id;
-    String thumbnailUrl;
+    String thumbnail;
     String title;
     Integer priceOld;
     Integer priceNew;
