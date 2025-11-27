@@ -32,8 +32,8 @@ public class UserConsumer {
                 UserVerifyAccountEvent userVerifyAccountEvent = objectMapper.convertValue(event.getData(),
                         UserVerifyAccountEvent.class);
                 emailService.sendVerificationEmail(userVerifyAccountEvent.getEmail(),
-                        userVerifyAccountEvent.getVerificationToken(),
-                        userVerifyAccountEvent.getExpiryAt());
+                        userVerifyAccountEvent.getOtp(),
+                        userVerifyAccountEvent.getExpiryMinutes());
             }
 
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PASSWORD_RESET.getName())) {

@@ -15,7 +15,7 @@ import java.text.ParseException;
 public interface AuthService {
     ApiResponse<AuthResponse> login(AuthRequest request);
     ApiResponse<String> register(RegistrationRequest request);
-    ApiResponse<String> verifyAccount(String token) throws ParseException;
+    ApiResponse<String> verifyAccount(VerifyAccountRequest request);
     ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException;
     ApiResponse<String> forgotPassword(String email, Boolean isUser)
             throws MessagingException, UnsupportedEncodingException, ParseException;

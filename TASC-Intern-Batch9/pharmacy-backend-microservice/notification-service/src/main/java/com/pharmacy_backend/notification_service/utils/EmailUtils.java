@@ -148,20 +148,38 @@ public class EmailUtils {
 //        """.formatted(adminUrl, token, expiryAt.toLocalTime().toString());
 //    }
 
-    public String buildVerifyAccountEmail(String token, LocalDateTime expiryAt) {
+    public String buildVerifyAccountEmail(String otp, int expiryMinutes) {
+        int hours = expiryMinutes / 60;
+        int minutes = expiryMinutes % 60;
+
+        String expiryText;
+        if (hours > 0 && minutes > 0) {
+            expiryText = hours + " giờ " + minutes + " phút";
+        } else if (hours > 0) {
+            expiryText = hours + " giờ";
+        } else {
+            expiryText = minutes + " phút";
+        }
+
         return """
-            <html>
-              <body style="font-family: Arial, sans-serif; color: #333;">
-                <h2>✅ Xác thực tài khoản của bạn</h2>
-                <p>Cảm ơn bạn đã đăng ký tài khoản tại Nhà Thuốc Pharmacy.</p>
-                <p>Vui lòng nhấp vào liên kết dưới đây để xác thực tài khoản của bạn:</p>
-                <p><a href="%s/verify-account?token=%s" style="color: #007bff;">Xác thực tài khoản</a></p>
-                <p>Liên kết này sẽ hết hạn sau %s. phút</p>
-                <p>Nếu bạn không đăng ký tài khoản, vui lòng bỏ qua email này.</p>
-                <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
-              </body>
-            </html>
-        """.formatted(userUrl, token, expiryAt.toLocalTime().toString());
+        <html>
+          <body style="font-family: Arial, sans-serif; color: #333;">
+            <h2>✅ Xác thực tài khoản của bạn</h2>
+            <p>Cảm ơn bạn đã đăng ký tài khoản tại Nhà Thuốc Pharmacy.</p>
+            <p>Để hoàn tất việc xác thực tài khoản, vui lòng nhập mã OTP bên dưới:</p>
+
+            <div style="font-size: 24px; font-weight: bold; letter-spacing: 4px; margin: 20px 0;">
+                %s
+            </div>
+
+            <p>Mã OTP này sẽ hết hạn sau <strong>%s</strong>.</p>
+            <p>Nếu bạn không yêu cầu đăng ký tài khoản, vui lòng bỏ qua email này.</p>
+
+            <p>Trân trọng,<br>Nhà Thuốc Pharmacy</p>
+          </body>
+        </html>
+    """.formatted(otp, expiryText);
     }
+
 
 }

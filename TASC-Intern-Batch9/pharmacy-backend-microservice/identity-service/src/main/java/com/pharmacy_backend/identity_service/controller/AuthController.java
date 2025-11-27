@@ -41,8 +41,8 @@ public class AuthController {
     }
 
     @PatchMapping("/verify")
-    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestParam String token) throws ParseException {
-        ApiResponse<String> response = authService.verifyAccount(token);
+    public ResponseEntity<ApiResponse<String>> verifyAccount(@RequestBody VerifyAccountRequest request) {
+        ApiResponse<String> response = authService.verifyAccount(request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

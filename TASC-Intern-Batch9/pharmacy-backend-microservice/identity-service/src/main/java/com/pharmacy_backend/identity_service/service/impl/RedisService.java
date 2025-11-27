@@ -7,7 +7,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -116,6 +115,31 @@ public class RedisService {
                 + ":" + userId);
         log.info("Removed reset password OTP from Redis: {} - {}", userId, existed);
         return existed != null && existed;
+    }
+
+    public boolean storeOtp(Long userId, String otp, RedisKeyTypeEnum type) {
+        String key = type.getKey() + ":" + userId;
+        Boolean exists = redisTemplate.hasKey(key);
+        if (exists != null && exists) {
+            log.info("OTP already exists in Redis: {} - {}", userId, type);
+            return false;
+        }
+        redisTemplate.opsForValue().set(key, otp, type.getDuration(), TimeUnit.SECONDS);
+        log.info("Stored OTP in Redis: {} - {} - {}", userId, otp, type);
+        return true;
+    }
+
+    public boolean isOtpValid(Long userId, String otp, RedisKeyTypeEnum type) {
+        String key = type.getKey() + ":" + userId;
+        Object storedOtp = redisTemplate.opsForValue().get(key);
+        boolean isValid = storedOtp != null && storedOtp.toString().equals(otp);
+        return isValid;
+    }
+
+    public void removeOtp(Long userId, RedisKeyTypeEnum type) {
+        String key = type.getKey() + ":" + userId;
+        redisTemplate.delete(key);
+        log.info("Removed OTP from Redis: {} - {}", userId, type);
     }
 }
 

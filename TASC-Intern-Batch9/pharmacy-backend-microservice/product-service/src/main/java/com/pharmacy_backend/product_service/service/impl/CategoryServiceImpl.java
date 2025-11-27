@@ -64,7 +64,6 @@ public class CategoryServiceImpl implements CategoryService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với slug: " + parentSlug));
 
         response.setParent(categoryMapper.toCategoryResponse(parentCategory));
-        response.getParent().setThumbnail(getThumbnailUrl(parentCategory.getThumbnail()));
 
         List<Category> childCategories = categoryRepository.findByParent(parentCategory);
 
@@ -73,7 +72,6 @@ public class CategoryServiceImpl implements CategoryService {
                         category -> {
                             CategoryResponse childResponse = categoryMapper.toCategoryResponse(category);
                             childResponse.setType(typeMapper.toTypeResponse(category.getType()));
-                            childResponse.setThumbnail(getThumbnailUrl(category.getThumbnail()));
                             childResponse.setParentId(parentCategory.getId());
                             return childResponse;
                         }
@@ -94,7 +92,6 @@ public class CategoryServiceImpl implements CategoryService {
 
         CategoryResponse response = categoryMapper.toCategoryResponse(category);
 
-        response.setThumbnail(getThumbnailUrl(category.getThumbnail()));
         response.setType(typeMapper.toTypeResponse(category.getType()));
         return ApiResponse.buildOkResponse(
                 response,
@@ -270,7 +267,6 @@ public class CategoryServiceImpl implements CategoryService {
         List<CategoryResponse> response = categories.stream()
                 .map(category -> {
                     CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
-                    categoryResponse.setThumbnail(getThumbnailUrl(category.getThumbnail()));
                     categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
                     return categoryResponse;
                 })
@@ -298,8 +294,6 @@ public class CategoryServiceImpl implements CategoryService {
         for (Category category : allCategories) {
             CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
             categoryResponse.setChildren(new ArrayList<>());
-            String url =  getThumbnailUrl(category.getThumbnail());
-            categoryResponse.setThumbnail(url);
 
             categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
             idToCategoryMap.put(category.getId(), categoryResponse);
@@ -321,13 +315,6 @@ public class CategoryServiceImpl implements CategoryService {
         return roots;
     }
 
-    private String getThumbnailUrl(String uuid) {
-        if(uuid != null && !uuid.isEmpty()) {
-            return String.valueOf(fileServiceClient.getFileUrl(uuid).getData());
-        }
-        return null;
-    }
-
     public void handleSaveOutboxEvent(Event<?> event) {
         OutboxEvent outboxEvent = new OutboxEvent();
         outboxEvent.setAggregateType(PartitionKeyEnum.CATEGORY.getName());
@@ -342,6 +329,4 @@ public class CategoryServiceImpl implements CategoryService {
                     e.getMessage());
         }
     }
-
-
 }

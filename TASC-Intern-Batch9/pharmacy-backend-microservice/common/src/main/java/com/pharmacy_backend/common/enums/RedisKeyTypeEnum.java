@@ -8,6 +8,7 @@ public enum RedisKeyTypeEnum {
     RESET_PASSWORD_TOKEN("RESET_PASSWORD_TOKEN"),
     RESET_PASSWORD_OTP("RESET_PASSWORD_OTP"),
     VERIFICATION_TOKEN("VERIFICATION_TOKEN"),
+    VERIFICATION_OTP("VERIFICATION_OTP"),
     USER_VERSION("USER_VERSION"),
     PRODUCT_DETAIL("PRODUCT_DETAIL"),
     RELATED_PRODUCTS("RELATED_PRODUCTS"),
@@ -29,6 +30,7 @@ public enum RedisKeyTypeEnum {
             case PRODUCT_DETAIL, RELATED_PRODUCTS -> 6 * 60 * 60L; // 6 hours
             case PRODUCT_STOCK, LAST_RUN_TIME -> 0L;
             case RESET_PASSWORD_OTP -> 5 * 60L; // 5 minutes
+            case VERIFICATION_OTP -> 12 * 60 * 60L; // 5 minutes
         };
     }
 

@@ -13,6 +13,6 @@ public interface EmailService {
     void sendResetEmail(String email, String otp, int expiryMinutes)
             throws MessagingException, UnsupportedEncodingException;
 
-    void sendVerificationEmail(String email, String token, LocalDateTime expiryAt);
+    void sendVerificationEmail(String email, String otp, int expiryM);
 //    ApiResponse<Void> resendVerificationEmail(String email);
 }

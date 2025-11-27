@@ -138,9 +138,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         UserResponse userResponse = userMapper.toUserResponse(currentUser);
-        String profilePicUrl = fileServiceClient.getFileUrl(
-                (currentUser.getProfilePic() != null) ? currentUser.getProfilePic() : "").getData();
-        userResponse.setProfilePicUrl(profilePicUrl);
         userResponse.setRoles(null);
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }

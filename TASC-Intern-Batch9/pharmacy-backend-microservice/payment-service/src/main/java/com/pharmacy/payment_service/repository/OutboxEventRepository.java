@@ -18,4 +18,8 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT e FROM OutboxEvent e WHERE e.eventStatus = :status order by e.createdAt asc limit 100")
     List<OutboxEvent> findPendingEvents(@Param("status") EventStatusEnum status);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT e FROM OutboxEvent e WHERE e.eventStatus IN :statuses order by e.createdAt asc limit 100")
+    List<OutboxEvent> findPendingAndFailedEvents(@Param("statuses") EventStatusEnum... statuses);
 }

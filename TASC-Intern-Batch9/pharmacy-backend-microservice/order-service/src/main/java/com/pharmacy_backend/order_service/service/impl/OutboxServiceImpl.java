@@ -32,7 +32,7 @@ public class OutboxServiceImpl implements OutboxService {
     @Override
     public void publishPendingEvents() {
         List<OutboxEvent> pendingOutboxEvent = outboxRepository.
-                findPendingEvents(EventStatusEnum.PENDING);
+                findPendingAndFailedEvents(EventStatusEnum.PENDING, EventStatusEnum.FAILED);
 
         for (OutboxEvent event : pendingOutboxEvent) {
             try {

@@ -42,9 +42,9 @@ public class EmailServiceImpl implements EmailService {
     }
 
     @Override
-    public void sendVerificationEmail(String email, String token, LocalDateTime expiryAt) {
+    public void sendVerificationEmail(String email, String otp, int expiryMinutes) {
         String subject = "Xác thực tài khoản";
-        String html = emailUtils.buildVerifyAccountEmail(token, expiryAt);
+        String html = emailUtils.buildVerifyAccountEmail(otp, expiryMinutes);
         send(email, subject, html);
     }
 

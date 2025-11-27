@@ -9,6 +9,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class UserVerifyAccountEvent {
     private String email;
-    private String verificationToken;
-    private LocalDateTime expiryAt;
+    private String otp;
+    private int expiryMinutes;
 }

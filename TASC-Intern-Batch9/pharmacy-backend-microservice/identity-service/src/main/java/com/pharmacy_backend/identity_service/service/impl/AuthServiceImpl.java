@@ -12,7 +12,6 @@ import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.service.OutboxService;
-import com.pharmacy_backend.common.utils.DateUtils;
 import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
@@ -53,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
     final UserMapper userMapper;
     final FileServiceClient fileServiceClient;
     final OutboxService outboxService;
+    final Random random;
 
     @Value("${spring.application.name}")
     String appName;
@@ -109,17 +109,15 @@ public class AuthServiceImpl implements AuthService {
                 .key(String.format("%s-%d", PartitionKeyEnum.USER, user.getId()))
                 .data(userEvent).
                 build();
-        //send message queue to profile-service, cart-service to create profile for new user
         outboxService.handleSaveOutboxEvent(event);
 
-        String token = jwtAuthenticationProvider.generateVerificationToken(user);
-        long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
+        String otp = String.format("%06d", random.nextInt(999999));
 
         UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
                 user.getEmail(),
-                token,
-                DateUtils.convertToLocalDateTime(new Date(System.currentTimeMillis() + expiryTime))
-        );
+                otp,
+                (int) RedisKeyTypeEnum.VERIFICATION_OTP.getDuration() / 60
+                );
 
         Event<UserVerifyAccountEvent> verifyEvent = Event.<UserVerifyAccountEvent>builder()
                 .source(appName)
@@ -128,41 +126,36 @@ public class AuthServiceImpl implements AuthService {
                 .data(userVerifyAccountEvent).
                 build();
 
+        redisService.storeOtp(user.getId(), otp, RedisKeyTypeEnum.VERIFICATION_OTP);
         outboxService.handleSaveOutboxEvent(verifyEvent);
-        try {
-            redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
-        } catch (ParseException e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
-        }
         return ApiResponse.buildCreatedResponse(null, "Đăng ký thành công," +
                 " vui lòng kiểm tra email để xác thực tài khoản");
     }
 
     @Transactional
     @Override
-    public ApiResponse<String> verifyAccount(String token) throws ParseException {
-        String jti = jwtAuthenticationProvider.getJWTID(token);
-        if(!redisService.isVerificationTokenValid(jti)) {
-            throw new CustomException(ErrorCode.VALIDATION_ERROR, "Token không hợp lệ hoặc đã hết hạn");
-        }
-
-        User user = userRepository.findByEmail(jwtAuthenticationProvider.getUserEmail(token))
+    public ApiResponse<String> verifyAccount(VerifyAccountRequest request){
+        User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+
+        if(!redisService.isOtpValid(user.getId(), request.getOtp(), RedisKeyTypeEnum.VERIFICATION_OTP)) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR,
+                    "Mã OTP không hợp lệ hoặc đã hết hạn");
+        }
+
         user.setStatusEmail(true);
         userRepository.save(user);
-        redisService.removeVerificationToken(jti);
+        redisService.removeOtp(user.getId(), RedisKeyTypeEnum.VERIFICATION_OTP);
 
         return ApiResponse.buildOkResponse(null, "Xác thực tài khoản thành công, vui lòng đăng nhập");
     }
 
     @Override
-    public ApiResponse<String> resetPassword(ResetPasswordRequest request) throws ParseException {
+    public ApiResponse<String> resetPassword(ResetPasswordRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
-
-//        String jti = jwtAuthenticationProvider.getJWTID(request.getOtp());
 
         if(!redisService.isResetPasswordOtpValid(user.getId(),  request.getOtp())) {
             throw new CustomException(
@@ -188,17 +181,16 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public ApiResponse<String> forgotPassword(String email, Boolean isUser)
-            throws MessagingException, ParseException {
+            throws MessagingException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
-//        String token = jwtAuthenticationProvider.generatePasswordResetToken(user);
-        Random rd = new Random();
-        String otp = String.format("%06d", rd.nextInt(999999));
+        String otp = String.format("%06d", random.nextInt(999999));
         UserForgotPasswordEvent userForgotPasswordEvent = new UserForgotPasswordEvent();
         userForgotPasswordEvent.setEmail(user.getEmail());
         userForgotPasswordEvent.setOtp(otp);
         userForgotPasswordEvent.setUser(isUser);
+        userForgotPasswordEvent.setExpiryMinutes((int) RedisKeyTypeEnum.RESET_PASSWORD_OTP.getDuration() / 60);
 
         Event<UserForgotPasswordEvent> event = Event.<UserForgotPasswordEvent>builder()
                 .source(appName)
@@ -271,14 +263,7 @@ public class AuthServiceImpl implements AuthService {
                 build();
 
         UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
-        if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
-            String profilePicUrl = fileServiceClient.getFileUrl(user.getProfilePic()).getData();
-            userResponse.setProfilePicUrl(profilePicUrl);
-
-            userEvent.setProfilePicUrl(profilePicUrl);
-        }
         userResponse.setRoles(null);
-
 
         outboxService.handleSaveOutboxEvent(event);
 
@@ -330,13 +315,12 @@ public class AuthServiceImpl implements AuthService {
             throw new CustomException(ErrorCode.USER_ALREADY_VERIFIED,
                     HttpStatus.BAD_REQUEST, "Tài khoản đã được xác thực");
         } else {
-            String token = jwtAuthenticationProvider.generateVerificationToken(user);
-            long expiryTime = DateUtils.convertToMillis(jwtAuthenticationProvider.getTokenExpiry(token));
+            String otp = String.format("%06d", random.nextInt(999999));
 
             UserVerifyAccountEvent userVerifyAccountEvent = new UserVerifyAccountEvent(
                     user.getEmail(),
-                    token,
-                    DateUtils.convertToLocalDateTime(new Date(System.currentTimeMillis() + expiryTime))
+                    otp,
+                    (int) RedisKeyTypeEnum.VERIFICATION_OTP.getDuration() / 60
             );
 
             Event<UserVerifyAccountEvent> verifyEvent = Event.<UserVerifyAccountEvent>builder()
@@ -345,13 +329,8 @@ public class AuthServiceImpl implements AuthService {
                     .key(String.format("%s-%d", PartitionKeyEnum.USER, user.getId()))
                     .data(userVerifyAccountEvent).
                     build();
-
+            redisService.storeOtp(user.getId(), otp, RedisKeyTypeEnum.VERIFICATION_OTP);
             outboxService.handleSaveOutboxEvent(verifyEvent);
-            try {
-                redisService.storeVerificationToken(jwtAuthenticationProvider.getJWTID(token), expiryTime);
-            } catch (ParseException e) {
-                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, e.getMessage());
-            }
             return ApiResponse.<Void>builder()
                     .status(HttpStatus.OK.value())
                     .message("Đã gửi lại email xác thực thành công, vui lòng kiểm tra email")
