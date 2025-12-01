@@ -39,7 +39,6 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.Random;
 
-
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor

@@ -46,9 +46,6 @@ public class FileMinioService implements FileMetadataService {
     @Value("${minio.public-base-url:}")
     private String publicBaseUrl;
 
-    /**
-     * Upload 1 file lên MinIO (bucket public), lưu metadata và trả về public URL cố định.
-     */
     @Transactional
     @Override
     public ApiResponse<FileMetadataResponse> storeFile(MultipartFile file, String category) {
@@ -129,17 +126,11 @@ public class FileMinioService implements FileMetadataService {
         }
     }
 
-    /**
-     * Đọc file vật lý: tái sử dụng downloadFile.
-     */
     @Override
     public FileSystemResource loadFile(String uuidStr) {
         return downloadFile(uuidStr);
     }
 
-    /**
-     * Upload nhiều file.
-     */
     @Transactional
     @Override
     public ApiResponse<List<FileMetadataResponse>> storeFile(List<MultipartFile> multipartFiles, String category) {
@@ -149,7 +140,6 @@ public class FileMinioService implements FileMetadataService {
         }
         return ApiResponse.buildCreatedResponse(list, "Upload file thành công");
     }
-
 
     @Override
     public ApiResponse<Boolean> checkFileExists(String uuidStr) {
@@ -186,8 +176,11 @@ public class FileMinioService implements FileMetadataService {
         if (uuidStr == null || uuidStr.isEmpty()) return;
 
         FileMetadata fileMetadata = fileMetadataRepository.findByUuid(UUID.fromString(uuidStr))
-                .orElseThrow(() -> new CustomException(ErrorCode.FILE_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "File không tồn tại"));
+                .orElse(null);
+
+        if(fileMetadata == null) {
+            return;
+        }
 
         String objectKey = fileMetadata.getFileType() + "/" + fileMetadata.getStoredFileName();
 
@@ -196,9 +189,7 @@ public class FileMinioService implements FileMetadataService {
                     .bucket(bucket)
                     .object(objectKey)
                     .build());
-
             fileMetadataRepository.delete(fileMetadata);
-
         } catch (Exception e) {
             log.error("MinIO remove error: ", e);
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,

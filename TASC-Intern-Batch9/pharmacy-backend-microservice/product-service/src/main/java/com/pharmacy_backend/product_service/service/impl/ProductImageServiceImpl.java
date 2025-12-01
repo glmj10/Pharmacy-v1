@@ -2,6 +2,7 @@ package com.pharmacy_backend.product_service.service.impl;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
+import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.FileCategoryEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.product_service.dto.response.ProductImageResponse;
@@ -49,11 +50,18 @@ public class ProductImageServiceImpl implements ProductImageService {
         return images.stream()
                 .map(image -> {
                     ProductImage productImage = new ProductImage();
-                    ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(image,
-                            FileCategoryEnum.PRODUCT.getSubDirectory());
-                    productImage.setProduct(product);
-                    productImage.setImageUUID(thumbnailResponse.getData().getId().toString());
-                    productImageRepository.save(productImage);
+
+                    try {
+                        ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(image,
+                                FileCategoryEnum.PRODUCT.getSubDirectory());
+                        productImage.setProduct(product);
+                        productImage.setImageUUID(thumbnailResponse.getData().getId().toString());
+                        productImageRepository.save(productImage);
+
+                    } catch (Exception e) {
+                        throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi tải ảnh lên máy chủ");
+                    }
+
                     return productImageMapper.toProductImageResponse(productImage);
                 })
                 .toList();

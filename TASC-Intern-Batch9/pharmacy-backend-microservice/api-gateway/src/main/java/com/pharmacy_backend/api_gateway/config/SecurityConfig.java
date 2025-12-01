@@ -24,13 +24,11 @@ import java.util.List;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     @Value("${jwt.secret}")
     private String jwtSecret;
 
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final JWTAuthenticationFilter jwtAuthenticationFilter;
-
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain() {

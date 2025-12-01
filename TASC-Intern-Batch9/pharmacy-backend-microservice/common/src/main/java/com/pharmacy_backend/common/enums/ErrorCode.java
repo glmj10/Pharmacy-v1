@@ -37,6 +37,7 @@ public enum ErrorCode {
 
     CATEGORY_NOT_FOUND("Danh mục không tồn tại"),
     CATEGORY_ALREADY_EXISTS("Danh mục đã tồn tại"),
+    INVALID_CATEGORY_TYPE("Loại danh mục không hợp lệ"),
 
     BLOG_NOT_FOUND("Bài viết không tồn tại"),
 

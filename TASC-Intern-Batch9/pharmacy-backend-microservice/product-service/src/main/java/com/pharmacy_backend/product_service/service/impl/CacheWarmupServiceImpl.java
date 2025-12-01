@@ -18,7 +18,9 @@ import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-public class CacheWarmupServiceImpl implements CacheWarmupService {
+public class CacheWarmupServiceImpl
+//        implements CacheWarmupService
+{
     private final ProductRedisService productRedisService;
     private final StockCacheService stockCacheService;
     private final ProductRepository productRepository;
@@ -40,50 +42,50 @@ public class CacheWarmupServiceImpl implements CacheWarmupService {
         this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     }
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void warmUpCacheOnStartup() {
-        CompletableFuture.runAsync(this::preloadProducts, threadPoolTaskExecutor);
-    }
-
-    @Override
-    public void preloadProducts() {
-        if(Boolean.parseBoolean(cacheWarmupEnable)) {
-            Long minId = productRepository.findMinId();
-            Long maxId = productRepository.findMaxId();
-
-            if (minId == null || maxId == null) {
-                log.warn("No products found in the database to warm up the cache.");
-                return;
-            }
-
-            List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-            for(long startId = minId; startId <= maxId; startId += batchSize) {
-                long endId = Math.min(startId + batchSize, maxId + 1);
-
-                long finalStartId = startId;
-                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                    try {
-                        List<Product> batch = productRepository.findAllFromRange(finalStartId, endId);
-                        batch.forEach(product ->{
-                            productRedisService.cacheProductDetail(product);
-                            stockCacheService.setStock(product.getId(), product.getQuantity());
-                        });
-                        log.info("📦 Cache batch {} → {} ({} items)", finalStartId, endId, batch.size());
-                    } catch (Exception e) {
-                        log.error("❌ Lỗi khi nạp batch {} → {}", finalStartId, endId, e);
-                    }
-                }, threadPoolTaskExecutor);
-
-                futures.add(future);
-            }
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("✅ Hoàn thành nạp cache sản phẩm từ ID {} đến ID {}", minId, maxId);
-
-        } else {
-            log.info("Disabling cache warm-up as per configuration.");
-        }
-    }
+//    @EventListener(ApplicationReadyEvent.class)
+//    public void warmUpCacheOnStartup() {
+//        CompletableFuture.runAsync(this::preloadProducts, threadPoolTaskExecutor);
+//    }
+//
+//    @Override
+//    public void preloadProducts() {
+//        if(Boolean.parseBoolean(cacheWarmupEnable)) {
+//            Long minId = productRepository.findMinId();
+//            Long maxId = productRepository.findMaxId();
+//
+//            if (minId == null || maxId == null) {
+//                log.warn("No products found in the database to warm up the cache.");
+//                return;
+//            }
+//
+//            List<CompletableFuture<Void>> futures = new ArrayList<>();
+//
+//            for(long startId = minId; startId <= maxId; startId += batchSize) {
+//                long endId = Math.min(startId + batchSize, maxId + 1);
+//
+//                long finalStartId = startId;
+//                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+//                    try {
+//                        List<Product> batch = productRepository.findAllFromRange(finalStartId, endId);
+//                        batch.forEach(product ->{
+//                            productRedisService.cacheProductDetail(product);
+//                            stockCacheService.setStock(product.getId(), product.getQuantity());
+//                        });
+//                        log.info("📦 Cache batch {} → {} ({} items)", finalStartId, endId, batch.size());
+//                    } catch (Exception e) {
+//                        log.error("❌ Lỗi khi nạp batch {} → {}", finalStartId, endId, e);
+//                    }
+//                }, threadPoolTaskExecutor);
+//
+//                futures.add(future);
+//            }
+//
+//            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+//            log.info("✅ Hoàn thành nạp cache sản phẩm từ ID {} đến ID {}", minId, maxId);
+//
+//        } else {
+//            log.info("Disabling cache warm-up as per configuration.");
+//        }
+//    }
 
 }

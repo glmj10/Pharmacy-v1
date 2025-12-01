@@ -16,7 +16,6 @@ import lombok.experimental.FieldDefaults;
 public class ProductImage extends BaseEntity {
     @Column(name = "image_uuid")
     String imageUUID;
-    String url;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

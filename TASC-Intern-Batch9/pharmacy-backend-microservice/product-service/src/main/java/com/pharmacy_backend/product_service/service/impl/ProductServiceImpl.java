@@ -25,6 +25,7 @@ import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import com.pharmacy_backend.product_service.service.ProductService;
 import com.pharmacy_backend.product_service.service.StockCacheService;
+import feign.RetryableException;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -122,7 +123,7 @@ public class ProductServiceImpl implements ProductService {
         User user;
         Long userId = SecurityUtils.getCurrentUserId();
         if(userId != null) {
-            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
+            user = userRepository.findById(userId)
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                             HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
         } else {
@@ -242,6 +243,18 @@ public class ProductServiceImpl implements ProductService {
 
         List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
 
+        for(Category category : categories) {
+            if(category == null) {
+                throw new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
+                        HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID: " + category.getId());
+            }
+
+            if(category.getType().getCode().equalsIgnoreCase(CategoryTypeEnum.BLOG.name())) {
+                throw new CustomException(ErrorCode.INVALID_CATEGORY_TYPE,
+                        HttpStatus.BAD_REQUEST, category.getName() + " không phải là danh mục sản phẩm");
+            }
+        }
+
         if (categories.isEmpty()) {
             throw new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
                     HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với các ID đã chọn");
@@ -249,12 +262,20 @@ public class ProductServiceImpl implements ProductService {
 
         Product product = productMapper.toProduct(request);
         product.setSlug(createSlug(product.getTitle()));
-        product.setThumbnail(fileServiceClient.uploadFile(thumbnail,
-                FileCategoryEnum.PRODUCT.getSubDirectory()).getData().getId().toString());
+
+        try {
+            product.setThumbnail(fileServiceClient.uploadFile(thumbnail,
+                    FileCategoryEnum.PRODUCT.getSubDirectory()).getData().getId().toString());
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.FILE_STORAGE_ERROR,
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi tải lên hình ảnh đại diện: " + e.getMessage());
+        }
+
         product.setBrand(brand);
         product.setCategories(categories);
         product.setCreatedBy(SecurityUtils.getCurrentUserId());
         product.setModifiedBy(SecurityUtils.getCurrentUserId());
+        product.setDescription(request.getDescription());
         images.add(0, thumbnail);
         List<ProductImageResponse> productImages = productImageService.createProductImages(product, images);
 
@@ -381,10 +402,10 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
-        fileServiceClient.deleteFile(product.getThumbnail());
         productImageService.deleteProductImagesByProduct(product);
         stockRepository.deleteByProduct(product);
         productRepository.deleteProduct(id);
+        fileServiceClient.deleteFile(product.getThumbnail());
 
         ProductEvent productEvent = ProductEvent.builder()
                 .productId(product.getId())

@@ -477,11 +477,20 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Transactional
     @Override
     public void deleteProduct(Long id) {
-        String sql = "DELETE FROM products WHERE id=?";
-        jdbcTemplate.update(sql, id);
-
         String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
         jdbcTemplate.update(deleteCategorySql, id);
+
+        String deleteCommentSql = "DELETE FROM comments WHERE product_id = ?";
+        jdbcTemplate.update(deleteCommentSql, id);
+
+        String deleteWishlistSql = "DELETE FROM wishlists WHERE product_id = ?";
+        jdbcTemplate.update(deleteWishlistSql, id);
+
+        String deleteProductImageSql = "DELETE FROM product_images WHERE product_id = ?";
+        jdbcTemplate.update(deleteProductImageSql, id);
+
+        String sql = "DELETE FROM products WHERE id=?";
+        jdbcTemplate.update(sql, id);
     }
 
     @Override

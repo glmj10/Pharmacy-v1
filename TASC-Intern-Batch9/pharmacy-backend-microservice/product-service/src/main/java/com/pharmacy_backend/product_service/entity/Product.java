@@ -51,7 +51,7 @@ public class Product extends BaseModifyEntity {
     @OneToMany(mappedBy = "product",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     List<ProductImage> productImages;
 
-    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
     @JoinTable(name = "products_categories", joinColumns = @JoinColumn(name = "product_id"),
                                             inverseJoinColumns = @JoinColumn(name = "category_id"))
     List<Category> categories = new ArrayList<>();

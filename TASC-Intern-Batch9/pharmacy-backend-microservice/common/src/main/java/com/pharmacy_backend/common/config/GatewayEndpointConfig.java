@@ -21,6 +21,7 @@ public class GatewayEndpointConfig {
 
     public static final String[] PUBLIC_GET_ENDPOINTS = {
             "/api/v1/products",
+            "/api/v1/products/related/{productId}",
             "/api/v1/products/slug/{slug}",
             "/api/v1/products/rank/suggestions/top15",
             "/api/v1/categories/**",
