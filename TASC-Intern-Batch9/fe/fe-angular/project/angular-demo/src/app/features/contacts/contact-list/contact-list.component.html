@@ -1,0 +1,114 @@
+<div class="crm-layout">
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <div class="contact-list">
+    <!-- Header Section -->
+    <div class="contacts-header">
+      <h1 class="contacts-title">Contacts</h1>
+      <div class="header-controls">
+        <div class="filter-dropdown">
+          <select>
+            <option>ALL</option>
+            <option>Salaried</option>
+            <option>Commission</option>
+            <option>Terminated</option>
+          </select>
+        </div>
+        <button class="add-contact-btn">ADD CONTACT</button>
+        <div class="action-buttons">
+          <button class="action-btn" title="Export">
+            <i class="fas fa-download"></i>
+          </button>
+          <button class="action-btn" title="Print">
+            <i class="fas fa-print"></i>
+          </button>
+          <button class="action-btn" title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <div class="search-container">
+          <input 
+            type="text" 
+            placeholder="Contact Search" 
+            [(ngModel)]="searchText" 
+            class="search-input">
+          <i class="search-icon fas fa-search"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-container">
+      <table class="contacts-table">
+        <thead>
+          <tr>
+            <th class="checkbox-column">
+              <input 
+                type="checkbox" 
+                [checked]="selectAll" 
+                (change)="toggleSelectAll()">
+            </th>
+            <th class="name-column">
+              Name 
+              <span class="sort-icon"><i class="fas fa-sort-down"></i></span>
+            </th>
+            <th class="company-column">
+              Company 
+              <span class="sort-icon"><i class="fas fa-sort-down"></i></span>
+            </th>
+            <th class="status-column">
+              Status 
+              <span class="sort-icon"><i class="fas fa-sort-down"></i></span>
+            </th>
+            <th class="assigned-column">
+              Assigned to 
+              <span class="sort-icon"><i class="fas fa-sort-down"></i></span>
+            </th>
+            <th class="phone-column">
+              Phone 
+              <span class="sort-icon"><i class="fas fa-sort-down"></i></span>
+            </th>
+            <th class="actions-column"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr 
+            *ngFor="let contact of filteredContacts" 
+            (click)="selectContact(contact)" 
+            [class.selected]="contact === selectedContact"
+            [class.highlighted]="contact.selected">
+            <td class="checkbox-column">
+              <input 
+                type="checkbox" 
+                [checked]="contact.selected" 
+                (change)="toggleContactSelection(contact)"
+                (click)="$event.stopPropagation()">
+            </td>
+            <td class="name-column">
+              <div class="contact-info">
+                <div class="contact-details">
+                  <div class="contact-name">{{ contact.name }}</div>
+                  <div class="contact-title">{{ contact.position }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="company-column">{{ contact.company }}</td>
+            <td class="status-column">
+              <span class="status-badge" [ngClass]="contact.status.toLowerCase()">
+                ● {{ contact.status }}
+              </span>
+            </td>
+            <td class="assigned-column">{{ contact.assignedTo }}</td>
+            <td class="phone-column">{{ contact.phone }}</td>
+            <td class="actions-column">
+              <button class="action-menu-btn"><i class="fas fa-ellipsis-h"></i></button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Contact Details Component -->
+  <app-contact-details [contact]="selectedContact"></app-contact-details>
+</div>

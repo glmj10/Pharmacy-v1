@@ -62,6 +62,7 @@ const BlogForm = () => {
           const categoriesData = Array.isArray(response.data) 
             ? response.data 
             : response.data.content || response.data.data || []
+          console.log(categoriesData)
           setCategories(categoriesData)
         }
       } catch (error) {

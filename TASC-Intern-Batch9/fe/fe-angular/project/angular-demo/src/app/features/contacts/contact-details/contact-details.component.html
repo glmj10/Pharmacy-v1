@@ -1,0 +1,58 @@
+<!-- Contact Details Panel -->
+<div class="contact-details-panel" *ngIf="contact">
+  <div class="contact-detail-header">
+    <div class="contact-avatar-large">
+      {{ contact.name.charAt(0) }}
+    </div>
+    <div class="contact-info-large">
+      <h2>{{ contact.name }}</h2>
+      <p class="contact-position">{{ contact.position }}</p>
+      <div class="contact-actions">
+        <button class="btn-edit"><i class="fas fa-edit"></i> EDIT</button>
+        <button class="btn-details"><i class="fas fa-info-circle"></i> DETAILS</button>
+        <button class="btn-actions"><i class="fas fa-cog"></i> ACTIONS <i class="fas fa-chevron-down"></i></button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="contact-detail-section">
+    <h3><i class="fas fa-bullseye"></i> Opportunities +</h3>
+    <div class="opportunity-item">
+      <strong>Black Friday Offer</strong><br>
+      <span class="opportunity-value">$1,995</span>
+    </div>
+    <div class="opportunity-item">
+      <strong>First Sale Opportunity</strong><br>
+      <span class="opportunity-value">$1,875</span>
+    </div>
+    <div class="opportunity-item">
+      <strong>Interview Conference Room Sell</strong><br>
+      <span class="opportunity-value">$700</span>
+    </div>
+    <div class="opportunity-item">
+      <strong>Upcoming Request for Conference Room</strong><br>
+      <span class="opportunity-value">$2,500</span>
+    </div>
+    <div class="opportunity-item">
+      <strong>POS Touch Screens</strong><br>
+      <span class="opportunity-value">$5,000</span>
+    </div>
+  </div>
+
+  <div class="contact-detail-section">
+    <h3><i class="fas fa-chart-line"></i> Activities +</h3>
+    <div class="activity-item">
+      <div class="activity-icon"><i class="fas fa-phone"></i></div>
+      <div class="activity-content">
+        <strong>{{ contact.phone }}</strong><br>
+        <span class="activity-address">{{ contact.address }}</span>
+      </div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-icon"><i class="fas fa-envelope"></i></div>
+      <div class="activity-content">
+        <strong>{{ contact.email }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
