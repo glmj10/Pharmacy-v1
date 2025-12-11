@@ -21,7 +21,7 @@ public abstract class BaseModifyEntity extends BaseEntity {
     LocalDateTime createdAt;
 
     @CreatedBy
-    @Column(name = "created_by", nullable = false)
+    @Column(name = "created_by")
     Long createdBy;
 
     @CreationTimestamp

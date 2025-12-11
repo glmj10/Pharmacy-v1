@@ -25,6 +25,7 @@ public class Product{
     Integer priceNew;
     @Column(name = "price_old")
     Integer priceOld;
+    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
     String thumbnailUrl;
     Boolean active;
     Integer quantity;

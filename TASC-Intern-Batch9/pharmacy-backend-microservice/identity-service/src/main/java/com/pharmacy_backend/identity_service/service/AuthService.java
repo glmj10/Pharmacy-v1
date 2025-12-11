@@ -1,6 +1,5 @@
 package com.pharmacy_backend.identity_service.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.JOSEException;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.identity_service.dto.request.*;

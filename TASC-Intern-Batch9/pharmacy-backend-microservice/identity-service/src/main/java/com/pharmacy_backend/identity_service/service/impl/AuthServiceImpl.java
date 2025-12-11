@@ -184,6 +184,18 @@ public class AuthServiceImpl implements AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
+
+        boolean isUserClickValid = redisService.isUserClickValid(user.getId());
+        if(isUserClickValid) {
+            throw new CustomException(
+                    ErrorCode.TOO_MANY_REQUESTS,
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Bạn đã gửi yêu cầu quá nhiều lần, vui lòng thử lại sau " +
+                            RedisKeyTypeEnum.USER_CLICK.getDuration()
+            );
+        }
+        redisService.storeUserClick(user.getId());
+
         String otp = String.format("%06d", random.nextInt(999999));
         UserForgotPasswordEvent userForgotPasswordEvent = new UserForgotPasswordEvent();
         userForgotPasswordEvent.setEmail(user.getEmail());
@@ -294,9 +306,8 @@ public class AuthServiceImpl implements AuthService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
         String oldJti = signedJWT.getJWTClaimsSet().getJWTID();
-        Date oldExpiry = signedJWT.getJWTClaimsSet().getExpirationTime();
 
-        redisService.storeInvalidatedToken(oldJti, oldExpiry.getTime());
+        redisService.storeInvalidatedToken(oldJti, RedisKeyTypeEnum.INVALIDATED_JWT.getDuration());
         String newToken = jwtAuthenticationProvider.generateToken(user);
         AuthResponse authResponse = new AuthResponse(newToken);
         return ApiResponse.buildOkResponse(
@@ -309,6 +320,16 @@ public class AuthServiceImpl implements AuthService {
     public ApiResponse<Void> resendVerificationToken(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                 ErrorCode.USER_NOT_FOUND.getMessage()));
+
+        boolean isUserClickValid = redisService.isUserClickValid(user.getId());
+        if(isUserClickValid) {
+            throw new CustomException(
+                    ErrorCode.TOO_MANY_REQUESTS,
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Bạn đã gửi yêu cầu quá nhiều lần, vui lòng thử lại sau " +
+                            RedisKeyTypeEnum.USER_CLICK.getDuration()
+            );
+        }
 
         if(user.isVerified()) {
             throw new CustomException(ErrorCode.USER_ALREADY_VERIFIED,

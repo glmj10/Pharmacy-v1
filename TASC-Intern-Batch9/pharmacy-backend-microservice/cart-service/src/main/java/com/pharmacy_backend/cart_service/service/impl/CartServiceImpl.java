@@ -73,7 +73,7 @@ public class CartServiceImpl implements CartService {
                 })
                 .toList();
 
-        CartResponse response = new CartResponse(cart.getId(), cart.getTotalPrice(), itemResponses);
+        CartResponse response = new CartResponse(cart.getId(), itemResponses);
         return ApiResponse.<CartResponse>builder()
                 .status(HttpStatus.OK.value())
                 .message("Lấy danh sách sản phẩm trong giỏ hàng thành công")
@@ -157,17 +157,9 @@ public class CartServiceImpl implements CartService {
                     HttpStatus.BAD_REQUEST, "Số lượng sản phẩm không đủ");
         }
 
-        if(item.isSelected()) {
-            cart.setTotalPrice(
-                    item.getQuantity() < quantity ?
-                            cart.getTotalPrice() + ((long) item.getProduct().getPriceNew() * (quantity - item.getQuantity())) :
-                            cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * (item.getQuantity() - quantity)
-            );
-        }
         item.setQuantity(quantity);
 
         cartItemRepository.updateCartItem(item);
-        cartRepository.updateCart(cart);
 
         CartItemResponse response = CartItemResponse.builder()
                 .id(item.getId())
@@ -195,10 +187,6 @@ public class CartServiceImpl implements CartService {
                         HttpStatus.NOT_FOUND, "Sản phẩm trong giỏ hàng không tồn tại"));
 
         cartItemRepository.remove(item);
-        if(item.getSelected()) {
-            cart.setTotalPrice(cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * item.getQuantity());
-        }
-        cartRepository.updateCart(cart);
 
         return ApiResponse.buildOkResponse(null, "Xóa sản phẩm khỏi giỏ hàng thành công");
     }
@@ -213,15 +201,9 @@ public class CartServiceImpl implements CartService {
                         HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại"));
 
         List<CartItem> cartItems = cartItemRepository.findAllByCart(cart);
-        cartItems.forEach(item -> {
-            if (item.getSelected()) {
-                cart.setTotalPrice(cart.getTotalPrice() - (long) item.getProduct().getPriceNew() * item.getQuantity());
-            }
-        });
 
         cartItemRepository.removeAll(cartItems);
         cart.getCartItems().clear();
-        cartRepository.updateCart(cart);
 
         return ApiResponse.buildOkResponse(null, "Xóa tất cả sản phẩm khỏi giỏ hàng thành công");
     }
@@ -246,11 +228,7 @@ public class CartServiceImpl implements CartService {
 
         if(!item.getSelected().equals(status)) {
             item.setSelected(status);
-            cart.setTotalPrice(cart.getTotalPrice() + (item.isSelected()
-                    ? (long) item.getProduct().getPriceNew() * item.getQuantity()
-                    : (long) -item.getProduct().getPriceNew() * item.getQuantity()));
             cartItemRepository.updateCartItem(item);
-            cartRepository.updateCart(cart);
         }
 
         CartItemResponse response = CartItemResponse.builder()
@@ -283,17 +261,9 @@ public class CartServiceImpl implements CartService {
 
             if (wasSelected != status) {
                 item.setSelected(status);
-                long change = (long) item.getProduct().getPriceNew() * item.getQuantity();
-                if (status) {
-                    cart.setTotalPrice(cart.getTotalPrice() + change);
-                } else {
-                    cart.setTotalPrice(cart.getTotalPrice() - change);
-                }
                 cartItemRepository.updateCartItem(item);
             }
         });
-
-        cartRepository.updateCart(cart);
 
         List<CartItemResponse> responses = items.stream()
                 .map(item -> CartItemResponse.builder()
@@ -342,7 +312,7 @@ public class CartServiceImpl implements CartService {
                 })
                 .toList();
 
-        CartResponse response = new CartResponse(cart.getId(), cart.getTotalPrice(), itemResponses);
+        CartResponse response = new CartResponse(cart.getId(), itemResponses);
         return ApiResponse.buildOkResponse(response,
                 "Lấy danh sách sản phẩm đã chọn trong giỏ hàng thành công");
     }

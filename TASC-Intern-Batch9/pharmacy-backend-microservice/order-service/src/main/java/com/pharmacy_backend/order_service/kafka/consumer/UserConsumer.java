@@ -29,7 +29,7 @@ public class UserConsumer {
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.USER_CREATED.getName())) {
                 UserEvent userEvent = objectMapper.convertValue(event.getData(),
                         UserEvent.class);
-                userService.createUser(userEvent.getUserId(),
+                userService.createUser(userEvent.getUserId(), userEvent.getUsername(),
                         userEvent.getEmail(), userEvent.getProfilePicUrl());
                 log.info("received user event: {}", event);
             }

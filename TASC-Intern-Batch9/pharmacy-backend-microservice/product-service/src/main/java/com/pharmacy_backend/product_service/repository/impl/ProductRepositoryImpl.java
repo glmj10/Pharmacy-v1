@@ -10,7 +10,6 @@ import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.repository.BrandRepository;
 import com.pharmacy_backend.product_service.repository.CategoryRepository;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
@@ -155,11 +154,11 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterCustomerRequest.getPriceTo());
         }
 
-        if (filterCustomerRequest.isAscending() != null) {
+        if (filterCustomerRequest.isAscending()) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
         } else {
-            sql.append(" ORDER BY modified_at DESC");
+            sql.append(" ORDER BY modified_at DESC, created_at DESC");
         }
 
         sql.append(" LIMIT ? OFFSET ?");
@@ -448,7 +447,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                     indication=?, manufacturer=?, price_old=?, price_new=?,
                     import_price=?, priority=?, quantity=?, registration_number=?,
                     slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
-                    modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
+                    modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW(), embedding=?
                 WHERE id=?
                 """;
 
@@ -459,7 +458,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.getPriority(), product.getQuantity(), product.getRegistrationNumber(),
                 product.getSlug(), product.getThumbnail(), product.getNumberOfLikes(),
                 product.getActive(), product.getBrand() != null ? product.getBrand().getId() : null,
-                product.getProductType(), product.getModifiedBy(), product.getNoted(), id
+                product.getProductType(), product.getModifiedBy(), product.getNoted(), product.getEmbedding(), id
         );
 
         String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
@@ -474,7 +473,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         return product;
     }
 
-    @Transactional
     @Override
     public void deleteProduct(Long id) {
         String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
@@ -488,6 +486,9 @@ public class ProductRepositoryImpl implements ProductRepository {
 
         String deleteProductImageSql = "DELETE FROM product_images WHERE product_id = ?";
         jdbcTemplate.update(deleteProductImageSql, id);
+
+        String stockDeleteSql = "DELETE FROM stocks WHERE product_id = ?";
+        jdbcTemplate.update(stockDeleteSql, id);
 
         String sql = "DELETE FROM products WHERE id=?";
         jdbcTemplate.update(sql, id);
@@ -569,6 +570,12 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public List<Product> findAllLimit500() {
+        String sql = "SELECT * FROM products WHERE active = true LIMIT 500";
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class));
+    }
+
+    @Override
     public List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId) {
         if (categories == null || categories.isEmpty()) {
             return new ArrayList<>();
@@ -594,5 +601,18 @@ public class ProductRepositoryImpl implements ProductRepository {
         params.add(productId);
 
         return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), params.toArray());
+    }
+
+    @Override
+    public List<Product> findAllByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        StringBuilder sql = new StringBuilder("SELECT * FROM products WHERE id IN (");
+        String placeholders = String.join(",", ids.stream().map(id -> "?").toArray(String[]::new));
+        sql.append(placeholders).append(")");
+
+        return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), ids.toArray());
     }
 }

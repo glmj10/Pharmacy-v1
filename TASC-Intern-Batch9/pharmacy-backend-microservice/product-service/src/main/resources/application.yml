@@ -37,3 +37,10 @@ async:
   core-pool-size: 10
   max-pool-size: 20
   queue-capacity: 100
+genai:
+  generation:
+    model: ${GENAI_GENERATION_MODEL:gemini-2.5-flash}
+  api:
+    key: ${GENAI_API_KEY}
+  embedding:
+    model: ${GENAI_EMBEDDING_MODEL:text-embedding-004}

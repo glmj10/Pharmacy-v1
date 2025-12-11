@@ -30,4 +30,6 @@ public class OrderDetail extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "product_id")
     Product product;
+
+    boolean isRated = false;
 }

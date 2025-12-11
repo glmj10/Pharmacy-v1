@@ -16,9 +16,8 @@ public class RedisService {
     private final RedisTemplate<String, Object> redisTemplate;
 
     public void storeInvalidatedToken(String jti, long expirationTime) {
-        long expirationMillis = expirationTime - new Date().getTime();
         redisTemplate.opsForValue().set(RedisKeyTypeEnum.INVALIDATED_JWT.getKey()
-                + ":" + jti, "invalid", expirationMillis, TimeUnit.MILLISECONDS);
+                + ":" + jti, "invalid", expirationTime, TimeUnit.SECONDS);
         log.info("Stored invalidated jti in Redis: {}", jti);
     }
 
@@ -140,6 +139,19 @@ public class RedisService {
         String key = type.getKey() + ":" + userId;
         redisTemplate.delete(key);
         log.info("Removed OTP from Redis: {} - {}", userId, type);
+    }
+
+    public void storeUserClick(Long userId) {
+        String key = String.format("%s:%d", RedisKeyTypeEnum.USER_CLICK.name(), userId);
+        redisTemplate.opsForValue().set(key, "clicked", RedisKeyTypeEnum.USER_CLICK.getDuration(), TimeUnit.SECONDS);
+        log.info("Stored user click in Redis: {}", userId);
+    }
+
+    public boolean isUserClickValid(Long userId) {
+        String key = String.format("%s:%d", RedisKeyTypeEnum.USER_CLICK.name(), userId);
+        Boolean exists = redisTemplate.hasKey(key);
+        log.info("Checked if user click is valid in Redis: {} - {}", userId, exists);
+        return exists != null && exists;
     }
 }
 

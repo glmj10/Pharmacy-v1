@@ -4,6 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
+    TOO_MANY_REQUESTS("Quá nhiều yêu cầu, vui lòng thử lại sau"),
+    FILE_SIZE_EXCEEDED("Kích thước tệp vượt quá giới hạn cho phép"),
+
     USER_NOT_FOUND("Người dùng không tồn tại"),
     INVALID_USER_ROLE("Vai trò người dùng không hợp lệ"),
     USER_ALREADY_EXISTS("Người dùng đã tồn tại"),
@@ -89,8 +92,15 @@ public enum ErrorCode {
     ILLEGAL_STATE("Trạng thái không hợp lệ"),
     STOCK_NOT_FOUND("Kho hàng không tồn tại"),
 
-    PAYMENT_URL_CREATION_FAILED("Tạo URL thanh toán không thành công")
+    PAYMENT_URL_CREATION_FAILED("Tạo URL thanh toán không thành công"),
 
+    FLASH_SALE_EVENT_NOT_FOUND("Sự kiện flash sale không tồn tại"),
+    FLASH_SALE_ITEM_ALREADY_EXISTS("Sản phẩm trong sự kiện flash sale đã tồn tại"),
+    INVALID_FLASH_SALE_PRICE("Giá flash sale không hợp lệ"),
+    INVALID_SALE_STOCK("Số lượng flash sale không hợp lệ"),
+    ORDER_DETAIL_ALREADY_RATED("Chi tiết đơn hàng đã được đánh giá"),
+
+    CANNOT_RATE_UNDELIVERED_ORDER("Không thể đánh giá đơn hàng chưa được giao")
 
     ;
 

@@ -19,3 +19,5 @@ file:
   service:
     name: file-service
     url: ${FILE_SERVICE_URL:http://localhost:6969}
+user:
+  clickMinutes: 1 #minutes

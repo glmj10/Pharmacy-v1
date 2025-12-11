@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -39,5 +40,17 @@ public class GlobalExceptionHandler extends BaseExceptionHandler {
         ErrorResponse errorResponse = buildErrorResponse(customException, request);
         log.warn("Missing request part: {}", ex.getRequestPartName());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.FILE_SIZE_EXCEEDED,
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Kích thước tệp vượt quá giới hạn cho phép"
+        );
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("File size exceeded: {}", ex.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.PAYLOAD_TOO_LARGE);
     }
 }

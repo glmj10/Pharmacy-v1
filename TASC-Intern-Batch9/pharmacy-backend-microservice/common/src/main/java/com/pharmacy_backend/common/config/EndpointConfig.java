@@ -15,6 +15,7 @@ public class EndpointConfig {
             "/v3/api-docs/**",
             "/swagger-ui.html",
             "/payments/test",
+            "/agents/**"
     };
 
     public static final String[] PUBLIC_GET_ENDPOINTS = {
@@ -32,7 +33,8 @@ public class EndpointConfig {
             "/files/download/{uuid}",
             "/blogs",
             "/blogs/slug/{slug}",
-            "/files/file-url"
+            "/files/file-url",
+            "/rates/{productId}",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

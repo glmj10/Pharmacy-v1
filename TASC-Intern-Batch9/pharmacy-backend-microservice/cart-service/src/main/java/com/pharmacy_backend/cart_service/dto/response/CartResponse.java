@@ -11,6 +11,5 @@ import java.util.List;
 @AllArgsConstructor
 public class CartResponse {
     private Long id;
-    private Long totalPrice;
     private List<CartItemResponse> cartItems;
 }

@@ -45,6 +45,8 @@ public interface ProductRepository {
     List<Product> findAllFromRange(Long startId, Long endId);
     List<Product> findAllByUpdatedAtBefore(int intervalSeconds);
 
+    List<Product> findAllLimit500();
 
     List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId);
+    List<Product> findAllByIds(List<Long> ids);
 }

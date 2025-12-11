@@ -84,7 +84,6 @@ public class VnPayService {
         if ("00".equals(vnp_ResponseCode)) {
             if(paymentTransactionRepository.existByOrderIdAndPaymentStatus(orderId,
                     PaymentStatusEnum.COMPLETED.name()) > 0) {
-                log.info("Order {} has already been paid", orderId);
                 return ApiResponse.buildOkResponse("Đơn hàng đã được thanh toán",
                         "Vui lòng kiểm tra email để xác nhận đơn hàng");
             }

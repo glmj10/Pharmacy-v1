@@ -19,7 +19,7 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @Slf4j
 public class CacheWarmupServiceImpl
-//        implements CacheWarmupService
+        implements CacheWarmupService
 {
     private final ProductRedisService productRedisService;
     private final StockCacheService stockCacheService;
@@ -42,13 +42,13 @@ public class CacheWarmupServiceImpl
         this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     }
 
-//    @EventListener(ApplicationReadyEvent.class)
-//    public void warmUpCacheOnStartup() {
-//        CompletableFuture.runAsync(this::preloadProducts, threadPoolTaskExecutor);
-//    }
-//
-//    @Override
-//    public void preloadProducts() {
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmUpCacheOnStartup() {
+        CompletableFuture.runAsync(this::preloadProducts, threadPoolTaskExecutor);
+    }
+
+    @Override
+    public void preloadProducts() {
 //        if(Boolean.parseBoolean(cacheWarmupEnable)) {
 //            Long minId = productRepository.findMinId();
 //            Long maxId = productRepository.findMaxId();
@@ -86,6 +86,6 @@ public class CacheWarmupServiceImpl
 //        } else {
 //            log.info("Disabling cache warm-up as per configuration.");
 //        }
-//    }
+    }
 
 }

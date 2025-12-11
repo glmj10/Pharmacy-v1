@@ -10,5 +10,4 @@ public interface CartRepository {
     boolean existsByUser(User user);
     Optional<Cart> findByUser(User user);
     Cart createCart(Cart cart);
-    Cart updateCart(Cart cart);
 }

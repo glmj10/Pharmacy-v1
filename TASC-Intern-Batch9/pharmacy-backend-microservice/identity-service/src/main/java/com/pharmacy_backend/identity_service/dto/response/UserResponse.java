@@ -15,7 +15,7 @@ public class UserResponse {
     Long id;
     String username;
     String email;
-    String profilePicUrl;
+    String profilePic;
     List<RoleResponse> roles;
     LocalDateTime createdAt;
 }

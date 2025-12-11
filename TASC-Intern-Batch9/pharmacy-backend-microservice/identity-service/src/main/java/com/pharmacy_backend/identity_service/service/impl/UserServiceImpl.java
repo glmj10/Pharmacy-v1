@@ -33,7 +33,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final RedisService redisService;
-    private final FileServiceClient fileServiceClient;
 
     @Override
     public ApiResponse<UserResponse> changeUserRole(Long userId, ChangeUserRoleRequest request) {
@@ -97,7 +96,6 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
         UserResponse userResponse = userMapper.toUserResponse(user);
-        userResponse.setProfilePicUrl(fileServiceClient.getFileUrl(user.getProfilePic()).getData());
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
 

@@ -39,7 +39,6 @@ public class CartRepositoryImpl implements CartRepository {
                 Cart cart = new Cart();
                 cart.setId(rs.getLong("id"));
                 cart.setUser(user); // Set the user relationship
-                cart.setTotalPrice(rs.getLong("total_price")); // Set the total price
                 return Optional.of(cart);
             }
             return Optional.empty();
@@ -49,10 +48,9 @@ public class CartRepositoryImpl implements CartRepository {
     @Override
     public Cart createCart(Cart cart) {
         String sql = "INSERT INTO carts (user_id, total_price, created_at, updated_at) " +
-                "VALUES(:userId, :totalPrice, :createdAt, :updatedAt)";
+                "VALUES(:userId, :createdAt, :updatedAt)";
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("userId", cart.getUser().getId());
-        parameterSource.addValue("totalPrice", cart.getTotalPrice());
         parameterSource.addValue("createdAt", cart.getCreatedAt());
         parameterSource.addValue("updatedAt", cart.getUpdatedAt());
 
@@ -64,18 +62,6 @@ public class CartRepositoryImpl implements CartRepository {
             cart.setId(keyHolder.getKey().longValue());
         }
 
-        return cart;
-    }
-
-    @Override
-    public Cart updateCart(Cart cart) {
-        String sql = "UPDATE carts SET user_id = :userId, total_price = :totalPrice WHERE id = :id";
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-        parameterSource.addValue("userId", cart.getUser().getId());
-        parameterSource.addValue("totalPrice", cart.getTotalPrice()); // Add totalPrice parameter
-        parameterSource.addValue("id", cart.getId());
-
-        namedParameterJdbcTemplate.update(sql, parameterSource);
         return cart;
     }
 

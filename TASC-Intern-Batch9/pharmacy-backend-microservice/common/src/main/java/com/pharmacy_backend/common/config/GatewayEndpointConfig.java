@@ -16,7 +16,7 @@ public class GatewayEndpointConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/swagger-ui.html",
-
+            "/api/v1/agents/**"
     };
 
     public static final String[] PUBLIC_GET_ENDPOINTS = {
@@ -35,7 +35,8 @@ public class GatewayEndpointConfig {
             "/api/v1/blogs",
             "/api/v1/blogs/slug/{slug}",
             "/api/v1/products/related/{productId}",
-            "/api/v1/files/file-url"
+            "/api/v1/files/file-url",
+            "/api/v1/rates/{productId}",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

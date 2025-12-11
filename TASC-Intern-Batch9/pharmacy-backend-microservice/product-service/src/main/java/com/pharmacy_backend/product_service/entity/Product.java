@@ -1,6 +1,7 @@
 package com.pharmacy_backend.product_service.entity;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.pharmacy_backend.common.entity.base.BaseModifyEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -51,7 +52,7 @@ public class Product extends BaseModifyEntity {
     @OneToMany(mappedBy = "product",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     List<ProductImage> productImages;
 
-    @ManyToMany(cascade = {CascadeType.ALL}, fetch = FetchType.LAZY)
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(name = "products_categories", joinColumns = @JoinColumn(name = "product_id"),
                                             inverseJoinColumns = @JoinColumn(name = "category_id"))
     List<Category> categories = new ArrayList<>();
@@ -68,4 +69,8 @@ public class Product extends BaseModifyEntity {
 
     @Column(name = "product_type")
     String productType;
+
+    @JsonIgnore
+    @Column(columnDefinition = "LONGTEXT")
+    String embedding;
 }

@@ -61,7 +61,6 @@ public class ProductServiceImpl implements ProductService {
     @Value("${spring.application.name}")
     private String appName;
 
-    @Transactional
     @Override
     public ApiResponse<PageResponse<List<ProductResponse>>> getAllCMSProduct(int pageIndex, int pageSize,
                                                                              ProductCMSFilterRequest filterRequest) {
@@ -106,7 +105,6 @@ public class ProductServiceImpl implements ProductService {
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách sản phẩm thành công");
     }
 
-    @Transactional
     @Override
     public ApiResponse<PageResponse<List<ProductResponse>>> getAllActiveProduct(int pageIndex,
                                                                                 int pageSize,
@@ -160,7 +158,6 @@ public class ProductServiceImpl implements ProductService {
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách sản phẩm thành công");
     }
 
-    @Transactional
     @Override
     public ApiResponse<ProductResponse> getProductById(Long id) {
         Product product = productRepository.findById(id)
@@ -175,7 +172,6 @@ public class ProductServiceImpl implements ProductService {
         return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
     }
 
-    @Transactional
     @Override
     public ApiResponse<ProductResponse> getProductBySlug(String slug) {
         ProductResponse productResponse = productRedisService.getCachedProductDetail(slug);
@@ -230,26 +226,26 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     @Override
     public ApiResponse<ProductResponse> createProduct(ProductRequest request, MultipartFile thumbnail, List<MultipartFile> images) {
-        if(thumbnail == null || thumbnail.isEmpty()) {
+        if (thumbnail == null || thumbnail.isEmpty()) {
             throw new CustomException(ErrorCode.THUMBNAIL_REQUIRED,
                     HttpStatus.BAD_REQUEST, "Hình ảnh đại diện sản phẩm không được để trống");
         }
-        if(images == null) {
+        if (images == null) {
             images = new ArrayList<>();
         }
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new CustomException(ErrorCode.BRAND_NOT_FOUND, HttpStatus.NOT_FOUND,
-                                        "Không tìm thấy thương hiệu với ID: " + request.getBrandId()));
+                        "Không tìm thấy thương hiệu với ID: " + request.getBrandId()));
 
         List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
 
-        for(Category category : categories) {
-            if(category == null) {
+        for (Category category : categories) {
+            if (category == null) {
                 throw new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID: " + category.getId());
             }
 
-            if(category.getType().getCode().equalsIgnoreCase(CategoryTypeEnum.BLOG.name())) {
+            if (category.getType().getCode().equalsIgnoreCase(CategoryTypeEnum.BLOG.name())) {
                 throw new CustomException(ErrorCode.INVALID_CATEGORY_TYPE,
                         HttpStatus.BAD_REQUEST, category.getName() + " không phải là danh mục sản phẩm");
             }
@@ -263,9 +259,11 @@ public class ProductServiceImpl implements ProductService {
         Product product = productMapper.toProduct(request);
         product.setSlug(createSlug(product.getTitle()));
 
+        ApiResponse<FileMetadataResponse> thumbnailResponse;
         try {
-            product.setThumbnail(fileServiceClient.uploadFile(thumbnail,
-                    FileCategoryEnum.PRODUCT.getSubDirectory()).getData().getId().toString());
+            thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
+                    FileCategoryEnum.PRODUCT.getSubDirectory());
+            product.setThumbnail(thumbnailResponse.getData().getId().toString());
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi tải lên hình ảnh đại diện: " + e.getMessage());
@@ -295,6 +293,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
                 .quantity(product.getQuantity())
+                .thumbnailUrl(thumbnailResponse.getData().getFileUrl())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
@@ -397,13 +396,13 @@ public class ProductServiceImpl implements ProductService {
         return ApiResponse.buildOkResponse(productResponse, "Cập nhật trạng thái sản phẩm thành công");
     }
 
+    @Transactional
     @Override
     public ApiResponse<Void> deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
         productImageService.deleteProductImagesByProduct(product);
-        stockRepository.deleteByProduct(product);
         productRepository.deleteProduct(id);
         fileServiceClient.deleteFile(product.getThumbnail());
 
@@ -425,7 +424,7 @@ public class ProductServiceImpl implements ProductService {
                 .source(appName)
                 .build();
 
-        handleSaveOutboxEvent(event);
+//        handleSaveOutboxEvent(event);
         productRedisService.deleteCachedProductDetail(product.getSlug());
         stockCacheService.deleteStock(product.getId());
 
