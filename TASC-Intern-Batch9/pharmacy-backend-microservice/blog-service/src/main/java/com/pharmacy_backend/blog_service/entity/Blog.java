@@ -16,6 +16,10 @@ public class Blog extends BaseModifyEntity {
     String title;
     String slug;
     String thumbnail;
+
+    @Column(name = "thumbnail_uuid")
+    String thumbnailUUID;
+
     Integer priority = 0;
 
     @JoinColumn(name = "category_id")

@@ -1,6 +1,6 @@
 package com.pharmacy_backend.product_service.dto.request;
 
-import com.pharmacy_backend.common.enums.FlashSaleEventStatusEnum;
+import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class FlashSaleEventRequest {
+public class PromotionEventRequest {
 
     @NotNull(message = "Tên sự kiện không được để trống")
     @NotEmpty(message = "Tên sự kiện không được để trống")
@@ -20,6 +20,4 @@ public class FlashSaleEventRequest {
 
     LocalDateTime startTime;
     LocalDateTime endTime;
-
-    String status = FlashSaleEventStatusEnum.UPCOMING.getName();
 }

@@ -19,7 +19,12 @@ public class Category extends BaseModifyEntity {
     String name;
     Integer priority = 0;
     String slug;
+
+    @Column(columnDefinition = "TEXT")
     String thumbnail;
+
+    @Column(name = "thumbnail_uuid")
+    String thumbnailUUID;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "parent")
     List<Category> child = new ArrayList<>();

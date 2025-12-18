@@ -10,7 +10,9 @@ public enum FileCategoryEnum {
     AVATAR("avatar"),
     BLOG("blog"),
     PRODUCT("product"),
-    CATEGORY("category");
+    CATEGORY("category"),
+    PROMOTION("promotion")
+    ;
 
     private final String subDirectory;
 

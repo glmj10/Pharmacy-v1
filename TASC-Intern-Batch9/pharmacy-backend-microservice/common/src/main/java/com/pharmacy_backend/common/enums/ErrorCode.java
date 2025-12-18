@@ -94,14 +94,18 @@ public enum ErrorCode {
 
     PAYMENT_URL_CREATION_FAILED("Tạo URL thanh toán không thành công"),
 
-    FLASH_SALE_EVENT_NOT_FOUND("Sự kiện flash sale không tồn tại"),
-    FLASH_SALE_ITEM_ALREADY_EXISTS("Sản phẩm trong sự kiện flash sale đã tồn tại"),
-    INVALID_FLASH_SALE_PRICE("Giá flash sale không hợp lệ"),
-    INVALID_SALE_STOCK("Số lượng flash sale không hợp lệ"),
+    PROMOTION_EVENT_NOT_FOUND("Sự kiện không tồn tại"),
+    PROMOTION_ITEM_ALREADY_EXISTS("Sản phẩm đã tồn tại trong sự kiện"),
+    PROMOTION_ITEM_ALREADY_EXISTS_IN_DIFFERENT_EVENT("Sản phẩm đã tồn tại trong một sự kiện khuyến mãi khác"),
+    INVALID_PROMOTION_PRICE("Giá sản phẩm khuyến mãi không hợp lệ"),
+    INVALID_PROMOTION_STATUS("Trạng thái khuyến mãi không hợp lệ"),
+    PROMOTION_ITEM_INVALID_SALE_PRICE("Giá khuyến mãi của sản phẩm không được lớn hơn giá gốc"),
+    CANNOT_UPDATE_ONGOING_PROMOTION("Không thể cập nhật sự kiện khuyến mãi đang hoạt động"),
+    CANNOT_DELETE_ONGOING_PROMOTION("Không thể xóa sự kiện khuyến mãi đang hoạt động"),
     ORDER_DETAIL_ALREADY_RATED("Chi tiết đơn hàng đã được đánh giá"),
 
-    CANNOT_RATE_UNDELIVERED_ORDER("Không thể đánh giá đơn hàng chưa được giao")
-
+    CANNOT_RATE_UNDELIVERED_ORDER("Không thể đánh giá đơn hàng chưa được giao"),
+    FILE_UPLOAD_FAILED("Tải tệp tin lên không thành công"),
     ;
 
     private final String message;

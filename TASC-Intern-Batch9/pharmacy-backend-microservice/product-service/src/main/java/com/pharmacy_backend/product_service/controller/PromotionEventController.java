@@ -1,7 +1,7 @@
 package com.pharmacy_backend.product_service.controller;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
-import com.pharmacy_backend.product_service.dto.request.FlashSaleEventRequest;
+import com.pharmacy_backend.product_service.dto.request.PromotionEventRequest;
 import com.pharmacy_backend.product_service.dto.response.PromotionEventResponse;
 import com.pharmacy_backend.product_service.service.PromotionEventService;
 import com.pharmacy_backend.common.dto.response.PageResponse;
@@ -17,7 +17,7 @@ import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/flash-sales")
+@RequestMapping("/promotions")
 public class PromotionEventController {
     private final PromotionEventService promotionEventService;
 
@@ -40,16 +40,17 @@ public class PromotionEventController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createPromotionEvent(@RequestPart @Valid FlashSaleEventRequest request, MultipartFile thumbnail) {
+    public ResponseEntity<ApiResponse<Void>> createPromotionEvent(@RequestPart("promotion") @Valid PromotionEventRequest request, @RequestPart("thumbnail") MultipartFile thumbnail) {
         ApiResponse<Void> response = promotionEventService.createEvent(request, thumbnail);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> updatePromotionEvent(@PathVariable Long id, @RequestBody @Valid FlashSaleEventRequest request) {
-        ApiResponse<Void> response = promotionEventService.updateEvent(id, request);
+    public ResponseEntity<ApiResponse<Void>> updatePromotionEvent(@PathVariable Long id,
+                                                                  @RequestPart("promotion") @Valid PromotionEventRequest request,
+                                                                  @RequestPart MultipartFile thumbnail) {
+        ApiResponse<Void> response = promotionEventService.updateEvent(id, request, thumbnail);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
@@ -57,6 +58,14 @@ public class PromotionEventController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deletePromotionEvent(@PathVariable Long id) {
         ApiResponse<Void> response = promotionEventService.deleteEvent(id);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+    
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> changePromotionEventStatus(@PathVariable Long id,
+                                                                        @RequestParam String status) {
+        ApiResponse<Void> response = promotionEventService.changePromotionStatus(id, status);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

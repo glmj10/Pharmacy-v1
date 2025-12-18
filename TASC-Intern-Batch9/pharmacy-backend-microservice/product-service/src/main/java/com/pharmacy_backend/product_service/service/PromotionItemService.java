@@ -2,17 +2,18 @@ package com.pharmacy_backend.product_service.service;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.product_service.dto.request.FlashSaleItemRequest;
-import com.pharmacy_backend.product_service.dto.response.FlashSaleItemResponse;
+import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
+import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 
 import java.util.List;
 
 public interface PromotionItemService {
 
-    ApiResponse<PageResponse<List<FlashSaleItemResponse>>> getFlashSaleItemByEventId(Long eventId,
+    ApiResponse<PageResponse<List<PromotionItemResponse>>> getPromotionItemByEventId(Long eventId,
                                                                                      Integer pageIndex,
                                                                                      Integer pageSize);
 
-    ApiResponse<Void> createFlashSaleItems(FlashSaleItemRequest request);
-    ApiResponse<Void> removeFlashSaleItems(Long flashSaleItemId);
+    ApiResponse<AllPromotionItemResponse> createPromotionItems(AllPromotionItemRequest request);
+    ApiResponse<Void> removePromotionItems(List<Long> ids);
 }

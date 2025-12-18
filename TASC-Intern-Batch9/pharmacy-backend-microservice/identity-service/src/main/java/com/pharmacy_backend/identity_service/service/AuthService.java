@@ -20,7 +20,6 @@ public interface AuthService {
             throws MessagingException, UnsupportedEncodingException, ParseException;
     ApiResponse<String> changePassword(ChangePasswordRequest request);
     ApiResponse<UserResponse> changeInfo(UserInfoRequest request, MultipartFile profilePic);
-
     ApiResponse<Void> logout(String bearerToken) throws ParseException;
     ApiResponse<AuthResponse> refreshToken(RefreshRequest request) throws ParseException, JOSEException;
     ApiResponse<Void> resendVerificationToken(String email);

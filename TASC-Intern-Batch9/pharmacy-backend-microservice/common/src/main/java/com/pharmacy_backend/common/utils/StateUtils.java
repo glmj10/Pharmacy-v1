@@ -19,4 +19,5 @@ public class StateUtils {
             default -> false;
         };
     }
+
 }

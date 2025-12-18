@@ -26,14 +26,12 @@ public class CategoryController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize( "hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/products/all")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllProductCategories() {
         ApiResponse<List<CategoryResponse>> response = categoryService.getAllProductCategories();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize( "hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/blogs/all")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllBlogCategories() {
         ApiResponse<List<CategoryResponse>> response = categoryService.getAllBlogCategories();

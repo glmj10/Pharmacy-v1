@@ -18,6 +18,15 @@ spring:
       properties:
         reconnect-backoff-ms: 1000
         reconnect-backoff-max-ms: 10000
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always
+    properties:
+      org:quartz:
+        scheduler:
+          instanceName: PromotionScheduler
+          instanceId: AUTO
 file:
   service:
     name: file-service
@@ -44,3 +53,4 @@ genai:
     key: ${GENAI_API_KEY}
   embedding:
     model: ${GENAI_EMBEDDING_MODEL:text-embedding-004}
+

@@ -35,6 +35,7 @@ public class EndpointConfig {
             "/blogs/slug/{slug}",
             "/files/file-url",
             "/rates/{productId}",
+            "/promotions/**"
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

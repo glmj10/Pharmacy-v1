@@ -31,7 +31,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -65,7 +64,7 @@ public class BlogServiceImpl implements BlogService {
         List<BlogResponse> blogResponses = blogPage.getContent().stream().map(
                 blog -> {
                     BlogResponse response = blogMapper.toBlogResponse(blog);
-                    String thumbnailUrl = getThumbnailUrl(blog.getThumbnail());
+                    String thumbnailUrl = blog.getThumbnail();
                     response.setThumbnail(thumbnailUrl);
                     return response;
                 }
@@ -90,7 +89,7 @@ public class BlogServiceImpl implements BlogService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy bài viết với slug: " + slug));
         BlogResponse blogResponse = blogMapper.toBlogResponse(blog);
         blogResponse.setCategory(categoryMapper.toCategoryResponse(blog.getCategory()));
-        blogResponse.setThumbnail(getThumbnailUrl(blog.getThumbnail()));
+        blogResponse.setThumbnail(blog.getThumbnail());
         return ApiResponse.buildOkResponse(blogResponse, "Lấy bài viết thành công");
     }
 
@@ -102,7 +101,7 @@ public class BlogServiceImpl implements BlogService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy bài viết với ID: " + id));
         BlogResponse blogResponse = blogMapper.toBlogResponse(blog);
         blogResponse.setCategory(categoryMapper.toCategoryResponse(blog.getCategory()));
-        blogResponse.setThumbnail(getThumbnailUrl(blog.getThumbnail()));
+        blogResponse.setThumbnail(blog.getThumbnail());
         return ApiResponse.buildOkResponse(blogResponse, "Lấy bài viết thành công");
     }
 
@@ -119,7 +118,7 @@ public class BlogServiceImpl implements BlogService {
 
         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                 FileCategoryEnum.BLOG.getSubDirectory());
-        blog.setThumbnail(thumbnailResponse.getData().getId().toString());
+        blog.setThumbnail(thumbnailResponse.getData().getFileUrl());
         blog.setCategory(category);
         Blog savedBlog = blogRepository.save(blog);
 
@@ -137,17 +136,17 @@ public class BlogServiceImpl implements BlogService {
         Blog blogUpdateFromRequest = blogMapper.toBlogUpdateFromRequest(request, existingBlog);
 
         if (thumbnail != null) {
-            fileServiceClient.deleteFile(existingBlog.getThumbnail());
+            fileServiceClient.deleteFile(existingBlog.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            blogUpdateFromRequest.setThumbnail(thumbnailResponse.getData().getId().toString());
+            blogUpdateFromRequest.setThumbnail(thumbnailResponse.getData().getFileUrl());
         }
 
         blogUpdateFromRequest.setSlug(createSlug(blogUpdateFromRequest.getTitle()));
         blogUpdateFromRequest.setModifiedBy(SecurityUtils.getCurrentUserId());
         Blog updatedBlog = blogRepository.save(blogUpdateFromRequest);
         BlogResponse blogResponse = blogMapper.toBlogResponse(updatedBlog);
-        blogResponse.setThumbnail(getThumbnailUrl(updatedBlog.getThumbnail()));
+        blogResponse.setThumbnail(updatedBlog.getThumbnail());
 
         return ApiResponse.buildOkResponse(blogResponse, "Cập nhật bài viết thành công");
     }
@@ -158,6 +157,7 @@ public class BlogServiceImpl implements BlogService {
         Blog blog = blogRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.BLOG_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy bài viết với ID: " + id));
+        fileServiceClient.deleteFile(blog.getThumbnailUUID());
         blogRepository.delete(blog);
         return ApiResponse.buildOkResponse(null, "Xóa bài viết thành công");
     }
@@ -172,10 +172,4 @@ public class BlogServiceImpl implements BlogService {
         return slug;
     }
 
-    private String getThumbnailUrl(String uuid) {
-        if(uuid != null && !uuid.isEmpty()) {
-            return String.valueOf(fileServiceClient.getFileUrl(uuid).getData());
-        }
-        return null;
-    }
 }

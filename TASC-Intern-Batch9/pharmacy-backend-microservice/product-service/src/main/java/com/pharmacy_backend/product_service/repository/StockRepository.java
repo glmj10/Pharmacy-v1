@@ -9,7 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface StockRepository extends JpaRepository<Stock, Long> {
-    void deleteByProduct(Product product);
 
     Optional<Stock> findByProduct(Product product);
 }

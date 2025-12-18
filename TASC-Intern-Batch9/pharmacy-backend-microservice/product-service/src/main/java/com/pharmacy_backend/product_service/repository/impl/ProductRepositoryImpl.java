@@ -495,7 +495,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public List<Product> updateAll(List<Product> products) {
+    public void updateAll(List<Product> products) {
         String sql = """
                 UPDATE products SET 
                     title=?, active_ingredient=?, dosage_form=?, description=?,
@@ -517,7 +517,6 @@ public class ProductRepositoryImpl implements ProductRepository {
                     product.getProductType(), product.getModifiedBy(), product.getNoted(), product.getId()
             );
         }
-        return products;
     }
 
     @Override
@@ -614,5 +613,15 @@ public class ProductRepositoryImpl implements ProductRepository {
         sql.append(placeholders).append(")");
 
         return jdbcTemplate.query(sql.toString(), new BeanPropertyRowMapper<>(Product.class), ids.toArray());
+    }
+
+    @Override
+    public List<Product> findAllByPromotionId(Long promotionId) {
+        String sql = """
+                                SELECT p.* FROM products p
+                                JOIN promotion_items pi ON p.id = pi.product_id
+                                WHERE pi.promotion_event_id = ?
+                """;
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), promotionId);
     }
 }

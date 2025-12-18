@@ -251,13 +251,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if(profilePic != null) {
-            fileServiceClient.deleteFile((user.getProfilePic() != null) ? user.getProfilePic() : "");
+            fileServiceClient.deleteFile((user.getProfilePicUUID() != null) ? user.getProfilePicUUID() : "");
             ApiResponse<FileMetadataResponse> fileResponse = fileServiceClient.uploadFile(profilePic,
                     FileCategoryEnum.AVATAR.name());
-            if(user.getProfilePic() != null && !user.getProfilePic().isEmpty()) {
-                fileServiceClient.deleteFile(user.getProfilePic());
+            if(user.getProfilePicUUID() != null && !user.getProfilePicUUID().isEmpty()) {
+                fileServiceClient.deleteFile(user.getProfilePicUUID());
             }
-            user.setProfilePic(fileResponse.getData().getId().toString());
+            user.setProfilePic(fileResponse.getData().getFileUrl());
         }
 
         UserEvent userEvent = UserEvent.builder()

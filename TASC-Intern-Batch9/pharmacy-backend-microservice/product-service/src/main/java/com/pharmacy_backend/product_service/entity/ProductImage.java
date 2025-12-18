@@ -14,6 +14,9 @@ import lombok.experimental.FieldDefaults;
 @Table(name = "product_images")
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductImage extends BaseEntity {
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    String imageUrl;
+
     @Column(name = "image_uuid")
     String imageUUID;
 

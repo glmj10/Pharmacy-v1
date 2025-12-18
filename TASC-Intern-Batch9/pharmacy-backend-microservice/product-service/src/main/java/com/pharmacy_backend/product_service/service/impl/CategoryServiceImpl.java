@@ -112,7 +112,8 @@ public class CategoryServiceImpl implements CategoryService {
 
         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                 FileCategoryEnum.CATEGORY.getSubDirectory());
-        category.setThumbnail(thumbnailResponse.getData().getId().toString());
+        category.setThumbnail(thumbnailResponse.getData().getFileUrl());
+        category.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         Type type = typeRepository.findByCode(request.getType())
                 .orElseThrow(() -> new CustomException(ErrorCode.TYPE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy loại danh mục với code: " + request.getType()));
@@ -161,10 +162,10 @@ public class CategoryServiceImpl implements CategoryService {
         updatedCategory.setModifiedBy(SecurityUtils.getCurrentUserId());
 
         if (thumbnail != null) {
-            fileServiceClient.deleteFile(existingCategory.getThumbnail());
+            fileServiceClient.deleteFile(existingCategory.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            updatedCategory.setThumbnail(thumbnailResponse.getData().getId().toString());
+            updatedCategory.setThumbnail(thumbnailResponse.getData().getFileUrl());
         }
 
         if(request.getParentId() != null) {
@@ -216,7 +217,7 @@ public class CategoryServiceImpl implements CategoryService {
         }
 
         if(category.getThumbnail() != null && !category.getThumbnail().isEmpty()) {
-            fileServiceClient.deleteFile(category.getThumbnail());
+            fileServiceClient.deleteFile(category.getThumbnailUUID());
         }
 
         categoryRepository.delete(category);

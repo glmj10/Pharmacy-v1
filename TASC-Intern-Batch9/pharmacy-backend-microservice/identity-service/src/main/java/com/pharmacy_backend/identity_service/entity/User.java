@@ -36,6 +36,9 @@ public class User extends BaseEntity {
     @Column(name = "profile_pic")
     String profilePic;
 
+    @Column(name = "profile_pic_uuid")
+    String profilePicUUID;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))

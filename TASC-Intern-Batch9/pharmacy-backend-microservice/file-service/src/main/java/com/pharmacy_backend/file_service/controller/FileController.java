@@ -32,7 +32,7 @@ public class FileController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<Void> deleteFile(@RequestParam String uuid) {
+    public ResponseEntity<Void> deleteFile(@RequestParam(required = false) String uuid) {
         fileMetadataService.deleteFile(uuid);
         return ResponseEntity.ok(null);
     }

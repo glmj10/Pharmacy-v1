@@ -42,7 +42,12 @@ public class Product extends BaseModifyEntity {
     @Column(name = "registration_number")
     String registrationNumber;
     String slug;
+
+    @Column(columnDefinition = "TEXT")
     String thumbnail;
+
+    @Column(name = "thumbnail_uuid")
+    String thumbnailUUID;
 
     @Column(name = "number_of_likes")
     Integer numberOfLikes = 0;

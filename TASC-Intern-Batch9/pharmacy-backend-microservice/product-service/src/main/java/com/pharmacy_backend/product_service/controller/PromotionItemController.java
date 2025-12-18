@@ -2,8 +2,9 @@ package com.pharmacy_backend.product_service.controller;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.product_service.dto.request.FlashSaleItemRequest;
-import com.pharmacy_backend.product_service.dto.response.FlashSaleItemResponse;
+import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
+import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 import com.pharmacy_backend.product_service.service.PromotionItemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -14,36 +15,37 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@RequestMapping("/flash-sale-items")
+@RequestMapping("/promotion-items")
 @RequiredArgsConstructor
 @Controller
 public class PromotionItemController {
     private final PromotionItemService promotionItemService;
 
     @GetMapping("/{eventId}")
-    public ResponseEntity<ApiResponse<PageResponse<List<FlashSaleItemResponse>>>> getPromotionItemByEventId
+    public ResponseEntity<ApiResponse<PageResponse<List<PromotionItemResponse>>>> getPromotionItemByEventId
             (
                     @PathVariable Long eventId,
                     @RequestParam(defaultValue = "0") Integer pageIndex,
                     @RequestParam(defaultValue = "10") Integer pageSize
             )
     {
-        ApiResponse<PageResponse<List<FlashSaleItemResponse>>> response = promotionItemService
-                .getFlashSaleItemByEventId(eventId, pageIndex, pageSize);
+        ApiResponse<PageResponse<List<PromotionItemResponse>>> response = promotionItemService
+                .getPromotionItemByEventId(eventId, pageIndex, pageSize);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @PreAuthorize("hasRole('ADMIN')" )
     @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createPromotionItems(@RequestBody @Valid FlashSaleItemRequest request) {
-        ApiResponse<Void> response = promotionItemService.createFlashSaleItems(request);
+    public ResponseEntity<ApiResponse<AllPromotionItemResponse>> createPromotionItems(@RequestBody @Valid AllPromotionItemRequest request) {
+        ApiResponse<AllPromotionItemResponse> response = promotionItemService.createPromotionItems(request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> removePromotionItems(@PathVariable Long id) {
-        ApiResponse<Void> response = promotionItemService.removeFlashSaleItems(id);
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> removePromotionItems(@RequestBody List<Long> id) {
+        ApiResponse<Void> response = promotionItemService.removePromotionItems(id);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
 }

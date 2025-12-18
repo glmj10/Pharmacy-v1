@@ -3,9 +3,10 @@ package com.pharmacy_backend.common.enums;
 import lombok.Getter;
 
 @Getter
-public enum FlashSaleEventStatusEnum {
+public enum PromotionEventStatusEnum {
     UPCOMING,
     ONGOING,
+    CANCELLED,
     ENDED;
 
     public String getName() {

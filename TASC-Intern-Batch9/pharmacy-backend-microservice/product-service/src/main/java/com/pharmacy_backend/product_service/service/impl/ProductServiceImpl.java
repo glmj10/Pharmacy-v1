@@ -25,7 +25,6 @@ import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import com.pharmacy_backend.product_service.service.ProductService;
 import com.pharmacy_backend.product_service.service.StockCacheService;
-import feign.RetryableException;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -178,17 +177,6 @@ public class ProductServiceImpl implements ProductService {
         if(productResponse != null) {
             Integer stockResponse = stockCacheService.getStock(productResponse.getId());
             productResponse.setQuantity(stockResponse);
-//            User user;
-//            Long userId = SecurityUtils.getCurrentUserId();
-//            if(userId != null) {
-//                user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-//                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-//                                HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
-//                Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-//                productResponse.setInWishlist(isInWishList);
-//            } else {
-//                productResponse.setInWishlist(false);
-//            }
             return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
         } else {
             Product product = productRepository.findBySlug(slug)
@@ -263,7 +251,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.PRODUCT.getSubDirectory());
-            product.setThumbnail(thumbnailResponse.getData().getId().toString());
+            product.setThumbnail(thumbnailResponse.getData().getFileUrl());
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi tải lên hình ảnh đại diện: " + e.getMessage());
@@ -315,10 +303,10 @@ public class ProductServiceImpl implements ProductService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
 
         if (thumbnail != null) {
-            fileServiceClient.deleteFile(product.getThumbnail());
+            fileServiceClient.deleteFile(product.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            product.setThumbnail(thumbnailResponse.getData().getId().toString());
+            product.setThumbnail(thumbnailResponse.getData().getFileUrl());
         }
 
         Brand brand = brandRepository.findById(request.getBrandId())
@@ -403,28 +391,27 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
         productImageService.deleteProductImagesByProduct(product);
+        fileServiceClient.deleteFile(product.getThumbnailUUID());
         productRepository.deleteProduct(id);
-        fileServiceClient.deleteFile(product.getThumbnail());
 
-        ProductEvent productEvent = ProductEvent.builder()
-                .productId(product.getId())
-                .title(product.getTitle())
-                .slug(product.getSlug())
-                .thumbnailUrl(fileServiceClient.getFileUrl(product.getThumbnail()).getData())
-                .priceNew(product.getPriceNew())
-                .priceOld(product.getPriceOld())
-                .active(product.getActive())
-                .quantity(product.getQuantity())
-                .build();
+//        ProductEvent productEvent = ProductEvent.builder()
+//                .productId(product.getId())
+//                .title(product.getTitle())
+//                .slug(product.getSlug())
+//                .thumbnailUrl(fileServiceClient.getFileUrl(product.getThumbnail()).getData())
+//                .priceNew(product.getPriceNew())
+//                .priceOld(product.getPriceOld())
+//                .active(product.getActive())
+//                .quantity(product.getQuantity())
+//                .build();
 
-        Event<ProductEvent> event = Event.<ProductEvent>builder()
-                .key(String.format("%s-%d", PartitionKeyEnum.PRODUCT.getName(), product.getId()))
-                .eventType(EventTypeEnum.PRODUCT_CREATED.getName())
-                .data(productEvent)
-                .source(appName)
-                .build();
+//        Event<ProductEvent> event = Event.<ProductEvent>builder()
+//                .key(String.format("%s-%d", PartitionKeyEnum.PRODUCT.getName(), product.getId()))
+//                .eventType(EventTypeEnum.PRODUCT_CREATED.getName())
+//                .data(productEvent)
+//                .source(appName)
+//                .build();
 
-//        handleSaveOutboxEvent(event);
         productRedisService.deleteCachedProductDetail(product.getSlug());
         stockCacheService.deleteStock(product.getId());
 
@@ -540,27 +527,6 @@ public class ProductServiceImpl implements ProductService {
         return slug;
     }
 
-//    private ProductResponse buildProductResponse(Product product) {
-//        ProductResponse productResponse = productMapper.toProductResponse(product);
-//        productResponse.setThumbnailUrl(fileServiceClient.getFilelUrl(product.getThumbnail()));
-//        productResponse.setImages(productImageService.getProductImagesByProduct(product));
-//        productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
-//        List<Category> categories = categoryRepository.findAllByProductsContains(product);
-//        productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
-//        User user;
-//        Long userId = SecurityUtils.getCurrentUserId();
-//        if(userId != null) {
-//            user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
-//                    .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
-//                            HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
-//            Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
-//            productResponse.setInWishlist(isInWishList);
-//        } else {
-//            productResponse.setInWishlist(false);
-//        }
-//
-//        return productResponse;
-//    }
 
     public void handleSaveOutboxEvent(Event<?> event) {
         OutboxEvent outboxEvent = new OutboxEvent();

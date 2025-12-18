@@ -37,6 +37,9 @@ public class GatewayEndpointConfig {
             "/api/v1/products/related/{productId}",
             "/api/v1/files/file-url",
             "/api/v1/rates/{productId}",
+            "api/v1/categories/products/all",
+            "/api/v1/categories/blogs/all",
+            "/api/v1/promotions/**",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

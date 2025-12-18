@@ -292,6 +292,8 @@ public class OrderServiceImpl implements OrderService {
                 case VNPAY -> {
                     order.setPaymentMethod(PaymentMethodEnum.VNPAY);
                     order = orderRepository.save(order);
+                    orderEvent.setOrderId(order.getId());
+                    orderEvent.setCreatedAt(order.getCreatedAt());
                     List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
                     orderDetailEvents = OrderService.mapToOrderDetailEvents(orderDetails);
                     orderEvent.setOrderDetailEventList(orderDetailEvents);
@@ -323,6 +325,8 @@ public class OrderServiceImpl implements OrderService {
                 case COD -> {
                     order.setPaymentMethod(PaymentMethodEnum.COD);
                     order = orderRepository.save(order);
+                    orderEvent.setOrderId(order.getId());
+                    orderEvent.setCreatedAt(order.getCreatedAt());
                     List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
                     orderDetailEvents = OrderService.mapToOrderDetailEvents(orderDetails);
                     orderEvent.setOrderDetailEventList(orderDetailEvents);

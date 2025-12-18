@@ -2,7 +2,7 @@ package com.pharmacy_backend.product_service.entity;
 
 
 import com.pharmacy_backend.common.entity.base.BaseEntity;
-import com.pharmacy_backend.common.enums.FlashSaleEventStatusEnum;
+import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PromotionEvent extends BaseEntity {
     String thumbnailUrl;
+    String thumbnailUUID;
+
     String name;
 
     @Column(name = "start_time")
@@ -27,5 +29,5 @@ public class PromotionEvent extends BaseEntity {
     LocalDateTime endTime;
 
     @Enumerated(EnumType.STRING)
-    FlashSaleEventStatusEnum status;
+    PromotionEventStatusEnum status = PromotionEventStatusEnum.UPCOMING;
 }

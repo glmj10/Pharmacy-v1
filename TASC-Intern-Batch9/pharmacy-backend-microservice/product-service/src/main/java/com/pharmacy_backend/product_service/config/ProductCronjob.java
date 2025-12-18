@@ -1,6 +1,5 @@
 package com.pharmacy_backend.product_service.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
 import com.pharmacy_backend.product_service.service.StockCacheService;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component

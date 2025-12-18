@@ -1,7 +1,9 @@
 package com.pharmacy_backend.product_service.mapper;
 
-import com.pharmacy_backend.product_service.dto.request.FlashSaleItemRequest;
-import com.pharmacy_backend.product_service.dto.response.FlashSaleItemResponse;
+import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.request.PromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
+import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 import com.pharmacy_backend.product_service.entity.PromotionItem;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -9,8 +11,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface PromotionItemMapper {
 
-    @Mapping(target = "productResponse", ignore = true)
-    FlashSaleItemResponse toFlashSaleItemResponse(PromotionItem item);
+    PromotionItemResponse toPromotionItemResponse(PromotionItem item);
 
-    PromotionItem toFlashSaleItem(FlashSaleItemRequest request);
+    PromotionItem toPromotionItem(PromotionItemRequest request);
 }

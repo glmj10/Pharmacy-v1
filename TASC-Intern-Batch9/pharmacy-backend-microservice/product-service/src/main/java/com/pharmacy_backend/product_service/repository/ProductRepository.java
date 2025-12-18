@@ -6,7 +6,6 @@ import com.pharmacy_backend.product_service.entity.Brand;
 import com.pharmacy_backend.product_service.entity.Category;
 import com.pharmacy_backend.product_service.entity.Product;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,7 +34,7 @@ public interface ProductRepository {
 
     void deleteProduct(Long id);
 
-    List<Product> updateAll(List<Product> products);
+    void updateAll(List<Product> products);
     List<Product> findAll(boolean active);
     List<Product> findByIdIn(List<Long> ids);
 
@@ -49,4 +48,5 @@ public interface ProductRepository {
 
     List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId);
     List<Product> findAllByIds(List<Long> ids);
+    List<Product> findAllByPromotionId(Long promotionId);
 }

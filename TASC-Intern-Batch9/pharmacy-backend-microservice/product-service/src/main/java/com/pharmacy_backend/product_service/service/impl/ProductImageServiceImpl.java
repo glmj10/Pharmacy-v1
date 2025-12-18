@@ -55,6 +55,7 @@ public class ProductImageServiceImpl implements ProductImageService {
                         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(image,
                                 FileCategoryEnum.PRODUCT.getSubDirectory());
                         productImage.setProduct(product);
+                        productImage.setImageUrl(thumbnailResponse.getData().getFileUrl());
                         productImage.setImageUUID(thumbnailResponse.getData().getId().toString());
                         productImageRepository.save(productImage);
 
