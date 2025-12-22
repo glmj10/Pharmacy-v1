@@ -106,6 +106,14 @@ public enum ErrorCode {
 
     CANNOT_RATE_UNDELIVERED_ORDER("Không thể đánh giá đơn hàng chưa được giao"),
     FILE_UPLOAD_FAILED("Tải tệp tin lên không thành công"),
+
+    VOUCHER_NOT_FOUND("Mã giảm giá không tồn tại"),
+    VOUCHER_ALREADY_CLAIMED("Mã giảm giá đã nhận"),
+    VOUCHER_EXPIRED("Mã giảm giá đã hết hạn"),
+    VOUCHER_NOT_ACTIVE("Mã giảm giá không hoạt động"),
+    VOUCHER_USAGE_LIMIT_REACHED("Mã giảm giá đã đạt giới hạn sử dụng"),
+    VOUCHER_CANNOT_CLAIM("Không thể nhận mã giảm giá"),
+    CANNOT_UPDATE_VOUCHER_TYPE("Không thể cập nhật loại mã giảm giá có trạng thái đang hoạt động")
     ;
 
     private final String message;

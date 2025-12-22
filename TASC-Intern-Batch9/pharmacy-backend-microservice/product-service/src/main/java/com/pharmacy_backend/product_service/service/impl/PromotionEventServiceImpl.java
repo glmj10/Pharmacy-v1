@@ -47,6 +47,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
     private final ProductRepository productRepository;
     private final PromotionItemRepository promotionItemRepository;
     private final QuartzService quartzService;
+    private final ProductRedisService productRedisService;
 
     @Override
     public ApiResponse<List<PromotionEventResponse>> getCurrentEvent() {
@@ -227,6 +228,10 @@ public class PromotionEventServiceImpl implements PromotionEventService {
 
         promotionEvent.setStatus(PromotionEventStatusEnum.ONGOING);
         productRepository.updateAll(products);
+        promotionEventRepository.save(promotionEvent);
+        productRedisService.deleteCacheProductDetail(
+                products.stream().map(Product::getSlug).toList()
+        );
     }
 
     @Override
@@ -253,6 +258,9 @@ public class PromotionEventServiceImpl implements PromotionEventService {
                     });
 
                     productRepository.updateAll(products);
+                    productRedisService.deleteCacheProductDetail(
+                            products.stream().map(Product::getSlug).toList()
+                    );
                 } else if (promotionEvent.getStatus() == PromotionEventStatusEnum.UPCOMING) {
                     quartzService.removeScheduledPromotionActivation(promotionEvent.getId());
                 }

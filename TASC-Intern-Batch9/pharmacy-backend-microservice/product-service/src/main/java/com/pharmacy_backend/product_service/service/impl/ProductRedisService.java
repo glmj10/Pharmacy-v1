@@ -190,4 +190,16 @@ public class ProductRedisService {
         }
         return null;
     }
+
+    public void deleteCacheProductDetail(List<String> slugs) {
+        List<String> keys = slugs.stream()
+                .map(slug -> RedisKeyTypeEnum.PRODUCT_DETAIL.getKey() + ":" + slug)
+                .collect(Collectors.toList());
+        try {
+            Long deletedCount = redisTemplate.delete(keys);
+            log.debug("Deleted {} cached product details.", deletedCount);
+        } catch (Exception e) {
+            log.error("Failed to delete cached product details, error: {}", e.getMessage());
+        }
+    }
 }

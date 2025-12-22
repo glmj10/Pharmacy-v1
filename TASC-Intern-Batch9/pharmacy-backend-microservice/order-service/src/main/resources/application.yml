@@ -16,6 +16,15 @@ spring:
         user-topic: USER_TOPIC
         product-topic: PRODUCT_TOPIC
         profile-topic: PROFILE_TOPIC
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always
+    properties:
+      org:quartz:
+        scheduler:
+          instanceName: PromotionScheduler
+          instanceId: AUTO
 cart:
   service:
     name: cart-service
