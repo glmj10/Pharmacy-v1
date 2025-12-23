@@ -3,17 +3,21 @@ package com.pharmacy_backend.order_service.kafka.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pharmacy_backend.common.dto.request.ReserveRequest;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
 import com.pharmacy_backend.common.enums.PartitionKeyEnum;
+import com.pharmacy_backend.common.enums.VoucherTypeEnum;
 import com.pharmacy_backend.common.kafka.event.OrderDetailEvent;
 import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.common.kafka.event.PaymentEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.order_service.entity.Order;
 import com.pharmacy_backend.order_service.entity.OrderDetail;
+import com.pharmacy_backend.order_service.entity.Voucher;
+import com.pharmacy_backend.order_service.entity.VoucherUsage;
 import com.pharmacy_backend.order_service.repository.OrderDetailRepository;
 import com.pharmacy_backend.order_service.repository.OrderRepository;
+import com.pharmacy_backend.order_service.repository.VoucherRepository;
+import com.pharmacy_backend.order_service.repository.VoucherUsageRepository;
 import com.pharmacy_backend.order_service.service.OrderService;
 import com.pharmacy_backend.order_service.service.OutboxService;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
@@ -24,7 +28,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -37,6 +40,8 @@ public class PaymentConsumer {
     private final OrderDetailRepository orderDetailRepository;
     private final OrderRepository orderRepository;
     private final OutboxService outboxService;
+    private final VoucherRepository voucherRepository;
+    private final VoucherUsageRepository voucherUsageRepository;
     
     @Value("${spring.application.name}")
     private String appName;
@@ -89,6 +94,20 @@ public class PaymentConsumer {
 
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PAYMENT_FAILED.getName())) {
                 orderService.changePaymentStatus(paymentEvent.getOrderId(), paymentEvent.getPaymentStatus());
+
+                Voucher voucher = voucherRepository.findById(order.getVoucherId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "Voucher not found for voucherId: " + order.getVoucherId())
+                        );
+                if(voucher.getType() == VoucherTypeEnum.PUBLIC) {
+                    voucher.setCollectedCount(voucher.getCollectedCount() - 1);
+                    voucherRepository.save(voucher);
+                }
+
+                VoucherUsage voucherUsage = voucherUsageRepository.findByOrderIdAndVoucherId(
+                        order.getId(), voucher.getId()
+                );
+                voucherUsageRepository.delete(voucherUsage);
 //
 //                List<ReserveRequest> reserveRequests = orderDetails.stream()
 //                        .map(od -> ReserveRequest.builder()

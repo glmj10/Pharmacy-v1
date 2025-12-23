@@ -11,6 +11,8 @@ public class OrderRequest {
     @NotNull(message = "Địa chỉ người dùng không được để trống")
     Long profileId;
 
+    Long voucherId;
+
     @NotNull(message = "Tổng giá không được để trống")
     String note;
     @NotNull(message = "Phương thức thanh toán không được để trống")

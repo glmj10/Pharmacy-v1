@@ -5,10 +5,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "voucher_usages")
 @Getter
 @Setter
+@Builder
 public class VoucherUsage extends BaseEntity {
     @Column(name = "voucher_id")
     Long voucherId;
@@ -28,6 +27,7 @@ public class VoucherUsage extends BaseEntity {
     @Column(name = "order_id")
     Long orderId;
 
+    @CreationTimestamp
     @Column(name = "used_at")
     LocalDateTime usedAt;
 

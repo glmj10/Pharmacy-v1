@@ -68,6 +68,9 @@ public class OrderServiceImpl implements OrderService {
     final ProductRepository productRepository;
     final OutboxRepository outboxRepository;
     final PaymentServiceClient paymentServiceClient;
+    final VoucherRepository voucherRepository;
+    final VoucherUsageRepository voucherUsageRepository;
+    final UserVoucherRepository userVoucherRepository;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
@@ -211,6 +214,7 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildOkResponse(orderDetailResponses, "Lấy chi tiết đơn hàng thành công");
     }
 
+    @Transactional
     @Override
     public ApiResponse<?> createOrder(OrderRequest request) {
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
@@ -265,6 +269,65 @@ public class OrderServiceImpl implements OrderService {
             totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
         }
 
+        if(request.getVoucherId() != null) {
+            Voucher voucher = voucherRepository.findById(request.getVoucherId())
+                    .orElseThrow(() -> new CustomException(ErrorCode.VOUCHER_NOT_FOUND,
+                            HttpStatus.NOT_FOUND));
+            if(!voucher.getStatus().equals(VoucherStatusEnum.ACTIVE)) {
+                throw new CustomException(ErrorCode.VOUCHER_NOT_ACTIVE,
+                        HttpStatus.BAD_REQUEST, "Voucher không còn hiệu lực");
+            }
+
+            boolean existsUsage = voucherUsageRepository.existsVoucherUsageByVoucherIdAndUserId(
+                    voucher.getId(), user.getId()
+            );
+
+            if(existsUsage) {
+                throw new CustomException(ErrorCode.VOUCHER_ALREADY_USED,
+                        HttpStatus.BAD_REQUEST);
+            }
+
+            if(totalPrice < voucher.getMinOrderValue()) {
+                throw new CustomException(ErrorCode.VOUCHER_MIN_ORDER_VALUE_NOT_MET,
+                        HttpStatus.BAD_REQUEST);
+            }
+
+            if (voucher.getType() == VoucherTypeEnum.PUBLIC
+                    && voucher.getCollectedCount() >= voucher.getUsageLimit()) {
+                throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED,
+                        HttpStatus.BAD_REQUEST);
+            } else if(voucher.getType() == VoucherTypeEnum.PRIVATE) {
+                boolean exist = userVoucherRepository.existsByUserIdAndVoucherId(user.getId(), voucher.getId());
+                if(!exist) {
+                    throw new CustomException(ErrorCode.VOUCHER_NOT_ASSIGNED_TO_USER,
+                            HttpStatus.BAD_REQUEST);
+                }
+            } else {
+                int rowCnt = voucherRepository.increaseCollectedCount(voucher.getId());
+                if(rowCnt == 0) {
+                    throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED,
+                            HttpStatus.BAD_REQUEST);
+                }
+            }
+
+            int discountAmount;
+            if(voucher.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
+                discountAmount = voucher.getDiscountValue();
+            } else {
+                discountAmount = (int) Math.min(
+                        totalPrice * voucher.getDiscountValue() / 100,
+                        voucher.getMaxDiscountAmount()
+                );
+            }
+
+            order.setSubtotalPrice(totalPrice);
+
+            totalPrice -= discountAmount;
+            order.setVoucherDiscountPrice((long) discountAmount);
+            order.setVoucherId(voucher.getId());
+            order.setVoucherCode(voucher.getCode());
+        }
+
         order.setTotalPrice(totalPrice);
 
 
@@ -292,6 +355,16 @@ public class OrderServiceImpl implements OrderService {
                 case VNPAY -> {
                     order.setPaymentMethod(PaymentMethodEnum.VNPAY);
                     order = orderRepository.save(order);
+
+                    if(request.getVoucherId() != null) {
+                        VoucherUsage voucherUsage = VoucherUsage.builder()
+                                .voucherId(request.getVoucherId())
+                                .orderId(order.getId())
+                                .userId(user.getId())
+                                .build();
+                        voucherUsageRepository.save(voucherUsage);
+                    }
+
                     orderEvent.setOrderId(order.getId());
                     orderEvent.setCreatedAt(order.getCreatedAt());
                     List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
@@ -325,6 +398,16 @@ public class OrderServiceImpl implements OrderService {
                 case COD -> {
                     order.setPaymentMethod(PaymentMethodEnum.COD);
                     order = orderRepository.save(order);
+
+                    if(request.getVoucherId() != null) {
+                        VoucherUsage voucherUsage = VoucherUsage.builder()
+                                .voucherId(request.getVoucherId())
+                                .orderId(order.getId())
+                                .userId(user.getId())
+                                .build();
+                        voucherUsageRepository.save(voucherUsage);
+                    }
+
                     orderEvent.setOrderId(order.getId());
                     orderEvent.setCreatedAt(order.getCreatedAt());
                     List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
@@ -334,6 +417,7 @@ public class OrderServiceImpl implements OrderService {
                 }
                 default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD);
             }
+
         } catch (RuntimeException e) {
             log.error("Lỗi khi xử lý phương thức thanh toán: {}", e.getMessage());
             event.setEventType(EventTypeEnum.ORDER_FAILED.getName());
@@ -397,6 +481,22 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         if (status.equalsIgnoreCase(OrderStatusEnum.CANCELLED.name())) {
+            if (order.getVoucherId() != null) {
+                Voucher voucher = voucherRepository.findById(order.getVoucherId())
+                        .orElseThrow(() -> new RuntimeException(
+                                "Voucher not found for voucherId: " + order.getVoucherId())
+                        );
+                if (voucher.getType() == VoucherTypeEnum.PUBLIC) {
+                    voucher.setCollectedCount(voucher.getCollectedCount() - 1);
+                    voucherRepository.save(voucher);
+                }
+
+                VoucherUsage voucherUsage = voucherUsageRepository.findByOrderIdAndVoucherId(
+                        order.getId(), voucher.getId()
+                );
+                voucherUsageRepository.delete(voucherUsage);
+            }
+
             event.setEventType(EventTypeEnum.ORDER_CANCELLED.getName());
             handleSaveOutboxEvent(event);
         } else {
@@ -513,6 +613,7 @@ public class OrderServiceImpl implements OrderService {
         );
     }
 
+    @Transactional
     @Override
     public ApiResponse<Void> cancelOrder(Long id) {
         Order order = orderRepository.findById(id)
@@ -523,9 +624,24 @@ public class OrderServiceImpl implements OrderService {
                     HttpStatus.BAD_REQUEST, "Chỉ có thể hủy đơn hàng đang ở trạng thái Đang chờ xử lý");
         }
 
-
         order.setStatus(OrderStatusEnum.CANCELLED);
         orderRepository.save(order);
+
+        if (order.getVoucherId() != null) {
+            Voucher voucher = voucherRepository.findById(order.getVoucherId())
+                    .orElseThrow(() -> new RuntimeException(
+                            "Voucher not found for voucherId: " + order.getVoucherId())
+                    );
+            if (voucher.getType() == VoucherTypeEnum.PUBLIC) {
+                voucher.setCollectedCount(voucher.getCollectedCount() - 1);
+                voucherRepository.save(voucher);
+            }
+
+            VoucherUsage voucherUsage = voucherUsageRepository.findByOrderIdAndVoucherId(
+                    order.getId(), voucher.getId()
+            );
+            voucherUsageRepository.delete(voucherUsage);
+        }
 
         OrderReserveEvent orderReserveEvent = OrderReserveEvent.builder()
                 .orderId(order.getId())
@@ -578,7 +694,6 @@ public class OrderServiceImpl implements OrderService {
 
         return orderDetails;
     }
-
 
     private String buildCacheKey(OrderFilterRequest filterRequest, int pageIndex, int pageSize) {
         String orderStatus = filterRequest.getOrderStatus() != null ? filterRequest.getOrderStatus() : "ALL";

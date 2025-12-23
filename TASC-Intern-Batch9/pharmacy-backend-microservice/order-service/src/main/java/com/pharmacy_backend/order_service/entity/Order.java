@@ -28,7 +28,17 @@ public class Order  extends BaseEntity {
     @Column(name = "customer_address")
     String customerAddress;
 
+    @Column(name = "subtotal_price")
+    Long subtotalPrice;
+
+    @Column(name = "shipping_fee")
+    Long shippingFee;
+
+    @Column(name = "total_price")
     Long totalPrice;
+
+    @Column(name = "voucher_discount_price")
+    Long voucherDiscountPrice;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
@@ -50,4 +60,10 @@ public class Order  extends BaseEntity {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     User user;
+
+    @Column(name = "voucher_id")
+    Long voucherId;
+
+    @Column(name = "voucher_code")
+    String voucherCode;
 }

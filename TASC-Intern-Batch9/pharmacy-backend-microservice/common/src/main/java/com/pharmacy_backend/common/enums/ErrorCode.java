@@ -113,7 +113,10 @@ public enum ErrorCode {
     VOUCHER_NOT_ACTIVE("Mã giảm giá không hoạt động"),
     VOUCHER_USAGE_LIMIT_REACHED("Mã giảm giá đã đạt giới hạn sử dụng"),
     VOUCHER_CANNOT_CLAIM("Không thể nhận mã giảm giá"),
-    CANNOT_UPDATE_VOUCHER_TYPE("Không thể cập nhật loại mã giảm giá có trạng thái đang hoạt động")
+    CANNOT_UPDATE_VOUCHER_TYPE("Không thể cập nhật loại mã giảm giá có trạng thái đang hoạt động"),
+    VOUCHER_MIN_ORDER_VALUE_NOT_MET("Giá trị đơn hàng không đạt yêu cầu để sử dụng mã giảm giá"),
+    VOUCHER_ALREADY_USED("Mã giảm giá đã được sử dụng"),
+    VOUCHER_NOT_ASSIGNED_TO_USER("Mã giảm giá chưa được gán cho người dùng"),
     ;
 
     private final String message;
