@@ -21,37 +21,12 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  profile_pic?: string;
+  profilePic?: string;
   token?: string; // JWT lưu ở đây và LocalStorage
 }
 
 // 2. Product (Thuốc)
-export interface Product {
-  id: number;
-  title: string;
-  thumbnail?: string;
-  thumbnailUrl?:string;
-  slug: string;
-  quantity: number;
-  active: boolean;
-  price_new: number;
-  price_old: number;
-  description?: string;
-  manufacturer?: string;       
-  brand?: {                    
-    id: number;
-    name: string;
-  };
-  productType?: string;
-  indication?: string;
-  registrationNumber?: string;
-  activeIngredient?: string;
-  dosageForm?: string;
-  noted?: string;
-  images?: string[];
-  inWishlist?: boolean;
-  numberOfLikes?: number;
-}
+
 
 
 // 4. Order (Đơn hàng)

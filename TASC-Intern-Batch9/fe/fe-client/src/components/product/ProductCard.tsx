@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Loader2 } from 'lucide-react';
-import type { Product } from '../../types';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchTotalItems } from '../../store/slices/cartSlice'; // Action lấy số lượng
 import cartService from '../../api/cartService'; // Service API
 import { useToast } from '../../context/ToastContext';
 import AsyncImage from '../common/AsyncImage';
+import type { Product } from '../../types/product.types';
 
 interface ProductCardProps {
   product: Product;
@@ -55,8 +55,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   };
 
   // Tính phần trăm giảm giá (an toàn với null/undefined)
-  const priceNew = product.price_new || 0;
-  const priceOld = product.price_old || 0;
+  const priceNew = product.priceNew || 0;
+  const priceOld = product.priceOld || 0;
   
   const discountPercent = priceOld > priceNew 
     ? Math.round(((priceOld - priceNew) / priceOld) * 100) 
@@ -75,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       {/* Ảnh sản phẩm */}
       <Link to={`/products/${product.slug}`} className="block relative overflow-hidden aspect-square shrink-0">
         <AsyncImage 
-          uuid={product.thumbnail} 
+          src={product.thumbnail} 
           alt={product.title}
           className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
         />

@@ -5,8 +5,7 @@ import { SlidersHorizontal, Loader2, ChevronDown, ArrowUp } from 'lucide-react';
 import ProductFilter from '../components/product/ProductFilter';
 import ProductCard from '../components/product/ProductCard';
 import productService from '../api/productService';
-import type { ApiResponse, PageResponse, Product } from '../types';
-import type { ProductFilterRequest } from '../types/product';
+import type { Product, ProductFilterRequest } from '../types/product.types';
 import { cn } from '../lib/utils';
 
 const Products: React.FC = () => {
@@ -71,10 +70,10 @@ const Products: React.FC = () => {
           // Nếu backend trả 'name', map sang 'title'
           title: item.name || item.title || "Sản phẩm chưa đặt tên",
           
-          price_new: Number(item.price || item.salePrice || item.priceNew || 0),
+          priceNew: Number(item.price || item.salePrice || item.priceNew || 0),
           
           // Nếu backend trả 'originalPrice', map sang 'price_old'
-          price_old: Number(item.originalPrice || item.priceOld || 0),
+          priceOld: Number(item.originalPrice || item.priceOld || 0),
           
           // Nếu backend trả 'image', map sang 'thumbnail'
           thumbnail: item.image || item.thumbnail || "https://via.placeholder.com/300",

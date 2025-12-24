@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { X, Save, Loader2, User, Camera } from 'lucide-react';
+import { X, Loader2, User, Camera } from 'lucide-react';
 import identityService from '../../api/identityService';
 import { useToast } from '../../context/ToastContext';
 import { useAppDispatch } from '../../store/hooks';
@@ -93,7 +93,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onClose, cu
                 {previewUrl ? (
                   <img src={previewUrl} className="w-full h-full object-cover" alt="Preview" />
                 ) : (
-                  <AsyncImage uuid={currentUser?.profilePic} className="w-full h-full object-cover" />
+                  <AsyncImage src={currentUser?.profilePic} className="w-full h-full object-cover" />
                 )}
               </div>
               

@@ -1,16 +1,20 @@
 import axiosClient from './axiosClient';
 import type { Category } from '../types/category.types';
+import type { ApiResponse } from '../types';
 
 const categoryService = {
-  // Lấy toàn bộ cây danh mục
-  // Backend trả về List<CategoryResponse> dạng cây (Root có children, children có children...)
+  // 1. API Lấy cây danh mục (Thường dùng cho Sản phẩm)
   getCategoriesTree: () => {
-    return axiosClient.get<Category[]>('/categories');
+    return axiosClient.get<ApiResponse<Category[]>>('/categories');
   },
 
-  // (Tùy chọn) Lấy chi tiết 1 danh mục theo slug để hiển thị trang danh mục sau này
+  // 2. ===> API MỚI: Lấy danh mục Blog <===
+  getBlogCategories: () => {
+    return axiosClient.get<ApiResponse<Category[]>>('/categories/blogs/all');
+  },
+
   getCategoryBySlug: (slug: string) => {
-    return axiosClient.get<Category>(`/categories/${slug}`);
+    return axiosClient.get<ApiResponse<Category>>(`/categories/${slug}`);
   }
 };
 

@@ -1,100 +1,89 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Loader2 } from 'lucide-react';
-import fileService from '../../api/fileService';
 import { cn } from '../../lib/utils';
 
 interface AsyncImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
-  uuid?: string | null; // UUID để gọi API
-  url?: string | null;  // URL trực tiếp (nếu có)
-  fallbackSrc?: string;
+  src?: string; // URL ảnh trực tiếp
+  fallbackSrc?: string; // Ảnh thế khi lỗi
 }
 
-const AsyncImage: React.FC<AsyncImageProps> = ({
-  uuid,
-  url,
-  className,
-  alt,
+const AsyncImage: React.FC<AsyncImageProps> = ({ 
+  src, 
+  className, 
+  alt, 
   fallbackSrc = "https://placehold.co/400x400?text=No+Image",
-  ...props
+  ...props 
 }) => {
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
 
   useEffect(() => {
-    let isMounted = true;
-    setLoading(true);
-    setError(false);
-
-    const loadImage = async () => {
-      if (url || (uuid && uuid.startsWith('http'))) {
-        setImgSrc(url || uuid || null);
-        setLoading(false);
-        return;
-      }
-
-      // TRƯỜNG HỢP 2: Chỉ có UUID -> Gọi API
-      if (uuid) {
-        try {
-          // Gọi API lấy URL thật
-          const response: any = await fileService.getFileUrl(uuid);
-          const fetchedUrl = response.data || response.result;
-
-          if (isMounted) {
-            if (fetchedUrl) {
-              setImgSrc(fetchedUrl);
-            } else {
-              setError(true);
-            }
-          }
-        } catch (err) {
-          // console.error(`Error loading image ${uuid}`, err);
-          if (isMounted) setError(true);
-        } finally {
-          if (isMounted) setLoading(false);
-        }
-        return;
-      }
-
-      // TRƯỜNG HỢP 3: Không có gì cả
-      setError(true);
-      setLoading(false);
+    // Reset trạng thái khi src thay đổi
+    if (!src) {
+      setStatus('error');
+      return;
+    }
+    
+    setStatus('loading');
+    
+    // Tạo Image object để kiểm tra load ảnh
+    const img = new Image();
+    img.src = src;
+    
+    // Nếu ảnh đã được cache, complete = true ngay lập tức
+    if (img.complete) {
+      setStatus('loaded');
+    } else {
+      img.onload = () => setStatus('loaded');
+      img.onerror = () => setStatus('error');
+    }
+    
+    return () => {
+      img.onload = null;
+      img.onerror = null;
     };
+  }, [src]);
 
-    loadImage();
+  const handleLoad = () => {
+    setStatus('loaded');
+  };
 
-    return () => { isMounted = false; };
-  }, [uuid, url]); 
+  const handleError = () => {
+    setStatus('error');
+  };
 
-  // Render
-  if (error || !imgSrc) {
+  if (status === 'error' || !src) {
     return (
-      <div className={cn("bg-gray-100 flex items-center justify-center text-gray-400", className)}>
-        {/* Nếu không có ảnh thì hiện Icon hoặc ảnh fallback */}
+      <div className={cn("bg-gray-100 flex items-center justify-center text-gray-400 h-full w-full", className)}>
         {fallbackSrc && fallbackSrc.startsWith('http') ? (
-          <img src={fallbackSrc} alt="fallback" className={cn("w-full h-full object-cover", className)} />
+            <img src={fallbackSrc} alt="fallback" className={cn("w-full h-full object-cover", className)} />
         ) : (
-          <ImageIcon className="w-8 h-8" />
+            <ImageIcon className="w-8 h-8" />
         )}
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className={cn("bg-gray-50 flex items-center justify-center animate-pulse", className)}>
-        <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
-      </div>
-    );
-  }
-
   return (
-    <img
-      src={imgSrc}
-      alt={alt || "Product Image"}
-      className={cn("transition-opacity duration-300", className)}
-      {...props}
-    />
+    <div className={cn("relative overflow-hidden", className)}>
+      {status === 'loading' && (
+        <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-10">
+          <Loader2 className="w-6 h-6 text-gray-300 animate-spin" />
+        </div>
+      )}
+
+      {/* 3. Ảnh thật */}
+      <img
+        src={src}
+        alt={alt || "Product Image"}
+        className={cn(
+          "transition-opacity duration-300 w-full h-full object-cover",
+          status === 'loading' ? 'opacity-0' : 'opacity-100' // Ẩn ảnh khi đang load để tránh hiện tượng giật
+        )}
+        onLoad={handleLoad}
+        onError={handleError}
+        {...props}
+      />
+    </div>
   );
 };
 

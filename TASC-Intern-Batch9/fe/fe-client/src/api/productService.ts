@@ -1,6 +1,6 @@
 import axiosClient from './axiosClient';
 import type { Product, ApiResponse, PageResponse } from '../types';
-import type { ProductFilterRequest } from '../types/product';
+import type { ProductFilterRequest } from '../types/product.types';
 // 1. KHO DỮ LIỆU GIẢ CHÍNH (MASTER DB)
 // Định nghĩa đầy đủ các sản phẩm có thể xuất hiện
 const MASTER_DB: Product[] = [

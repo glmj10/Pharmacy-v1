@@ -14,7 +14,7 @@ interface CartItemRowProps {
 const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
   const { openModal } = useModal();
   const [isUpdating, setIsUpdating] = useState(false);
-
+  console.log(item)
   // Thay đổi số lượng
   const handleQuantityChange = async (newQty: number) => {
     if (newQty < 1) return;
@@ -26,9 +26,8 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
     finally { setIsUpdating(false); }
   };
 
-  // Checkbox chọn
-  const handleToggle = async () => {
-    // setIsUpdating(true); // Có thể ko cần loading UI cho checkbox để mượt hơn
+ const handleToggle = async () => {
+    // setIsUpdating(true);
     try {
       await cartService.updateItemStatus(item.id, !item.selected);
       onUpdate();
@@ -37,7 +36,7 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
 
   const handleRemove = () => {
     openModal(
-      'warning', // Dùng warning cho hành động xóa (màu vàng/cam cảnh báo)
+      'warning', 
       'Xóa sản phẩm',
       `Bạn có chắc muốn xóa "${item.product.title}" khỏi giỏ hàng?`,
       async () => {
@@ -52,8 +51,6 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
       'Hủy bỏ'    // Label nút Cancel
     );
   };
-
-  // Ưu tiên thumbnailUrl (từ Cart Service), nếu không có thì dùng thumbnail (từ Product Service)
 
   return (
     <div className={`flex items-center gap-4 py-6 border-b border-gray-100 last:border-0 ${item.isOutOfStock ? 'opacity-50' : ''}`}>
@@ -74,8 +71,7 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
         <Link to={`/products/${item.product.slug}`} className="w-20 h-20 shrink-0 border rounded-md overflow-hidden bg-gray-50">
           {/* ===> SỬA TẠI ĐÂY: Truyền cả url và uuid <=== */}
           <AsyncImage
-            url={item.product.thumbnailUrl} // Ưu tiên 1: Link từ CartService
-            uuid={item.product.thumbnail}   // Ưu tiên 2: UUID từ ProductService
+            src={item.product.thumbnail} // Ưu tiên 1: Link từ CartService
             alt={item.product.title}
             className="w-full h-full object-cover"
           />

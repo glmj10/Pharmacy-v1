@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Minus, Plus, ShoppingCart, ShieldCheck, Heart, FileText, Info, Activity } from 'lucide-react'; // Thêm icons
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Minus, Plus, ShoppingCart, ShieldCheck, Heart, FileText, Info, Activity, ChevronDown, ChevronUp, ChevronRight, Gift, Tag } from 'lucide-react'; // Thêm icons
 
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import cartService from '../api/cartService'
 import { fetchTotalItems } from '../store/slices/cartSlice';
 import productService from '../api/productService';
-import type { Product } from '../types';
 import { cn } from '../lib/utils';
 
 import AsyncImage from '../components/common/AsyncImage';
@@ -14,6 +13,8 @@ import Breadcrumb from '../components/common/BreadCrumb';
 import ProductReviews from '../components/product/ProductReviews';
 import ProductSlider from '../components/common/ProductSlider';
 import { useToast } from '../context/ToastContext';
+import { useRef } from 'react';
+import type { Product } from '../types/product.types';
 
 const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -27,6 +28,9 @@ const ProductDetail: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]); // State lưu sản phẩm liên quan
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const [isExpanded, setIsExpanded] = useState(false); // Trạng thái đang mở hay đóng
+  const [isOverflowing, setIsOverflowing] = useState(false); // Nội dung có dài quá mức quy định không?
+  const descriptionRef = useRef<HTMLDivElement>(null); // Ref để đo chiều cao
 
   // Tabs: Mô tả | Chỉ định | Thông tin chi tiết
   const [activeTab, setActiveTab] = useState<'description' | 'indication' | 'details'>('description');
@@ -34,9 +38,9 @@ const ProductDetail: React.FC = () => {
   const mapProductFromBackend = (item: any): Product => ({
     id: item.id,
     title: item.name || item.title,
-    price_new: Number(item.price || item.salePrice || item.priceNew || 0),
-    price_old: Number(item.originalPrice || item.priceOld || 0),
-    thumbnail: item.image || item.thumbnail, // UUID ảnh
+    priceNew: item.priceNew,
+    priceOld: Number(item.priceOld || 0),
+    thumbnail: item.thumbnail,
     slug: item.slug,
     quantity: item.quantity || 0,
     active: item.active !== false,
@@ -51,8 +55,40 @@ const ProductDetail: React.FC = () => {
     noted: item.noted,
     inWishlist: item.inWishlist,
     numberOfLikes: item.numberOfLikes,
-    images: item.images ? item.images.map((img: any) => img.imageUrl || img.image || img.uuid || img) : []
+    images: item.images ? item.images.map((img: any) => img.imageUrl || img.image || img.uuid || img) : [],
+    promotionEvent: item.promotionEvent ? {
+      id: item.promotionEvent.id,
+      name: item.promotionEvent.name,
+      thumbnailUrl: item.promotionEvent.thumbnailUrl,
+      startTime: item.promotionEvent.startTime,
+      endTime: item.promotionEvent.endTime, // Nếu cần đếm ngược
+      status: item.promotionEvent.status
+    } : null
   });
+
+  // Reset trạng thái khi đổi sản phẩm
+  useEffect(() => {
+    setIsExpanded(false);
+    setIsOverflowing(false);
+  }, [product]);
+
+  useEffect(() => {
+    if (activeTab === 'description' && product) {
+      const timer = setTimeout(() => {
+        if (descriptionRef.current) {
+          const contentHeight = descriptionRef.current.scrollHeight;
+          if (contentHeight > 300) {
+            setIsOverflowing(true);
+          } else {
+            setIsOverflowing(false);
+          }
+        }
+      }, 100); // Delay 100ms
+
+      return () => clearTimeout(timer);
+    }
+  }, [product, activeTab]); // Chạy lại khi product đổi HOẶC activeTab đổi
+
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -63,12 +99,13 @@ const ProductDetail: React.FC = () => {
         if (slug) {
           const res: any = await productService.getBySlug(slug);
           const backendData = res.data; // ApiResponse.data -> ProductResponse
-
+          console.log(backendData)
           if (backendData) {
             // ===> MAPPING DỮ LIỆU TỪ BACKEND <===
             const mappedProduct = mapProductFromBackend(backendData);
+            console.log(mappedProduct)
             setProduct(mappedProduct);
-            setSelectedImage(mappedProduct.thumbnail)
+            setSelectedImage(mappedProduct.thumbnail || '')
 
             try {
               const relatedRes: any = await productService.getRelated(mappedProduct.id)
@@ -94,7 +131,7 @@ const ProductDetail: React.FC = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-const handleAddToCart = async (isBuyNow = false) => {
+  const handleAddToCart = async (isBuyNow = false) => {
     // 1. Check Đăng nhập
     if (!isAuthenticated) {
       toast.info("Yêu cầu đăng nhập", "Vui lòng đăng nhập để mua hàng.");
@@ -140,7 +177,7 @@ const handleAddToCart = async (isBuyNow = false) => {
         {/* CỘT TRÁI: HÌNH ẢNH */}
         <div className="space-y-4">
           <div className="aspect-square bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center relative group">
-            <AsyncImage uuid={selectedImage} alt={product.title} className="w-full h-full object-contain p-4" />
+            <AsyncImage src={selectedImage} alt={product.title} className="w-full h-full object-contain p-4" />
             <button className={cn("absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:text-red-500 transition", product.inWishlist && "text-red-500 fill-current")}>
               <Heart className="w-5 h-5" />
             </button>
@@ -148,13 +185,13 @@ const handleAddToCart = async (isBuyNow = false) => {
 
           {/* Gallery */}
           <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
-            {[product.thumbnail, ...(product.images || [])].filter(Boolean).map((imgUuid, index) => (
+            {[...(product.images || [])].filter(Boolean).map((imgSrc, index) => (
               <button
                 key={index}
-                onClick={() => setSelectedImage(imgUuid)}
-                className={cn("w-20 h-20 border rounded-lg overflow-hidden shrink-0 hover:opacity-80 transition bg-white", selectedImage === imgUuid ? "border-primary ring-1 ring-primary" : "border-gray-200")}
+                onClick={() => setSelectedImage(imgSrc || '')}
+                className={cn("w-20 h-20 border rounded-lg overflow-hidden shrink-0 hover:opacity-80 transition bg-white", selectedImage === imgSrc ? "border-primary ring-1 ring-primary" : "border-gray-200")}
               >
-                <AsyncImage uuid={imgUuid} className="w-full h-full object-contain p-1" />
+                <AsyncImage src={imgSrc} className="w-full h-full object-contain p-1" />
               </button>
             ))}
           </div>
@@ -180,22 +217,68 @@ const handleAddToCart = async (isBuyNow = false) => {
             {product.activeIngredient && <p><span className="font-semibold">Hoạt chất:</span> {product.activeIngredient}</p>}
           </div>
 
-          <div className="bg-blue-50 p-6 rounded-xl mb-6">
+          {/* ===> 1. BANNER CHƯƠNG TRÌNH KHUYẾN MÃI (THIẾT KẾ MỚI) <=== */}
+          {product.promotionEvent && (
+            <Link 
+              to={`/promotions/${product.promotionEvent.id}`}
+              className="block mb-6 group relative overflow-hidden rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all"
+            >
+              <div className="flex h-24 md:h-28">
+                {/* Ảnh Banner Khuyến Mãi */}
+                <div className="w-1/3 md:w-2/5 relative bg-gray-100">
+                  <AsyncImage 
+                    // Ưu tiên dùng thumbnailUrl (link) hoặc uuid
+                    src={product.promotionEvent.thumbnailUrl}
+                    // Nếu dùng cơ chế cũ là uuid thì uncomment dòng dưới:
+                    // uuid={product.promotion.thumbnailUrl} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  {/* Overlay nhẹ để tách biệt ảnh */}
+                  <div className="absolute inset-0 bg-black/5"></div>
+                </div>
+
+                {/* Nội dung text bên cạnh */}
+                <div className="flex-1 p-4 flex flex-col justify-center bg-gradient-to-r from-white to-blue-50/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700 tracking-wider">
+                      Đang diễn ra
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-800 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                    {product.promotionEvent.name}
+                  </h3>
+                  <div className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                    Xem chi tiết chương trình <ChevronRight className="w-3 h-3" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
+          {/* ===> 2. KHỐI GIÁ TIỀN (VỀ LẠI GIAO DIỆN CHUẨN) <=== */}
+          <div className="bg-blue-50 p-6 rounded-xl mb-6 border border-blue-100">
             <div className="flex items-end gap-3 mb-2">
               <span className="text-3xl font-bold text-primary">
-                {product.price_new.toLocaleString('vi-VN')} đ
+                {product.priceNew.toLocaleString('vi-VN')} đ
               </span>
-              {product.price_old > product.price_new && (
+              
+              {product.priceOld > product.priceNew && (
                 <span className="text-lg text-gray-400 line-through mb-1">
-                  {product.price_old.toLocaleString('vi-VN')} đ
+                  {product.priceOld.toLocaleString('vi-VN')} đ
                 </span>
               )}
             </div>
-            {/* Tag tiết kiệm */}
-            {product.price_old > product.price_new && (
-              <div className="text-xs font-bold text-red-500 bg-white inline-block px-2 py-1 rounded border border-red-100">
-                Tiết kiệm: {(product.price_old - product.price_new).toLocaleString('vi-VN')} đ
-              </div>
+
+            {/* Tag tiết kiệm hiển thị tinh tế hơn */}
+            {product.priceOld > product.priceNew && (
+               <div className="flex items-center gap-2 mt-2">
+                 <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded">
+                   -{Math.round(((product.priceOld - product.priceNew) / product.priceOld) * 100)}%
+                 </span>
+                 <span className="text-sm text-blue-800">
+                   Giá tốt nhất thị trường hiện nay
+                 </span>
+               </div>
             )}
           </div>
 
@@ -247,9 +330,44 @@ const handleAddToCart = async (isBuyNow = false) => {
         </div>
 
         <div className="p-8 text-gray-700 leading-relaxed min-h-[200px]">
-          {/* TAB 1: MÔ TẢ */}
           {activeTab === 'description' && (
-            <div className="whitespace-pre-line">{product.description || "Đang cập nhật mô tả..."}</div>
+            <div>
+              <div
+                className={cn(
+                  "relative",
+                  // Nếu chưa mở rộng và nội dung dài -> Giới hạn chiều cao và ẩn phần thừa
+                  !isExpanded && isOverflowing ? "max-h-[300px] overflow-hidden" : ""
+                )}
+              >
+                {/* Nội dung HTML */}
+                <div
+                  ref={descriptionRef}
+                  className="prose prose-blue max-w-none prose-img:rounded-xl prose-headings:text-slate-800"
+                  dangerouslySetInnerHTML={{ __html: product.description || "<p>Đang cập nhật mô tả...</p>" }}
+                />
+
+                {/* Hiệu ứng mờ dần ở đáy khi chưa mở rộng */}
+                {!isExpanded && isOverflowing && (
+                  <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+                )}
+              </div>
+
+              {/* Nút Xem thêm / Thu gọn */}
+              {isOverflowing && (
+                <div className="mt-4 text-center">
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="inline-flex items-center gap-1 px-6 py-2 border border-primary text-primary font-medium rounded-full hover:bg-blue-50 transition shadow-sm bg-white"
+                  >
+                    {isExpanded ? (
+                      <>Thu gọn <ChevronUp className="w-4 h-4" /></>
+                    ) : (
+                      <>Xem thêm nội dung <ChevronDown className="w-4 h-4" /></>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
 
           {/* TAB 2: CÔNG DỤNG / CHỈ ĐỊNH */}

@@ -45,12 +45,10 @@ const MOCK_REVIEWS = [
 const ProductReviews: React.FC = () => {
   const [filterStar, setFilterStar] = useState<number | 'all'>('all');
 
-  // Lọc đánh giá theo sao
   const filteredReviews = filterStar === 'all' 
     ? MOCK_REVIEWS 
     : MOCK_REVIEWS.filter(r => r.rating === filterStar);
 
-  // Hàm render ngôi sao
   const renderStars = (rating: number) => {
     return (
       <div className="flex gap-0.5">
@@ -139,9 +137,9 @@ const ProductReviews: React.FC = () => {
             ))}
           </div>
           
-          <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-2">
+          {/* <button className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-2">
             <MessageSquare className="w-4 h-4" /> Viết đánh giá
-          </button>
+          </button> */}
         </div>
 
         {/* 3. Danh sách đánh giá */}

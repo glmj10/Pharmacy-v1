@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ArrowRight, ShieldCheck, Truck, Phone, Zap, Upload, 
-  ChevronRight, Heart, Activity, Thermometer, Baby, Pill 
+import {
+  ArrowRight, ShieldCheck, Truck, Phone, Zap, Upload,
+  ChevronRight, Heart, Activity, Thermometer, Baby, Pill
 } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
-import type { Product } from '../types';
 import HeroSlider from '../components/home/HeroSlider'; // <== Import HeroSlider
 import ProductSlider from '../components/common/ProductSlider'; // <== IMPORT MỚI
+import PromotionSection from '../components/home/PromotionSection';
+import type { Product } from '../types/product.types';
 
 
 // --- MOCK DATA (Dữ liệu giả lập) ---
@@ -48,8 +49,8 @@ const ARTICLES = [
 const MOCK_PRODUCT_ITEM: Product = {
   id: 1,
   title: "Viên uống Vitamin C 500mg tăng cường đề kháng (Hộp 100 viên)",
-  price_new: 120000,
-  price_old: 150000,
+  priceNew: 120000,
+  priceOld: 150000,
   thumbnail: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=400",
   slug: "vitamin-c-500mg",
   quantity: 100,
@@ -58,9 +59,9 @@ const MOCK_PRODUCT_ITEM: Product = {
 };
 
 const FLASH_SALE_PRODUCTS = Array(8).fill(MOCK_PRODUCT_ITEM).map((item, index) => ({
-  ...item, 
-  id: index + 100, 
-  price_new: 99000, 
+  ...item,
+  id: index + 100,
+  price_new: 99000,
   title: `[Flash Sale] ${item.title}`
 }));
 
@@ -73,15 +74,15 @@ const FUNCTIONAL_FOODS = Array(8).fill(MOCK_PRODUCT_ITEM).map((item, index) => (
 const Home: React.FC = () => {
   return (
     <div className="space-y-10 pb-10 bg-slate-50">
-      
+
       {/* 1. HERO SECTION */}
       <section className="bg-white pt-4 pb-8">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            
+
             {/* THAY ĐỔI Ở ĐÂY: Main Slider (2/3) */}
             <div className="lg:col-span-2">
-               <HeroSlider />
+              <HeroSlider />
             </div>
 
             {/* Side Banners (1/3) - Giữ nguyên */}
@@ -89,22 +90,22 @@ const Home: React.FC = () => {
               <div className="flex-1 rounded-2xl overflow-hidden relative shadow-sm group cursor-pointer">
                 <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="Sub 1" />
                 <div className="absolute inset-0 bg-black/20 hover:bg-transparent transition p-6 flex flex-col justify-end">
-                   <p className="text-white font-bold text-lg">Vitamin & Khoáng chất</p>
-                   <span className="text-white/80 text-sm">Giảm đến 30%</span>
+                  <p className="text-white font-bold text-lg">Vitamin & Khoáng chất</p>
+                  <span className="text-white/80 text-sm">Giảm đến 30%</span>
                 </div>
               </div>
               <div className="flex-1 rounded-2xl overflow-hidden relative shadow-sm group cursor-pointer">
                 <img src="https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="Sub 2" />
                 <div className="absolute inset-0 bg-black/20 hover:bg-transparent transition p-6 flex flex-col justify-end">
-                   <p className="text-white font-bold text-lg">Chăm sóc cá nhân</p>
-                   <span className="text-white/80 text-sm">Mua 1 tặng 1</span>
+                  <p className="text-white font-bold text-lg">Chăm sóc cá nhân</p>
+                  <span className="text-white/80 text-sm">Mua 1 tặng 1</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* ... (Phần Features / Policy giữ nguyên) ... */}
-           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             {[
               { icon: ShieldCheck, title: "Thuốc chính hãng", desc: "Đạt chuẩn GPP" },
               { icon: Truck, title: "Giao nhanh 2h", desc: "Miễn phí đơn từ 300k" },
@@ -124,6 +125,7 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      <PromotionSection />
       {/* 2. CATEGORY QUICK LINKS */}
       <section className="container mx-auto px-4">
         <h3 className="font-bold text-lg text-slate-800 mb-6">Danh mục nổi bật</h3>
@@ -139,43 +141,12 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-{/* 3. FLASH SALE SECTION (CẬP NHẬT DÙNG PRODUCT SLIDER) */}
-      <section className="bg-gradient-to-r from-red-500 to-orange-500 py-10">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-2 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Zap className="w-8 h-8 text-yellow-300 fill-current animate-pulse" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white uppercase italic tracking-wider">Flash Sale</h2>
-                <div className="flex items-center gap-2 text-white/90 text-sm mt-1">
-                  <span>Kết thúc trong:</span>
-                  <div className="flex gap-1 font-bold">
-                    <span className="bg-white text-red-600 px-1.5 rounded">02</span> :
-                    <span className="bg-white text-red-600 px-1.5 rounded">15</span> :
-                    <span className="bg-white text-red-600 px-1.5 rounded">40</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <Link to="#" className="text-white hover:text-yellow-200 flex items-center gap-1 text-sm font-medium">
-              Xem tất cả <ChevronRight className="w-4 h-4" />
-            </Link>
-          </div>
-          
-          {/* SỬ DỤNG COMPONENT SLIDER MỚI TẠI ĐÂY */}
-          <ProductSlider products={FLASH_SALE_PRODUCTS} />
-          
-        </div>
-      </section>
-
       {/* 4. BANNER UPLOAD PRESCRIPTION (Mua thuốc theo đơn) */}
       <section className="container mx-auto px-4">
         <div className="bg-blue-600 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden shadow-lg">
           {/* Background Pattern */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-          
+
           <div className="flex-1 relative z-10 text-white text-center md:text-left">
             <h2 className="text-2xl md:text-3xl font-bold mb-3">Bạn có đơn thuốc từ bác sĩ?</h2>
             <p className="text-blue-100 mb-6 max-w-lg">
@@ -186,18 +157,18 @@ const Home: React.FC = () => {
             </button>
           </div>
           <div className="w-full md:w-1/3 relative z-10 flex justify-center">
-             {/* Minh họa đơn thuốc */}
-             <div className="w-48 h-60 bg-white rotate-3 shadow-2xl rounded-lg p-4 flex flex-col gap-2 opacity-90">
-                <div className="h-4 w-20 bg-gray-200 rounded"></div>
-                <div className="h-2 w-full bg-gray-100 rounded mt-2"></div>
-                <div className="h-2 w-full bg-gray-100 rounded"></div>
-                <div className="h-2 w-2/3 bg-gray-100 rounded"></div>
-                <div className="flex-1 border-t border-dashed border-gray-300 mt-2 pt-2 space-y-2">
-                   <div className="h-2 w-full bg-blue-50 rounded"></div>
-                   <div className="h-2 w-full bg-blue-50 rounded"></div>
-                   <div className="h-2 w-full bg-blue-50 rounded"></div>
-                </div>
-             </div>
+            {/* Minh họa đơn thuốc */}
+            <div className="w-48 h-60 bg-white rotate-3 shadow-2xl rounded-lg p-4 flex flex-col gap-2 opacity-90">
+              <div className="h-4 w-20 bg-gray-200 rounded"></div>
+              <div className="h-2 w-full bg-gray-100 rounded mt-2"></div>
+              <div className="h-2 w-full bg-gray-100 rounded"></div>
+              <div className="h-2 w-2/3 bg-gray-100 rounded"></div>
+              <div className="flex-1 border-t border-dashed border-gray-300 mt-2 pt-2 space-y-2">
+                <div className="h-2 w-full bg-blue-50 rounded"></div>
+                <div className="h-2 w-full bg-blue-50 rounded"></div>
+                <div className="h-2 w-full bg-blue-50 rounded"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -205,14 +176,14 @@ const Home: React.FC = () => {
       {/* 5. FUNCTIONAL FOODS (CẬP NHẬT DÙNG PRODUCT SLIDER) */}
       <section className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-4">
-           <h2 className="text-2xl font-bold text-slate-900 border-l-4 border-green-500 pl-3">
-             Thực phẩm chức năng
-           </h2>
-           <Link to="#" className="text-primary hover:underline text-sm flex items-center gap-1">
-             Xem thêm <ChevronRight className="w-4 h-4" />
-           </Link>
+          <h2 className="text-2xl font-bold text-slate-900 border-l-4 border-green-500 pl-3">
+            Thực phẩm chức năng
+          </h2>
+          <Link to="#" className="text-primary hover:underline text-sm flex items-center gap-1">
+            Xem thêm <ChevronRight className="w-4 h-4" />
+          </Link>
         </div>
-        
+
         {/* SỬ DỤNG COMPONENT SLIDER MỚI TẠI ĐÂY */}
         <ProductSlider products={FUNCTIONAL_FOODS} />
 
@@ -225,7 +196,7 @@ const Home: React.FC = () => {
             <h2 className="text-3xl font-bold text-slate-900 mb-3">Góc sức khỏe</h2>
             <p className="text-gray-500">Thông tin y khoa chính thống từ đội ngũ chuyên gia</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {ARTICLES.map(article => (
               <div key={article.id} className="group cursor-pointer">

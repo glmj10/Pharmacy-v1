@@ -22,7 +22,7 @@ const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0
       <div className="w-8 h-8 rounded border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
         {category.thumbnail ? (
         <AsyncImage 
-          uuid={category.thumbnail} 
+          src={category.thumbnail} 
           className="w-full h-full object-cover"
         />
         ) : (

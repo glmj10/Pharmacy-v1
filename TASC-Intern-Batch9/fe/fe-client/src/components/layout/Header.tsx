@@ -22,22 +22,39 @@ const Header: React.FC = () => {
 
   // ... (Phần useEffect fetchCategories giữ nguyên) ...
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchMenuData = async () => {
       try {
-        const response: any = await categoryService.getCategoriesTree();
-        // ... Logic bóc tách dữ liệu cũ
-        let categoryList: Category[] = [];
-        if (Array.isArray(response)) categoryList = response;
-        else if (response?.data) categoryList = response.data;
-        else if (response?.result) categoryList = response.result;
+        // Gọi song song 2 API để tiết kiệm thời gian
+        const [productRes, blogRes] = await Promise.all([
+          categoryService.getCategoriesTree(),   // API cũ (cho sản phẩm)
+          categoryService.getBlogCategories()    // API mới (cho blog)
+        ]);
 
-        const pCats = categoryList.filter(c => !c.type || c.type.name === 'PRODUCT');
-        const aCats = categoryList.filter(c => c.type?.name === 'ARTICLE');
-        setProductCategories(pCats);
-        setArticleCategories(aCats);
-      } catch (error) { console.error(error); }
+        // 1. Xử lý Danh mục Sản phẩm
+        // (Vẫn giữ logic lọc phòng hờ API cũ trả về hỗn hợp, hoặc bỏ filter nếu API đã tách sạch)
+        const pData: any = productRes;
+        const pList = pData.data || pData.result || [];
+
+        if (Array.isArray(pList)) {
+          // Lọc lấy type PRODUCT (hoặc lấy hết nếu API /categories chỉ trả về product)
+          const pCats = pList.filter((c: Category) => !c.type || c.type.name === 'PRODUCT');
+          setProductCategories(pCats);
+        }
+
+        // 2. Xử lý Danh mục Blog (Dùng API mới)
+        const bData: any = blogRes;
+        const bList = bData.data || bData.result || [];
+
+        if (Array.isArray(bList)) {
+          setArticleCategories(bList);
+        }
+
+      } catch (error) {
+        console.error("Lỗi tải menu:", error);
+      }
     };
-    fetchCategories();
+
+    fetchMenuData();
   }, []);
 
   const handleLogout = () => {
@@ -100,14 +117,20 @@ const Header: React.FC = () => {
                 </div>
               </div>
 
-              {/* Menu Góc sức khỏe (Giữ nguyên) */}
+              {/* 2. Menu Góc sức khỏe (Dùng articleCategories từ API mới) */}
               <div className="group relative h-10 flex items-center">
                 <Link to="/articles" className="font-medium text-gray-700 hover:text-primary flex items-center gap-1 cursor-pointer">
                   Góc sức khỏe <ChevronDown className="w-4 h-4" />
                 </Link>
                 <div className="absolute top-full left-0 mt-0 pt-2 hidden group-hover:block">
                   <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[240px] py-2">
-                    {articleCategories.map(cat => <CategoryMenuItem key={cat.id} category={cat} depth={1} />)}
+                    {articleCategories.length > 0 ? (
+                      articleCategories.map(cat => (
+                        <CategoryMenuItem key={cat.id} category={cat} depth={1} />
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-400 italic">Đang cập nhật...</div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -149,8 +172,8 @@ const Header: React.FC = () => {
                 {/* Nút hiển thị User (Trigger) */}
                 <button className="flex items-center gap-2 hover:bg-gray-50 p-1 pr-3 rounded-full transition border border-transparent hover:border-gray-200">
                   <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-primary font-bold overflow-hidden border border-blue-200">
-                    {user.profile_pic ? (
-                      <AsyncImage uuid={user.profile_pic} className="w-full h-full object-cover" />
+                    {user.profilePic ? (
+                      <AsyncImage src={user.profilePic} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-sm">{user.username?.[0]?.toUpperCase()}</span>
                     )}

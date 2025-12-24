@@ -17,6 +17,7 @@ import SessionManager from './components/auth/SessionManager';
 import PaymentResult from './pages/PaymentResult';
 import ArticleDetail from './pages/ArticleDetail';
 import Blog from './pages/Blog';
+import PromotionDetail from './pages/PromotionDetail';
 
 
 const NotFound = () => <div className="p-10 text-center text-red-500">404 - Không tìm thấy trang</div>;
@@ -50,6 +51,7 @@ function App() {
           <Route path="articles" element={<Blog />} />
           <Route path="articles/:slug" element={<ArticleDetail />} />
 
+          <Route path="promotions/:id" element={<PromotionDetail />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

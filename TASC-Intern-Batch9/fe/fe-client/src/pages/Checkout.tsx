@@ -253,7 +253,6 @@ const Checkout: React.FC = () => {
                         <AsyncImage 
                           // Ưu tiên lấy URL từ cart service, fallback về uuid từ product service
                           url={item.product.thumbnailUrl}
-                          uuid={item.product.thumbnail}
                           className="w-full h-full object-cover" 
                         />
                     </div>

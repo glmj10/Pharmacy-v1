@@ -23,5 +23,7 @@ export default {
       // <=== KẾT THÚC PHẦN THÊM
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 }

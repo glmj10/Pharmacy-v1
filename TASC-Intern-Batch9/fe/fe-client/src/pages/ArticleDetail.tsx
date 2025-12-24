@@ -99,8 +99,7 @@ const ArticleDetail: React.FC = () => {
             {/* Featured Image */}
             <div className="rounded-2xl overflow-hidden mb-8 shadow-sm">
               <AsyncImage 
-                uuid={article.thumbnail} 
-                url={article.thumbnail}
+                src={article.thumbnail} 
                 className="w-full max-h-[400px] object-cover" 
               />
             </div>
@@ -127,8 +126,7 @@ const ArticleDetail: React.FC = () => {
                   <Link key={item.id} to={`/articles/${item.slug}`} className="group flex gap-4 items-start">
                     <div className="w-24 h-24 shrink-0 rounded-lg overflow-hidden bg-gray-100">
                       <AsyncImage 
-                        uuid={item.thumbnail} 
-                        url={item.thumbnail}
+                        src={item.thumbnail} 
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
                       />
                     </div>

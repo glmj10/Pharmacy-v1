@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     User, Mail, LogOut, Camera, KeyRound, Edit, MapPin,
-    ShieldCheck, Calendar, Package, Clock, XCircle, CreditCard, ChevronRight,
+    ShieldCheck, Calendar, Package, Clock, CreditCard,
     Eye
 } from 'lucide-react';
 
@@ -199,7 +199,7 @@ const Profile: React.FC = () => {
                             <div className="relative group">
                                 <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-md">
                                     <AsyncImage
-                                        uuid={profile?.profilePic}
+                                        src={profile?.profilePic}
                                         className="w-full h-full object-cover"
                                         fallbackSrc="https://ui-avatars.com/api/?background=random&color=fff&name=User"
                                     />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, X, Check, ChevronRight, ChevronDown } from 'lucide-react';
-import type { ProductFilterRequest } from '../../types/product';
+import type { ProductFilterRequest } from '../../types/product.types';
 import type { Category } from '../../types/category.types'; // Import type Category
 import categoryService from '../../api/categoryService'; // Import Service
 import { cn } from '../../lib/utils';
