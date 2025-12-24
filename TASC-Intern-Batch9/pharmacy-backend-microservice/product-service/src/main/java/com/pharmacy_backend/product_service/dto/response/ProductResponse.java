@@ -12,7 +12,8 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ProductResponse {    Long id;
+public class ProductResponse {
+    Long id;
     String thumbnail;
     String title;
     Integer priceOld;
@@ -35,5 +36,5 @@ public class ProductResponse {    Long id;
     BrandResponse brand;
     List<CategoryResponse> categories;
     List<ProductImageResponse> images;
-
+    PromotionEventResponse promotionEvent;
 }

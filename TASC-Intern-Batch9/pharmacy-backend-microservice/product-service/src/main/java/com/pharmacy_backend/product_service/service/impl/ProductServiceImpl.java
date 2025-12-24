@@ -20,6 +20,7 @@ import com.pharmacy_backend.product_service.entity.*;
 import com.pharmacy_backend.product_service.mapper.BrandMapper;
 import com.pharmacy_backend.product_service.mapper.CategoryMapper;
 import com.pharmacy_backend.product_service.mapper.ProductMapper;
+import com.pharmacy_backend.product_service.mapper.PromotionEventMapper;
 import com.pharmacy_backend.product_service.repository.*;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
@@ -56,6 +57,9 @@ public class ProductServiceImpl implements ProductService {
     final OutboxRepository outboxRepository;
     final StockRepository stockRepository;
     final StockCacheService stockCacheService;
+    final PromotionEventRepository promotionEventRepository;
+    final PromotionItemRepository promotionItemRepository;
+    final PromotionEventMapper promotionEventMapper;
 
     @Value("${spring.application.name}")
     private String appName;

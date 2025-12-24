@@ -8,8 +8,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PromotionItemResponse {
+    Long id;
     Integer salePrice;
     Long productId;
+    ProductResponse product;
     String errorCode;
     String message;
 }

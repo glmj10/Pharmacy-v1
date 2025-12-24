@@ -11,6 +11,7 @@ import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.entity.PromotionEvent;
 import com.pharmacy_backend.product_service.entity.PromotionItem;
+import com.pharmacy_backend.product_service.mapper.ProductMapper;
 import com.pharmacy_backend.product_service.mapper.PromotionItemMapper;
 import com.pharmacy_backend.product_service.repository.PromotionEventRepository;
 import com.pharmacy_backend.product_service.repository.PromotionItemRepository;
@@ -36,6 +37,7 @@ public class PromotionItemServiceImpl implements PromotionItemService {
     private final PromotionItemMapper promotionItemMapper;
     private final ProductRepository productRepository;
     private final PromotionEventRepository promotionEventRepository;
+    private final ProductMapper productMapper;
 
     @Override
     public ApiResponse<PageResponse<List<PromotionItemResponse>>> getPromotionItemByEventId(Long eventId, Integer pageIndex, Integer pageSize) {
@@ -52,7 +54,8 @@ public class PromotionItemServiceImpl implements PromotionItemService {
         List<PromotionItemResponse> promotionItemResponses = promotionItems.getContent().stream()
                 .map(item -> {
                     PromotionItemResponse response = promotionItemMapper.toPromotionItemResponse(item);
-                    productRepository.findById(item.getProductId()).ifPresent(product -> response.setProductId(product.getId()));
+                    productRepository.findById(item.getProductId()).ifPresent(product ->
+                            response.setProduct(productMapper.toProductResponse(product)));
                     return response;
                 })
                 .toList();

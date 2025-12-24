@@ -94,6 +94,7 @@ public enum ErrorCode {
 
     PAYMENT_URL_CREATION_FAILED("Tạo URL thanh toán không thành công"),
 
+    INVALID_PROMOTION_TIME("Thời gian khuyến mãi không hợp lệ"),
     PROMOTION_EVENT_NOT_FOUND("Sự kiện không tồn tại"),
     PROMOTION_ITEM_ALREADY_EXISTS("Sản phẩm đã tồn tại trong sự kiện"),
     PROMOTION_ITEM_ALREADY_EXISTS_IN_DIFFERENT_EVENT("Sản phẩm đã tồn tại trong một sự kiện khuyến mãi khác"),

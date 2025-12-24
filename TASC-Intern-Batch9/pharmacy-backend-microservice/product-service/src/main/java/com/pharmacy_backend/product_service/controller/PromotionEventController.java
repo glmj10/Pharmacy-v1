@@ -40,16 +40,19 @@ public class PromotionEventController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<Void>> createPromotionEvent(@RequestPart("promotion") @Valid PromotionEventRequest request, @RequestPart("thumbnail") MultipartFile thumbnail) {
+    public ResponseEntity<ApiResponse<Void>> createPromotionEvent(
+            @RequestPart("promotion") @Valid PromotionEventRequest request,
+            @RequestPart(value = "thumbnail") MultipartFile thumbnail) {
         ApiResponse<Void> response = promotionEventService.createEvent(request, thumbnail);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> updatePromotionEvent(@PathVariable Long id,
-                                                                  @RequestPart("promotion") @Valid PromotionEventRequest request,
-                                                                  @RequestPart MultipartFile thumbnail) {
+    public ResponseEntity<ApiResponse<Void>> updatePromotionEvent(
+            @PathVariable Long id,
+            @RequestPart(value = "promotion", required = false) @Valid PromotionEventRequest request,
+            @RequestPart(required = false) MultipartFile thumbnail) {
         ApiResponse<Void> response = promotionEventService.updateEvent(id, request, thumbnail);
         return ResponseEntity.status(response.getStatus()).body(response);
     }

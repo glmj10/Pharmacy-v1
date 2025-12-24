@@ -3,15 +3,21 @@ package com.pharmacy_backend.product_service.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import com.pharmacy_backend.product_service.entity.Category;
 import com.pharmacy_backend.product_service.entity.Product;
+import com.pharmacy_backend.product_service.entity.PromotionEvent;
+import com.pharmacy_backend.product_service.entity.PromotionItem;
 import com.pharmacy_backend.product_service.mapper.BrandMapper;
 import com.pharmacy_backend.product_service.mapper.CategoryMapper;
 import com.pharmacy_backend.product_service.mapper.ProductMapper;
+import com.pharmacy_backend.product_service.mapper.PromotionEventMapper;
 import com.pharmacy_backend.product_service.repository.CategoryRepository;
+import com.pharmacy_backend.product_service.repository.PromotionEventRepository;
+import com.pharmacy_backend.product_service.repository.PromotionItemRepository;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +42,9 @@ public class ProductRedisService {
     private final BrandMapper brandMapper;
     private final CategoryRepository categoryRepository;
     private final CategoryMapper categoryMapper;
+    private final PromotionEventRepository promotionEventRepository;
+    private final PromotionItemRepository promotionItemRepository;
+    private final PromotionEventMapper promotionEventMapper;
 
     public void cacheProductDetail(Product product){
         ProductResponse productResponse = buildProductResponse(product);
@@ -181,14 +190,16 @@ public class ProductRedisService {
         productResponse.setCategories(categories.stream()
                 .map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
 
-        return productResponse;
-    }
-
-    private String getThumbnailUrl(String uuid) {
-        if(uuid != null && !uuid.isEmpty()) {
-            return String.valueOf(fileServiceClient.getFileUrl(uuid).getData());
+        PromotionItem promotionItem = promotionItemRepository.findByProductId(product.getId())
+                .orElse(null);
+        if(promotionItem != null) {
+            PromotionEvent promotionEvent = promotionEventRepository.findByIdAndStatus(
+                    promotionItem.getPromotionEventId(), PromotionEventStatusEnum.ONGOING
+                    )
+                    .orElse(null);
+            productResponse.setPromotionEvent(promotionEventMapper.toResponse(promotionEvent));
         }
-        return null;
+        return productResponse;
     }
 
     public void deleteCacheProductDetail(List<String> slugs) {

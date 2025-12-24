@@ -7,12 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PromotionItemRepository extends JpaRepository<PromotionItem, Long> {
     Page<PromotionItem> findByPromotionEventId(Long promotionEventId, Pageable pageable);
 
     List<PromotionItem> findByPromotionEventId(Long promotionEventId);
     boolean existsByProductId(Long productId);
+
+    Optional<PromotionItem> findByProductId(Long productId);
 
     @Query("""
             SELECT pi FROM PromotionItem pi 

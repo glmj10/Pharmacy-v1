@@ -40,6 +40,8 @@ public class GatewayEndpointConfig {
             "api/v1/categories/products/all",
             "/api/v1/categories/blogs/all",
             "/api/v1/promotions/**",
+            "/api/v1/promotion-items/{eventId}",
+
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

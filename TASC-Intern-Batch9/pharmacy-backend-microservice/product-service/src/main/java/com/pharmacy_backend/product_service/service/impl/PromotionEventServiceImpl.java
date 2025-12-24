@@ -51,7 +51,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
 
     @Override
     public ApiResponse<List<PromotionEventResponse>> getCurrentEvent() {
-        List<PromotionEvent> currentEvents = promotionEventRepository.findCurrentFlashSaleEvents();
+        List<PromotionEvent> currentEvents = promotionEventRepository.findCurrentPromotionEvents();
 
         List<PromotionEventResponse> responses = currentEvents.stream()
                 .map(promotionEventMapper::toResponse)
@@ -143,6 +143,13 @@ public class PromotionEventServiceImpl implements PromotionEventService {
 
         if(existingEvent.getStatus() == PromotionEventStatusEnum.ONGOING) {
             throw new CustomException(ErrorCode.CANNOT_UPDATE_ONGOING_PROMOTION);
+        }
+
+        if(request.getStartTime() != null || request.getEndTime() != null) {
+            if(request.getStartTime() != null && request.getEndTime() != null &&
+                    request.getEndTime().isBefore(request.getStartTime())) {
+                throw new CustomException(ErrorCode.INVALID_PROMOTION_TIME);
+            }
         }
 
         PromotionEvent event = promotionEventMapper.toPromotionEventUpdateFromRequest(request, existingEvent);

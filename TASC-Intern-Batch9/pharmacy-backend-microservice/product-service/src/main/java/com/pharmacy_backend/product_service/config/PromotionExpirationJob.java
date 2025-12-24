@@ -17,7 +17,7 @@ public class PromotionExpirationJob extends QuartzJobBean {
     private final PromotionEventService promotionEventService;
 
     @Override
-    protected void executeInternal(JobExecutionContext context) throws JobExecutionException {
+    protected void executeInternal(JobExecutionContext context) {
         String promotionIdStr = context.getJobDetail().getJobDataMap().getString( "promotionId");
         if(promotionIdStr != null) {
             Long promotionId = Long.parseLong(promotionIdStr);
