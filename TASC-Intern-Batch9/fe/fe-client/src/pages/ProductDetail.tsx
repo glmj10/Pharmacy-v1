@@ -416,7 +416,7 @@ const ProductDetail: React.FC = () => {
         </div>
       </div>
 
-      <ProductReviews />
+      <ProductReviews productId={product.id} />
 
       {/* ===> HIỂN THỊ SẢN PHẨM LIÊN QUAN <=== */}
       {relatedProducts.length > 0 && (

@@ -1,12 +1,13 @@
-import type { Product } from ".";
 import type { PaymentMethod, PaymentStatus } from "./payment.types";
+import type { Product } from "./product.types";
 
 export type OrderStatus = 'PENDING' | 'SHIPPING' | 'CANCELLED' | 'DELIVERED' | 'FAILED';
 
 export interface OrderRequest {
   profileId: number;
   note: string;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod,
+  voucherId?: number;
 }
 
 export interface OrderResponse {
@@ -28,6 +29,6 @@ export interface OrderDetailResponse {
   quantity: number;
   priceAtOrder: number;
   product: Product
-  isRated: boolean
+  rated: boolean
 }
 

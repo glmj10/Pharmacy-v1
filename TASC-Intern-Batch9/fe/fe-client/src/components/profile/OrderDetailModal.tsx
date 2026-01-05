@@ -152,8 +152,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ isOpen, onClose, or
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-12 h-12 border rounded-lg overflow-hidden shrink-0">
                                                             <AsyncImage
-                                                                url={item.product.thumbnailUrl} // Ưu tiên 1: Link từ CartService
-                                                                uuid={item.product.thumbnail}   // Ưu tiên 2: UUID từ ProductService
+                                                                src={item.product.thumbnailUrl}
                                                                 alt={item.product.title}
                                                                 className="w-full h-full object-cover"
                                                             />
@@ -175,14 +174,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ isOpen, onClose, or
                                                 {/* ===> CỘT ĐÁNH GIÁ (LOGIC MỚI) <=== */}
                                                 {order.status === 'DELIVERED' && (
                                                     <td className="px-4 py-3 text-center">
-                                                        {item.isRated ? (
+                                                        {item.rated ? (
                                                             // TRƯỜNG HỢP 1: ĐÃ ĐÁNH GIÁ
                                                             <div className="flex flex-col items-center gap-1">
-                                                                <div className="flex text-yellow-400">
+                                                                {/* <div className="flex text-yellow-400">
                                                                     {[...Array(5)].map((_, i) => (
                                                                         <Star key={i} className="w-3 h-3 fill-current" />
                                                                     ))}
-                                                                </div>
+                                                                </div> */}
                                                                 <span className="text-[10px] text-green-600 font-medium flex items-center gap-0.5">
                                                                     <CheckCircle className="w-3 h-3" /> Đã đánh giá
                                                                 </span>

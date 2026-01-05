@@ -2,7 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ShieldCheck, Truck, Phone, Zap, Upload,
-  ChevronRight, Heart, Activity, Thermometer, Baby, Pill
+  ChevronRight, Heart, Activity, Thermometer, Baby, Pill,
+  Ticket
 } from 'lucide-react';
 import ProductCard from '../components/product/ProductCard';
 import HeroSlider from '../components/home/HeroSlider'; // <== Import HeroSlider
@@ -80,12 +81,10 @@ const Home: React.FC = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-            {/* THAY ĐỔI Ở ĐÂY: Main Slider (2/3) */}
             <div className="lg:col-span-2">
               <HeroSlider />
             </div>
 
-            {/* Side Banners (1/3) - Giữ nguyên */}
             <div className="hidden lg:flex flex-col gap-4">
               <div className="flex-1 rounded-2xl overflow-hidden relative shadow-sm group cursor-pointer">
                 <img src="https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&q=80&w=600" className="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="Sub 1" />
@@ -126,6 +125,13 @@ const Home: React.FC = () => {
       </section>
 
       <PromotionSection />
+
+      <section className="container mx-auto px-4 text-center my-8">
+        <Link to="/vouchers" className="inline-flex items-center gap-2 px-8 py-4 bg-orange-500 text-white rounded-full font-bold shadow-lg hover:bg-orange-600 transition hover:-translate-y-1">
+          <Ticket className="w-6 h-6" /> Săn thêm Voucher
+        </Link>
+      </section>
+      
       {/* 2. CATEGORY QUICK LINKS */}
       <section className="container mx-auto px-4">
         <h3 className="font-bold text-lg text-slate-800 mb-6">Danh mục nổi bật</h3>

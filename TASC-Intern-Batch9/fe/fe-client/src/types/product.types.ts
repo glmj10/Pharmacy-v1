@@ -16,6 +16,7 @@ export interface Product {
   id: number;
   title: string;
   thumbnail?: string;
+  thumbnailUrl?: string
   slug: string;
   quantity: number;
   active: boolean;
@@ -37,4 +38,20 @@ export interface Product {
   inWishlist?: boolean;
   numberOfLikes?: number,
   promotionEvent?: Promotion | null; 
+}
+
+
+// src/types/index.ts
+
+export interface ProductFilterRequest {
+  title?: string;
+  priceFrom?: number;
+  priceTo?: number;
+  isAscending?: boolean;
+  
+  brandSlug?: string;
+  
+  category?: string;
+  page?: number;
+  limit?: number;
 }

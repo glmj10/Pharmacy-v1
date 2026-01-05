@@ -47,8 +47,8 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
           console.error(error);
         }
       },
-      'Xóa ngay', // Label nút Confirm
-      'Hủy bỏ'    // Label nút Cancel
+      'Xóa ngay', 
+      'Hủy bỏ'    
     );
   };
 
@@ -69,9 +69,8 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
       {/* Ảnh & Tên */}
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <Link to={`/products/${item.product.slug}`} className="w-20 h-20 shrink-0 border rounded-md overflow-hidden bg-gray-50">
-          {/* ===> SỬA TẠI ĐÂY: Truyền cả url và uuid <=== */}
           <AsyncImage
-            src={item.product.thumbnail} // Ưu tiên 1: Link từ CartService
+            src={item.product.thumbnailUrl} 
             alt={item.product.title}
             className="w-full h-full object-cover"
           />

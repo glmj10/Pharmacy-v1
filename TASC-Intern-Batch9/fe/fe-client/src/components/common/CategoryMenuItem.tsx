@@ -1,46 +1,44 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronRight, Image as ImageIcon } from 'lucide-react';
-import type { Category } from '../../types/category.types';
-import { cn } from '../../lib/utils';
+import { type Category } from '../../types/category.types';
 import AsyncImage from './AsyncImage';
+import { cn } from '../../lib/utils';
 
 interface CategoryMenuItemProps {
   category: Category;
   depth?: number;
+  rootType?: 'PRODUCT' | 'BLOG';
 }
 
-const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0 }) => {
+const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0, rootType }) => {
   const hasChildren = category.children && category.children.length > 0;
   const [isOpen, setIsOpen] = useState(false);
 
-  // Render Thumbnail (Chỉ hiện ở menu con, không hiện ở Root bar)
+  const getCategoryLink = () => {
+    const typeName = category.type?.name || rootType || 'PRODUCT';
+    if (typeName === 'BLOG') return `/blogs?category=${category.slug}`;
+    return `/products?category=${category.slug}`;
+  };
+
   const renderThumbnail = () => {
     if (depth === 0) return null;
-
     return (
       <div className="w-8 h-8 rounded border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
-        {category.thumbnail ? (
-        <AsyncImage 
-          src={category.thumbnail} 
-          className="w-full h-full object-cover"
-        />
-        ) : (
-          <ImageIcon className="w-4 h-4 text-gray-300" />
-        )}
-        <ImageIcon className={cn("w-4 h-4 text-gray-300 hidden", !category.thumbnail && "block")} />
+        <AsyncImage src={category.thumbnail} className="w-full h-full object-cover" fallbackSrc="" />
+        {!category.thumbnail && <ImageIcon className="w-4 h-4 text-gray-300" />}
       </div>
     );
   };
 
-  // 1. Nếu KHÔNG có con -> Render Link thường
+  // 1. TRƯỜNG HỢP: KHÔNG CÓ CON (Giữ nguyên)
   if (!hasChildren) {
     return (
       <Link 
-        to={`/categories/${category.slug}`}
+        to={getCategoryLink()}
         className={cn(
           "flex items-center gap-3 px-4 py-2 hover:bg-blue-50 hover:text-primary transition text-sm text-gray-700 whitespace-nowrap",
-          depth === 0 && "py-0 px-0 hover:bg-transparent font-medium text-base hover:text-primary block" 
+          depth === 0 && "py-2 px-0 hover:bg-transparent font-bold text-base hover:text-primary block" 
         )}
       >
         {renderThumbnail()}
@@ -49,7 +47,7 @@ const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0
     );
   }
 
-  // 2. Nếu CÓ con -> Render Group với Click Toggle
+  // 2. TRƯỜNG HỢP: CÓ CON (TÁCH HÀNH ĐỘNG)
   return (
     <div 
       className={cn(
@@ -57,35 +55,46 @@ const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0
         depth === 0 ? "h-full flex items-center" : "w-full"
       )}
     >
-      
-      {/* Nút Trigger (Tên danh mục) */}
-      <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setIsOpen(!isOpen);
-        }}
-        className={cn(
-          "flex items-center justify-between gap-2 cursor-pointer transition text-gray-700 whitespace-nowrap",
-          depth === 0 
-            ? "font-medium hover:text-primary py-2" // Root
-            : "px-4 py-2 hover:bg-blue-50 text-sm hover:text-primary w-full" // Sub-item
-        )}
-      >
-        <div className="flex items-center gap-3">
+      <div className={cn(
+        "flex items-center justify-between w-full group transition-colors",
+        depth === 0 ? "" : "hover:bg-blue-50" // Hover background cho cả dòng ở menu dọc
+      )}>
+        
+        {/* ACTION 1: CLICK TÊN -> CHUYỂN TRANG */}
+        <Link
+          to={getCategoryLink()}
+          className={cn(
+            "flex items-center gap-3 flex-1 cursor-pointer text-gray-700 whitespace-nowrap",
+            depth === 0 
+              ? "font-bold hover:text-primary py-2" 
+              : "px-4 py-2 text-sm group-hover:text-primary"
+          )}
+        >
           {renderThumbnail()}
           <span className={cn(depth > 0 && "font-medium")}>{category.name}</span>
-        </div>
+        </Link>
 
-        {/* Icon mũi tên */}
-        {depth === 0 ? (
-          <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
-        ) : (
-          <ChevronRight className={cn("w-4 h-4 text-gray-400 transition-transform", isOpen && "rotate-90")} />
-        )}
-      </button>
+        {/* ACTION 2: CLICK MŨI TÊN -> ĐÓNG/MỞ MENU */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsOpen(!isOpen);
+          }}
+          className={cn(
+            "p-2 text-gray-400 hover:text-primary transition-colors focus:outline-none",
+            depth === 0 ? "hover:bg-transparent" : "hover:bg-blue-100"
+          )}
+        >
+          {depth === 0 ? (
+            <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isOpen && "rotate-180")} />
+          ) : (
+            <ChevronRight className={cn("w-4 h-4 transition-transform duration-200", isOpen && "rotate-90")} />
+          )}
+        </button>
+      </div>
 
-      {/* DROPDOWN MENU (Hiện khi isOpen = true) */}
+      {/* DROPDOWN MENU */}
       {isOpen && (
         <div 
           className={cn(
@@ -95,7 +104,12 @@ const CategoryMenuItem: React.FC<CategoryMenuItemProps> = ({ category, depth = 0
         >
           <div className="py-2">
              {category.children?.map((child) => (
-               <CategoryMenuItem key={child.id} category={child} depth={depth + 1} />
+               <CategoryMenuItem 
+                  key={child.id} 
+                  category={child} 
+                  depth={depth + 1} 
+                  rootType={rootType} 
+               />
              ))}
           </div>
         </div>

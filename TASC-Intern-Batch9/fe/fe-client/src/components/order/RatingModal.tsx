@@ -72,7 +72,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ isOpen, onClose, orderDetailI
           {productInfo && (
             <div className="flex items-center gap-4 bg-blue-50 p-3 rounded-xl border border-blue-100">
               <div className="w-12 h-12 shrink-0 border rounded-lg overflow-hidden bg-white">
-                <AsyncImage uuid={productInfo.thumbnail} className="w-full h-full object-cover" />
+                <AsyncImage src={productInfo.thumbnail} className="w-full h-full object-cover" />
               </div>
               <p className="text-sm font-medium text-slate-800 line-clamp-2">{productInfo.title}</p>
             </div>

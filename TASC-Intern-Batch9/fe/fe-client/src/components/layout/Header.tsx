@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, User as UserIcon, LogOut, ChevronDown, FileText, UserCircle } from 'lucide-react'; // Thêm icon
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { ShoppingCart, Search, Menu, User as UserIcon, LogOut, ChevronDown, FileText, UserCircle, Ticket } from 'lucide-react'; // Thêm icon
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { clearAuth } from '../../store/slices/authSlice'; // Action đăng xuất (clearAuth)
 import categoryService from '../../api/categoryService';
@@ -9,6 +9,7 @@ import CategoryMenuItem from '../common/CategoryMenuItem';
 import identityService from '../../api/identityService';
 import { useModal } from '../../context/ModalContext'; // Import Modal
 import AsyncImage from '../common/AsyncImage'; // Import AsyncImage để hiện Avatar
+
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -19,8 +20,9 @@ const Header: React.FC = () => {
 
   const [productCategories, setProductCategories] = useState<Category[]>([]);
   const [articleCategories, setArticleCategories] = useState<Category[]>([]);
+  const [keyword, setKeyword] = useState('');
+  const [searchParams] = useSearchParams();
 
-  // ... (Phần useEffect fetchCategories giữ nguyên) ...
   useEffect(() => {
     const fetchMenuData = async () => {
       try {
@@ -56,6 +58,29 @@ const Header: React.FC = () => {
 
     fetchMenuData();
   }, []);
+
+
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setKeyword(searchFromUrl);
+    } else {
+      // Nếu không có param search (ví dụ về trang chủ), có thể clear input hoặc giữ nguyên tùy ý
+      // setKeyword(''); 
+    }
+  }, [searchParams]);
+
+  const handleSearch = () => {
+    if (keyword.trim()) {
+      navigate(`/products?search=${encodeURIComponent(keyword.trim())}`);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   const handleLogout = () => {
     openModal(
@@ -112,28 +137,37 @@ const Header: React.FC = () => {
                 </Link>
                 <div className="absolute top-full left-0 mt-0 pt-2 hidden group-hover:block">
                   <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[240px] py-2">
-                    {productCategories.map(cat => <CategoryMenuItem key={cat.id} category={cat} depth={1} />)}
+                    {productCategories.map(cat => (
+                      <CategoryMenuItem key={cat.id} category={cat} depth={1} rootType="PRODUCT" />
+                    ))}
                   </div>
                 </div>
               </div>
 
               {/* 2. Menu Góc sức khỏe (Dùng articleCategories từ API mới) */}
               <div className="group relative h-10 flex items-center">
-                <Link to="/articles" className="font-medium text-gray-700 hover:text-primary flex items-center gap-1 cursor-pointer">
+                <Link to="/blogs" className="font-medium text-gray-700 hover:text-primary flex items-center gap-1 cursor-pointer">
                   Góc sức khỏe <ChevronDown className="w-4 h-4" />
                 </Link>
                 <div className="absolute top-full left-0 mt-0 pt-2 hidden group-hover:block">
                   <div className="bg-white shadow-xl border border-gray-100 rounded-lg min-w-[240px] py-2">
-                    {articleCategories.length > 0 ? (
-                      articleCategories.map(cat => (
-                        <CategoryMenuItem key={cat.id} category={cat} depth={1} />
-                      ))
-                    ) : (
-                      <div className="px-4 py-2 text-sm text-gray-400 italic">Đang cập nhật...</div>
-                    )}
+                    {articleCategories.map(cat => (
+                      // Truyền rootType="BLOG"
+                      <CategoryMenuItem key={cat.id} category={cat} depth={1} rootType="BLOG" />
+                    ))}
                   </div>
                 </div>
               </div>
+
+
+              {/* ===> 3. MÃ GIẢM GIÁ (MỚI THÊM) <=== */}
+              <Link
+                to="/vouchers"
+                className="font-bold text-orange-600 hover:text-orange-700 hover:bg-orange-50 px-3 py-1.5 rounded-full flex items-center gap-2 h-10 transition-all"
+              >
+                <Ticket className="w-5 h-5 fill-current" /> {/* fill-current để icon đặc màu cam */}
+                Mã giảm giá
+              </Link>
 
               {/* ===> THÊM MỚI: MENU LIÊN HỆ <=== */}
               <Link
@@ -146,10 +180,22 @@ const Header: React.FC = () => {
             </div>
           </div>
 
-          {/* Search Bar (Giữ nguyên) */}
+          {/* ===> CẬP NHẬT SEARCH BAR <=== */}
           <div className="flex-1 max-w-sm relative hidden sm:block ml-auto">
-            <input type="text" placeholder="Tìm thuốc, thực phẩm chức năng..." className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 focus:outline-none focus:border-primary text-sm" />
-            <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={keyword} // Binding giá trị
+              onChange={(e) => setKeyword(e.target.value)}
+              onKeyDown={handleKeyDown} // Bắt sự kiện Enter
+              placeholder="Tìm thuốc, thực phẩm chức năng..."
+              className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 focus:outline-none focus:border-primary text-sm transition-all"
+            />
+            <button
+              onClick={handleSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition"
+            >
+              <Search className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Actions */}

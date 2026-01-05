@@ -11,35 +11,33 @@ const SessionManager: React.FC = () => {
   const { openModal } = useModal();
 
   useEffect(() => {
-    // Hàm xử lý khi nhận được sự kiện hết phiên
     const handleSessionExpired = () => {
-      // 1. Xóa sạch dữ liệu trong Redux
+      // 1. Xóa sạch dữ liệu đăng nhập ngay lập tức để tránh lỗi lặp lại
       dispatch(clearAuth());
 
-      // 2. Mở Modal thông báo
+      // 2. Hiển thị Modal thông báo riêng biệt
       openModal(
         'warning', // Icon cảnh báo màu vàng
-        'Phiên đăng nhập hết hạn',
-        'Vui lòng đăng nhập lại để tiếp tục sử dụng dịch vụ.',
+        'Phiên đăng nhập đã hết hạn', // Tiêu đề
+        'Để bảo mật tài khoản, phiên làm việc của bạn đã kết thúc. Vui lòng đăng nhập lại để tiếp tục mua sắm.', // Nội dung chi tiết
         () => {
-          // 3. Khi bấm "Đồng ý" hoặc "Đóng" -> Chuyển về Login
+          // 3. Khi bấm nút -> Chuyển về trang Login
           navigate('/login');
         },
-        'Đăng nhập lại', // Tên nút Confirm
-        ''               // Ẩn nút Cancel (chỉ cần 1 nút để bắt buộc user)
+        'Đăng nhập lại', // Nút chính
+        '' // Để trống nút phụ (Cancel) để bắt buộc người dùng phải bấm Đăng nhập lại
       );
     };
 
-    // Đăng ký lắng nghe sự kiện
+    // Đăng ký lắng nghe sự kiện từ axiosClient
     window.addEventListener(AUTH_EVENTS.SESSION_EXPIRED, handleSessionExpired);
 
-    // Dọn dẹp khi component unmount
     return () => {
       window.removeEventListener(AUTH_EVENTS.SESSION_EXPIRED, handleSessionExpired);
     };
   }, [dispatch, navigate, openModal]);
 
-  return null; // Component này không hiển thị gì cả
+  return null; // Component này không có giao diện (Headless)
 };
 
 export default SessionManager;

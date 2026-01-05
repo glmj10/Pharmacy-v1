@@ -15,9 +15,11 @@ import VerifyAccount from './pages/VerifyAccount';
 import Contact from './pages/Contact';
 import SessionManager from './components/auth/SessionManager';
 import PaymentResult from './pages/PaymentResult';
-import ArticleDetail from './pages/ArticleDetail';
+import ArticleDetail from './pages/BlogDetail';
 import Blog from './pages/Blog';
 import PromotionDetail from './pages/PromotionDetail';
+import VoucherCenter from './pages/VoucherCenter';
+import BlogDetail from './pages/BlogDetail';
 
 
 const NotFound = () => <div className="p-10 text-center text-red-500">404 - Không tìm thấy trang</div>;
@@ -48,8 +50,9 @@ function App() {
 
           <Route path="payment/vnpay-return" element={<PaymentResult />} />
 
-          <Route path="articles" element={<Blog />} />
-          <Route path="articles/:slug" element={<ArticleDetail />} />
+          <Route path="blogs" element={<Blog />} />
+          <Route path="blogs/:slug" element={<BlogDetail />} />
+          <Route path="vouchers" element={<VoucherCenter />} />
 
           <Route path="promotions/:id" element={<PromotionDetail />} />
         </Route>

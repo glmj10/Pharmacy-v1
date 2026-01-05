@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
     User, Mail, LogOut, Camera, KeyRound, Edit, MapPin,
     ShieldCheck, Calendar, Package, Clock, CreditCard,
-    Eye
+    Eye,
+    Ticket
 } from 'lucide-react';
 
 // Hooks & Context
@@ -18,6 +19,7 @@ import userService, { type UserResponse } from '../api/identityService';
 import identityService from '../api/identityService';
 import orderService from '../api/orderService';
 import paymentService from '../api/paymentService';
+import voucherService from '../api/voucherService';
 import type { OrderResponse } from '../types/order.types';
 
 // Components
@@ -26,6 +28,8 @@ import AddressList from '../components/profile/AddressList';
 import ChangePasswordModal from '../components/profile/ChangePasswordModal';
 import EditProfileModal from '../components/profile/EditProfileModal';
 import OrderDetailModal from '../components/profile/OrderDetailModal';
+import type { Voucher } from '../types/voucher.types';
+import VoucherCard from '../components/voucher/VoucherCard';
 
 const Profile: React.FC = () => {
     const navigate = useNavigate();
@@ -34,6 +38,8 @@ const Profile: React.FC = () => {
     const { toast } = useToast();
     const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [myVouchers, setMyVouchers] = useState<Voucher[]>([]);
+    const [vouchersLoading, setVouchersLoading] = useState(false);
 
     // --- STATE DATA ---
     const [profile, setProfile] = useState<UserResponse | null>(null);
@@ -54,13 +60,31 @@ const Profile: React.FC = () => {
 
     const tabFromUrl = searchParams.get('tab');
 
-    const [activeTab, setActiveTab] = useState<'info' | 'address' | 'orders'>(
-        (tabFromUrl === 'orders' || tabFromUrl === 'address') ? tabFromUrl : 'info'
+    const [activeTab, setActiveTab] = useState<'info' | 'address' | 'orders' | 'vouchers'>(
+        (tabFromUrl === 'orders' || tabFromUrl === 'address' || tabFromUrl === 'vouchers') ? tabFromUrl : 'info'
     );
     // --- STATE MODALS ---
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
+
+    const fetchMyVouchers = async () => {
+        setVouchersLoading(true);
+        try {
+            const res: any = await voucherService.getUserVouchers(1, 20);
+            setMyVouchers(res.data?.content || res.result?.content || []);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setVouchersLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'vouchers') {
+            fetchMyVouchers();
+        }
+    }, [activeTab]);
 
     // Khi click vào nút Tab, ta cũng nên update URL để đồng bộ
     const handleTabChange = (tab: 'info' | 'address' | 'orders') => {
@@ -120,6 +144,8 @@ const Profile: React.FC = () => {
             }
         });
     };
+
+
 
     const handleCancelOrder = (id: number) => {
         openModal('warning', 'Hủy đơn hàng', 'Bạn có chắc muốn hủy đơn hàng này?', async () => {
@@ -248,6 +274,13 @@ const Profile: React.FC = () => {
                                     className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl font-medium transition text-sm"
                                 >
                                     <LogOut className="w-4 h-4" /> Đăng xuất
+                                </button>
+
+                                <button
+                                    onClick={() => setActiveTab('vouchers')}
+                                    className={cn("flex items-center gap-2 px-6 py-3 font-medium text-sm transition border-b-2 whitespace-nowrap", activeTab === 'vouchers' ? "border-primary text-primary bg-blue-50/50" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50")}
+                                >
+                                    <Ticket className="w-4 h-4" /> Ví Voucher
                                 </button>
                             </div>
                         </div>
@@ -412,6 +445,30 @@ const Profile: React.FC = () => {
                                 )}
                             </div>
                         )}
+
+                        {/* 4. Tab Ví Voucher */}
+                        {activeTab === 'vouchers' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <h3 className="text-lg font-bold text-slate-800 border-l-4 border-orange-500 pl-3 mb-6">Mã giảm giá của tôi</h3>
+
+                                {vouchersLoading ? (
+                                    <div className="text-center py-10">Đang tải voucher...</div>
+                                ) : myVouchers.length === 0 ? (
+                                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                                        <Ticket className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-gray-500">Bạn chưa có voucher nào.</p>
+                                        <Link to="/vouchers" className="text-primary hover:underline mt-2 inline-block text-sm">Săn voucher ngay</Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {myVouchers.filter(v => !v.used).map(v => (
+                                            <VoucherCard key={v.id} voucher={v} isOwned={true} />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                     </div>
 
                 </div>

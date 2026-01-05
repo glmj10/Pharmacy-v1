@@ -14,5 +14,5 @@ export interface Category {
   priority?: number;
   type?: CategoryType;
   parentId?: number;
-  children?: Category[]; // Đệ quy: Danh mục con chứa danh sách danh mục
+  children?: Category[],
 }
