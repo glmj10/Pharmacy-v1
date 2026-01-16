@@ -37,7 +37,8 @@ public class EndpointConfig {
             "/rates/{productId}",
             "/promotions/**",
             "/promotion-items/{eventId}",
-
+            "/vouchers/**",
+            "/banners/**",
     };
 
     public static final String[] PUBLIC_POST_ENDPOINTS = {

@@ -11,7 +11,8 @@ public enum FileCategoryEnum {
     BLOG("blog"),
     PRODUCT("product"),
     CATEGORY("category"),
-    PROMOTION("promotion")
+    PROMOTION("promotion"),
+    BANNER("banner")
     ;
 
     private final String subDirectory;

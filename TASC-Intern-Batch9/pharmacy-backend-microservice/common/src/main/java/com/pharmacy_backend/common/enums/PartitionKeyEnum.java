@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum PartitionKeyEnum {
-    USER, PROFILE, CATEGORY, PRODUCT, ORDER, PAYMENT;
+    USER, PROFILE, CATEGORY, PRODUCT, ORDER, PAYMENT,PROMOTION;
 
     public String getName() {
         return this.name();

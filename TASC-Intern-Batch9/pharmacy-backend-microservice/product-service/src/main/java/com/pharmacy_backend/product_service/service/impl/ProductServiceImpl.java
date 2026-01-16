@@ -9,7 +9,9 @@ import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.ProductEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.common.utils.SlugUtils;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.dto.request.ProductCMSFilterRequest;
 import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
@@ -60,6 +62,7 @@ public class ProductServiceImpl implements ProductService {
     final PromotionEventRepository promotionEventRepository;
     final PromotionItemRepository promotionItemRepository;
     final PromotionEventMapper promotionEventMapper;
+    final RedisService redisService;
 
     @Value("${spring.application.name}")
     private String appName;
@@ -87,6 +90,7 @@ public class ProductServiceImpl implements ProductService {
                                     .map(categoryMapper::toCategoryResponse)
                                     .collect(Collectors.toList())
                     );
+                    response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
 
                     return response;
                 })
@@ -135,6 +139,7 @@ public class ProductServiceImpl implements ProductService {
                 .stream()
                 .map(product -> {
                     ProductResponse response = productMapper.toProductResponse(product);
+                    response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
                     if(user != null) {
                         Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
                         response.setInWishlist(isInWishList);
@@ -167,6 +172,7 @@ public class ProductServiceImpl implements ProductService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm với ID: " + id));
         ProductResponse productResponse = productMapper.toProductResponse(product);
+        productResponse.setThumbnail(AppConfig.getImagePrefix() + productResponse.getThumbnail());
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
         productResponse.setImportPrice(product.getImportPrice());
@@ -181,6 +187,11 @@ public class ProductServiceImpl implements ProductService {
         if(productResponse != null) {
             Integer stockResponse = stockCacheService.getStock(productResponse.getId());
             productResponse.setQuantity(stockResponse);
+            productResponse.setThumbnail(AppConfig.getImagePrefix() + productResponse.getThumbnail());
+            Set<String> wishlist = redisService.getSetMembers(String.format("%s:%d",
+                    RedisKeyTypeEnum.WISHLIST_USER.getKey(),
+                    SecurityUtils.getCurrentUserId()));
+            productResponse.setInWishlist(wishlist != null && wishlist.contains(productResponse.getSlug()));
             return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
         } else {
             Product product = productRepository.findBySlug(slug)
@@ -255,7 +266,7 @@ public class ProductServiceImpl implements ProductService {
         try {
             thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.PRODUCT.getSubDirectory());
-            product.setThumbnail(thumbnailResponse.getData().getFileUrl());
+            product.setThumbnail(thumbnailResponse.getData().getPath());
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi tải lên hình ảnh đại diện: " + e.getMessage());
@@ -285,7 +296,7 @@ public class ProductServiceImpl implements ProductService {
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
                 .quantity(product.getQuantity())
-                .thumbnailUrl(thumbnailResponse.getData().getFileUrl())
+                .thumbnailUrl(thumbnailResponse.getData().getPath())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
@@ -310,7 +321,7 @@ public class ProductServiceImpl implements ProductService {
             fileServiceClient.deleteFile(product.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            product.setThumbnail(thumbnailResponse.getData().getFileUrl());
+            product.setThumbnail(thumbnailResponse.getData().getPath());
         }
 
         Brand brand = brandRepository.findById(request.getBrandId())
@@ -337,11 +348,12 @@ public class ProductServiceImpl implements ProductService {
                 .priceOld(product.getPriceOld())
                 .active(product.getActive())
                 .quantity(product.getQuantity())
+                .thumbnailUrl(product.getThumbnail())
                 .build();
 
         Event<ProductEvent> event = Event.<ProductEvent>builder()
                 .key(String.format("%s-%d", PartitionKeyEnum.PRODUCT.getName(), product.getId()))
-                .eventType(EventTypeEnum.PRODUCT_CREATED.getName())
+                .eventType(EventTypeEnum.PRODUCT_UPDATED.getName())
                 .data(productEvent)
                 .source(appName)
                 .build();
@@ -507,10 +519,7 @@ public class ProductServiceImpl implements ProductService {
             List<Product> relatedProducts = productRepository.findTop20ByCategoriesInAndIdNotAndActiveTrue(
                     product.getCategories(), product.getId());
             List<ProductResponse> relatedProductResponses = relatedProducts.stream()
-                    .map(p -> {
-                        ProductResponse response = productMapper.toProductResponse(p);
-                        return response;
-                    })
+                    .map(productMapper::toProductResponse)
                     .toList();
             List<String> slugsToCache = relatedProductResponses.stream()
                     .map(ProductResponse::getSlug)

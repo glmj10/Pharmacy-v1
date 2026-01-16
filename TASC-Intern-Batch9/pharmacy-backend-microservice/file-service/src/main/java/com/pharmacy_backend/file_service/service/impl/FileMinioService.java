@@ -71,7 +71,7 @@ public class FileMinioService implements FileMetadataService {
             minioClient.putObject(putArgs);
 
             String publicUrl = buildPublicUrl(bucket, objectKey);
-
+            String path = buildPath(bucket, objectKey);
             FileMetadata fileMetadata = FileMetadata.builder()
                     .originalFileName(originalFileName)
                     .storedFileName(publicId)
@@ -80,6 +80,7 @@ public class FileMinioService implements FileMetadataService {
                     .contentType(file.getContentType())
                     .fileType(fileCategoryEnum.getSubDirectory())
                     .url(publicUrl)
+                    .path(path)
                     .build();
 
             fileMetadata = fileMetadataRepository.save(fileMetadata);
@@ -87,7 +88,7 @@ public class FileMinioService implements FileMetadataService {
             FileMetadataResponse response = FileMetadataResponse.builder()
                     .id(fileMetadata.getUuid())
                     .storedFileName(publicId)
-                    .fileUrl(publicUrl)
+                    .path(path)
                     .build();
 
             return ApiResponse.buildCreatedResponse(response, "Upload file thành công");
@@ -201,5 +202,9 @@ public class FileMinioService implements FileMetadataService {
         String base = (publicBaseUrl != null && !publicBaseUrl.isBlank()) ? publicBaseUrl : endpoint;
         if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
         return base + "/" + bucket + "/" + objectKey;
+    }
+
+    private String buildPath(String bucket, String objectKey) {
+        return "/" + bucket + "/" + objectKey;
     }
 }

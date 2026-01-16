@@ -20,6 +20,7 @@ public class VoucherResponse {
     String discountType;
     String type;
     Integer discountValue;
+    Integer collectedCount;
     Integer maxDiscountAmount;
     Integer minOrderValue;
     Integer usageLimit;
@@ -27,4 +28,6 @@ public class VoucherResponse {
     String status;
     LocalDateTime startDate;
     LocalDateTime endDate;
+    boolean isClaimed;
+    boolean isUsed;
 }

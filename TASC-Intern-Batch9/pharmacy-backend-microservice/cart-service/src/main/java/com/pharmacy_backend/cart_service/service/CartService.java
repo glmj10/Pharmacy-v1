@@ -5,6 +5,7 @@ import com.pharmacy_backend.cart_service.dto.response.CartItemResponse;
 import com.pharmacy_backend.cart_service.dto.response.CartResponse;
 import com.pharmacy_backend.cart_service.entity.Cart;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -19,4 +20,6 @@ public interface CartService {
     ApiResponse<CartResponse> getCartItemsForCheckout();
     ApiResponse<Long> getTotalItemsInCart();
     Cart createCart(Long userId);
+
+    ApiResponse<List<CartItemResponse>> addMultipleItemsToCart(List<CartItemRequest> requests);
 }

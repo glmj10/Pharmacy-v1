@@ -12,6 +12,7 @@ import com.pharmacy_backend.common.kafka.event.UserVerifyAccountEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.service.OutboxService;
+import com.pharmacy_backend.identity_service.config.AppConfig;
 import com.pharmacy_backend.identity_service.dto.request.*;
 import com.pharmacy_backend.identity_service.dto.response.AuthResponse;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
@@ -257,7 +258,7 @@ public class AuthServiceImpl implements AuthService {
             if(user.getProfilePicUUID() != null && !user.getProfilePicUUID().isEmpty()) {
                 fileServiceClient.deleteFile(user.getProfilePicUUID());
             }
-            user.setProfilePic(fileResponse.getData().getFileUrl());
+            user.setProfilePic(fileResponse.getData().getPath());
         }
 
         UserEvent userEvent = UserEvent.builder()
@@ -275,6 +276,7 @@ public class AuthServiceImpl implements AuthService {
 
         UserResponse userResponse = userMapper.toUserResponse(userRepository.save(user));
         userResponse.setRoles(null);
+        userResponse.setProfilePic(AppConfig.getImagePrefix() + userResponse.getProfilePic());
 
         outboxService.handleSaveOutboxEvent(event);
 

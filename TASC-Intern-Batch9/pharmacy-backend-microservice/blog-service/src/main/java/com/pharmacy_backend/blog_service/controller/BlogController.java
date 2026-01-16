@@ -21,7 +21,6 @@ import java.util.List;
 public class BlogController {
     private final BlogService blogService;
 
-    @Transactional
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<List<BlogResponse>>>> getAllBlogs(@RequestParam(defaultValue = "1") int pageIndex,
                                                                                      @RequestParam(defaultValue = "10") int pageSize,

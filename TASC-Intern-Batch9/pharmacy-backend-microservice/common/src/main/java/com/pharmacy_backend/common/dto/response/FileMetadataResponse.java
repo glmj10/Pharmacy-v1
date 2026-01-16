@@ -13,5 +13,5 @@ import java.util.UUID;
 public class FileMetadataResponse {
     private UUID id;
     private String storedFileName;
-    private String fileUrl;
+    private String path;
 }

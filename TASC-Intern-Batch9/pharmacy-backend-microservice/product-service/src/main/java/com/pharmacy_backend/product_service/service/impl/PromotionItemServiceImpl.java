@@ -3,6 +3,7 @@ package com.pharmacy_backend.product_service.service.impl;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
 import com.pharmacy_backend.product_service.dto.request.PromotionItemRequest;
@@ -17,6 +18,7 @@ import com.pharmacy_backend.product_service.repository.PromotionEventRepository;
 import com.pharmacy_backend.product_service.repository.PromotionItemRepository;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
 import com.pharmacy_backend.product_service.service.PromotionItemService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -72,6 +74,7 @@ public class PromotionItemServiceImpl implements PromotionItemService {
                 "thành công");
     }
 
+    @Transactional
     @Override
     public ApiResponse<AllPromotionItemResponse> createPromotionItems(AllPromotionItemRequest request) {
         PromotionEvent promotionEvent = promotionEventRepository.findById(request.getPromotionEventId())
@@ -121,7 +124,7 @@ public class PromotionItemServiceImpl implements PromotionItemService {
                 continue;
             }
 
-            if (!isValidPrice(item, product)) {
+            if (isValidPrice(item, product)) {
                 failedItems.add(fail(item, ErrorCode.PROMOTION_ITEM_INVALID_SALE_PRICE));
                 continue;
             }
@@ -146,6 +149,7 @@ public class PromotionItemServiceImpl implements PromotionItemService {
         return ApiResponse.buildCreatedResponse(response, "Thêm sản phẩm vào sự kiện thành công");
     }
 
+    @Transactional
     @Override
     public ApiResponse<Void> removePromotionItems(List<Long> promotionItemIds) {
         List<PromotionItem> promotionItems = promotionItemRepository.findAllById(promotionItemIds);
@@ -153,16 +157,42 @@ public class PromotionItemServiceImpl implements PromotionItemService {
         return ApiResponse.buildOkResponse(null, "Xóa sản phẩm khỏi sự kiện thành công");
     }
 
+    @Transactional
+    @Override
+    public ApiResponse<Void> updatePromotionItems(Long promotionItemId, PromotionItemRequest request) {
+        PromotionItem promotionItem = promotionItemRepository.findById(promotionItemId)
+                .orElseThrow(() -> new CustomException(ErrorCode.PROMOTION_ITEM_NOT_FOUND));
+
+        PromotionEvent promotionEvent = promotionEventRepository.findById(promotionItem.getPromotionEventId())
+                .orElseThrow(() -> new CustomException(ErrorCode.PROMOTION_EVENT_NOT_FOUND));
+
+        Product product = productRepository.findById(request.getProductId())
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if(promotionEvent.getStatus() != null &&
+                promotionEvent.getStatus() == PromotionEventStatusEnum.ONGOING) {
+            throw new CustomException(ErrorCode.PROMOTION_EVENT_ACTIVE_CANNOT_UPDATE_ITEM);
+        }
+
+        if (isValidPrice(request, product)) {
+            throw new CustomException(ErrorCode.PROMOTION_ITEM_INVALID_SALE_PRICE);
+        }
+
+        promotionItem.setSalePrice(request.getSalePrice());
+        promotionItemRepository.save(promotionItem);
+        return ApiResponse.buildOkResponse(null, "Cập nhật sản phẩm trong sự kiện thành công");
+    }
+
     private boolean isValidPrice(PromotionItemRequest item, Product product) {
 
         Integer original = product.getPriceNew();
 
         if (item.getSalePrice() != null) {
-            return item.getSalePrice() > 0
-                    && item.getSalePrice().compareTo(original) < 0;
+            return item.getSalePrice() <= 0
+                    || item.getSalePrice().compareTo(original) >= 0;
         }
 
-        return false;
+        return true;
     }
 
     private PromotionItemResponse fail(

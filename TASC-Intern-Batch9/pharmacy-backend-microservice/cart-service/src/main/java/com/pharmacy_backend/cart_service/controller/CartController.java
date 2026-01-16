@@ -84,4 +84,10 @@ public class CartController {
 
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
+    @PostMapping("/item/bulk")
+    public ResponseEntity<ApiResponse<List<CartItemResponse>>> addMultipleItemsToCart(@RequestBody @Valid List<CartItemRequest> requests) {
+        ApiResponse<List<CartItemResponse>> response = cartService.addMultipleItemsToCart(requests);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }

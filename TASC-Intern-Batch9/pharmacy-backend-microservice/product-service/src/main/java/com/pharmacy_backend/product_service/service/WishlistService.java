@@ -11,5 +11,4 @@ public interface WishlistService {
     ApiResponse<Void> addProductToWishlist(Long productId);
     ApiResponse<Void> removeProductFromWishlist(Long wishlistId);
     ApiResponse<Void> clearWishlist();
-    ApiResponse<Void> addAllToCart();
 }

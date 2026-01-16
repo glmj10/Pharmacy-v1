@@ -6,6 +6,7 @@ import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import com.pharmacy_backend.product_service.entity.Category;
 import com.pharmacy_backend.product_service.entity.Product;
@@ -189,6 +190,7 @@ public class ProductRedisService {
         List<Category> categories = categoryRepository.findAllByProductsContains(product);
         productResponse.setCategories(categories.stream()
                 .map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
+        productResponse.setThumbnail(AppConfig.getImagePrefix() + product.getThumbnail());
 
         PromotionItem promotionItem = promotionItemRepository.findByProductId(product.getId())
                 .orElse(null);

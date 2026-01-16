@@ -4,6 +4,7 @@ import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.identity_service.config.AppConfig;
 import com.pharmacy_backend.identity_service.dto.request.ChangeUserRoleRequest;
 import com.pharmacy_backend.identity_service.dto.request.UserSearchCriteria;
 import com.pharmacy_backend.identity_service.dto.response.UserResponse;
@@ -115,7 +116,7 @@ public class UserServiceImpl implements UserService {
 
         List<UserResponse> userResponses = userPage.getContent().stream().map(user -> {
             UserResponse userResponse = userMapper.toUserResponse(user);
-//            userResponse.setProfilePicUrl(getProfilePicUrl(user.getProfilePic()));
+            userResponse.setProfilePic(AppConfig.getImagePrefix() + user.getProfilePic());
             return userResponse;
         }).toList();
         PageResponse<List<UserResponse>> pageResponse = PageResponse.<List<UserResponse>>builder()
@@ -137,6 +138,7 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         UserResponse userResponse = userMapper.toUserResponse(currentUser);
         userResponse.setRoles(null);
+        userResponse.setProfilePic(AppConfig.getImagePrefix() + currentUser.getProfilePic());
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
 

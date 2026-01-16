@@ -1,5 +1,6 @@
 package com.pharmacy_backend.blog_service.service.impl;
 
+import com.pharmacy_backend.blog_service.config.AppConfig;
 import com.pharmacy_backend.blog_service.dto.request.BlogRequest;
 import com.pharmacy_backend.blog_service.dto.response.BlogResponse;
 import com.pharmacy_backend.blog_service.entity.Blog;
@@ -65,7 +66,7 @@ public class BlogServiceImpl implements BlogService {
                 blog -> {
                     BlogResponse response = blogMapper.toBlogResponse(blog);
                     String thumbnailUrl = blog.getThumbnail();
-                    response.setThumbnail(thumbnailUrl);
+                    response.setThumbnail(AppConfig.getImagePrefix() + thumbnailUrl);
                     return response;
                 }
         ).toList();
@@ -89,7 +90,7 @@ public class BlogServiceImpl implements BlogService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy bài viết với slug: " + slug));
         BlogResponse blogResponse = blogMapper.toBlogResponse(blog);
         blogResponse.setCategory(categoryMapper.toCategoryResponse(blog.getCategory()));
-        blogResponse.setThumbnail(blog.getThumbnail());
+        blogResponse.setThumbnail(AppConfig.getImagePrefix() + blog.getThumbnail());
         return ApiResponse.buildOkResponse(blogResponse, "Lấy bài viết thành công");
     }
 
@@ -101,7 +102,7 @@ public class BlogServiceImpl implements BlogService {
                         HttpStatus.NOT_FOUND, "Không tìm thấy bài viết với ID: " + id));
         BlogResponse blogResponse = blogMapper.toBlogResponse(blog);
         blogResponse.setCategory(categoryMapper.toCategoryResponse(blog.getCategory()));
-        blogResponse.setThumbnail(blog.getThumbnail());
+        blogResponse.setThumbnail(AppConfig.getImagePrefix() + blog.getThumbnail());
         return ApiResponse.buildOkResponse(blogResponse, "Lấy bài viết thành công");
     }
 
@@ -118,11 +119,13 @@ public class BlogServiceImpl implements BlogService {
 
         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                 FileCategoryEnum.BLOG.getSubDirectory());
-        blog.setThumbnail(thumbnailResponse.getData().getFileUrl());
+        blog.setThumbnail(thumbnailResponse.getData().getPath());
+        blog.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         blog.setCategory(category);
         Blog savedBlog = blogRepository.save(blog);
 
         BlogResponse blogResponse = blogMapper.toBlogResponse(savedBlog);
+        blogResponse.setThumbnail(AppConfig.getImagePrefix() +  blogResponse.getThumbnail());
         return ApiResponse.buildCreatedResponse(blogResponse, "Tạo bài viết thành công");
     }
 
@@ -139,14 +142,15 @@ public class BlogServiceImpl implements BlogService {
             fileServiceClient.deleteFile(existingBlog.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            blogUpdateFromRequest.setThumbnail(thumbnailResponse.getData().getFileUrl());
+            blogUpdateFromRequest.setThumbnail(thumbnailResponse.getData().getPath());
+            blogUpdateFromRequest.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         }
 
         blogUpdateFromRequest.setSlug(createSlug(blogUpdateFromRequest.getTitle()));
         blogUpdateFromRequest.setModifiedBy(SecurityUtils.getCurrentUserId());
         Blog updatedBlog = blogRepository.save(blogUpdateFromRequest);
         BlogResponse blogResponse = blogMapper.toBlogResponse(updatedBlog);
-        blogResponse.setThumbnail(updatedBlog.getThumbnail());
+        blogResponse.setThumbnail(AppConfig.getImagePrefix() + updatedBlog.getThumbnail());
 
         return ApiResponse.buildOkResponse(blogResponse, "Cập nhật bài viết thành công");
     }

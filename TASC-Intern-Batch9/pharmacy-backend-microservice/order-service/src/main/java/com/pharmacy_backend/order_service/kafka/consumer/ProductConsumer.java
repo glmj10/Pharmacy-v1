@@ -29,21 +29,30 @@ public class ProductConsumer {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {
             });
             String eventType = event.getEventType();
-            ProductEvent productEvent = objectMapper.convertValue(event.getData(), ProductEvent.class);
+            ProductEvent productEvent;
 
             if (eventType.equalsIgnoreCase(EventTypeEnum.PRODUCT_CREATED.getName())) {
+                productEvent = objectMapper.convertValue(event.getData(), ProductEvent.class);
                 productService.createProduct(productEvent);
                 log.info("Consumed PRODUCT_CREATED event: {}", message);
             }
 
             if (eventType.equalsIgnoreCase(EventTypeEnum.PRODUCT_UPDATED.getName())) {
+                productEvent = objectMapper.convertValue(event.getData(), ProductEvent.class);
                 productService.updateProduct(productEvent);
                 log.info("Consumed PRODUCT_UPDATED event: {}", message);
             }
 
             if (eventType.equalsIgnoreCase(EventTypeEnum.PRODUCT_DELETED.getName())) {
+                productEvent = objectMapper.convertValue(event.getData(), ProductEvent.class);
                 productService.changeProductStatus(productEvent.getProductId(), false);
                 log.info("Consumed PRODUCT_DELETED event: {}", message);
+            }
+
+            if(eventType.equalsIgnoreCase(EventTypeEnum.PRODUCT_UPDATED_ALL.getName())) {
+                productService.updateAll(objectMapper.convertValue(event.getData(), new TypeReference<>() {
+                }));
+                log.info("Consumed PRODUCT_UPDATED_ALL event: {}", message);
             }
 
             acknowledgment.acknowledge();

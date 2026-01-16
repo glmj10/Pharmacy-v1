@@ -5,7 +5,10 @@ import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.service.RedisService;
+import com.pharmacy_backend.order_service.dto.projection.VoucherStatusInfoProjection;
 import com.pharmacy_backend.order_service.dto.request.UserVoucherRequest;
+import com.pharmacy_backend.order_service.dto.request.VoucherFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.VoucherRequest;
 import com.pharmacy_backend.order_service.dto.response.VoucherResponse;
 import com.pharmacy_backend.order_service.entity.UserVoucher;
@@ -16,19 +19,26 @@ import com.pharmacy_backend.order_service.repository.VoucherRepository;
 import com.pharmacy_backend.order_service.repository.VoucherUsageRepository;
 import com.pharmacy_backend.order_service.service.QuartzService;
 import com.pharmacy_backend.order_service.service.VoucherService;
+import com.pharmacy_backend.order_service.specification.VoucherSpecification;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -39,10 +49,12 @@ public class VoucherServiceImpl implements VoucherService {
     UserVoucherRepository userVoucherRepository;
     VoucherMapper voucherMapper;
     QuartzService quartzService;
+    RedisService redisService;
 
 
     @Override
-    public ApiResponse<PageResponse<List<VoucherResponse>>> getVouchers(int pageIndex, int pageSize, String type) {
+    public ApiResponse<PageResponse<List<VoucherResponse>>> getVouchers(
+            int pageIndex, int pageSize, VoucherFilterRequest request) {
         if(pageIndex < 0) {
             pageIndex = 1;
         }
@@ -53,29 +65,26 @@ public class VoucherServiceImpl implements VoucherService {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
         Page<Voucher> voucherPage;
         try{
-            if(type != null) {
-                voucherPage = voucherRepository.findByType(VoucherTypeEnum.valueOf(type), pageable);
-            } else {
-                voucherPage = voucherRepository.findAll(pageable);
-            }
+            Specification<Voucher> specification = VoucherSpecification.hasType(request.getType())
+                    .and(VoucherSpecification.hasStatus(request.getType()));
+
+            voucherPage = voucherRepository.findAll(specification, pageable);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR,
                     e.getMessage());
         }
 
-        List<VoucherResponse> voucherResponses = voucherPage.getContent()
-                .stream()
-                .map(voucherMapper::toVoucherResponse)
-                .toList();
+        List<VoucherResponse> voucherResponses = buildVoucherResponse(voucherPage.getContent());
 
         PageResponse<List<VoucherResponse>> pageResponse = PageResponse.<List<VoucherResponse>>builder()
                 .currentPage(pageIndex)
-                .totalPages(pageSize)
+                .totalPages(voucherPage.getTotalPages())
                 .totalElements(voucherPage.getTotalElements())
                 .content(voucherResponses)
                 .hasNext(voucherPage.hasNext())
                 .hasPrevious(voucherPage.hasPrevious())
                 .build();
+
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách voucher thành công");
     }
 
@@ -205,6 +214,10 @@ public class VoucherServiceImpl implements VoucherService {
                 .build();
 
         userVoucherRepository.save(userVoucher);
+        String key = RedisKeyTypeEnum.USER_CLAIMED_VOUCHER + ":" + SecurityUtils.getCurrentUserId();
+        redisService.addValueToSet(
+                key, String.valueOf(voucher.getId()), RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration()
+        );
 
         return ApiResponse.buildCreatedResponse(null, "Nhận voucher thành công");
     }
@@ -265,10 +278,7 @@ public class VoucherServiceImpl implements VoucherService {
                     e.getMessage());
         }
 
-        List<VoucherResponse> voucherResponses = voucherPage.getContent()
-                .stream()
-                .map(voucherMapper::toVoucherResponse)
-                .toList();
+        List<VoucherResponse> voucherResponses = buildVoucherResponse(voucherPage.getContent());
 
         PageResponse<List<VoucherResponse>> pageResponse = PageResponse.<List<VoucherResponse>>builder()
                 .currentPage(pageIndex)
@@ -279,5 +289,45 @@ public class VoucherServiceImpl implements VoucherService {
                 .hasPrevious(voucherPage.hasPrevious())
                 .build();
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách voucher của người dùng thành công");
+    }
+
+    private List<VoucherResponse> buildVoucherResponse(List<Voucher> vouchers) {
+        Set<String> claimedVoucherIdsStr = redisService.getSetMembers(
+                RedisKeyTypeEnum.USER_CLAIMED_VOUCHER + ":" + SecurityUtils.getCurrentUserId()
+        );
+
+        Set<Long> claimIds;
+        if(claimedVoucherIdsStr.isEmpty()) {
+            List<Long> ids = vouchers.stream().map(Voucher::getId).toList();
+            claimIds = userVoucherRepository.findClaimedVoucherIds(SecurityUtils.getCurrentUserId(), ids);
+            if(!claimIds.isEmpty()) {
+                String[] arr = claimIds.stream().map(String::valueOf).toArray(String[]::new);
+                redisService.addValueToSet(
+                        RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.name() + ":" + SecurityUtils.getCurrentUserId(),
+                        arr, RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration());
+            }
+        } else {
+            claimIds = claimedVoucherIdsStr.stream().map(Long::valueOf).collect(java.util.stream.Collectors.toSet());
+        }
+
+        Map<Long, Boolean> finalUsedMaps = userVoucherRepository.findUsedStatus(
+                SecurityUtils.getCurrentUserId(), claimIds).stream()
+                .filter(projection -> projection.getVoucherId() != null)
+                .collect(Collectors.toMap(
+                        VoucherStatusInfoProjection::getVoucherId,
+//                        VoucherStatusInfoProjection::getUsed
+                        projection -> projection.getUsed() != null ? projection.getUsed() : false,
+                        (existing, replacement) -> existing
+                ));
+
+        return vouchers
+                .stream()
+                .map(voucher -> {
+                    VoucherResponse response = voucherMapper.toVoucherResponse(voucher);
+                    response.setClaimed(claimIds.contains(voucher.getId()));
+                    response.setUsed(finalUsedMaps.getOrDefault(voucher.getId(), false));
+                    return response;
+                })
+                .toList();
     }
 }

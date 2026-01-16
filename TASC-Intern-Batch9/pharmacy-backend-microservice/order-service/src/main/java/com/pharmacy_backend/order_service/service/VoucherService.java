@@ -3,6 +3,7 @@ package com.pharmacy_backend.order_service.service;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.order_service.dto.request.UserVoucherRequest;
+import com.pharmacy_backend.order_service.dto.request.VoucherFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.VoucherRequest;
 import com.pharmacy_backend.order_service.dto.response.VoucherResponse;
 
@@ -11,7 +12,7 @@ import java.util.List;
 public interface VoucherService {
     ApiResponse<PageResponse<List<VoucherResponse>>> getVouchers(int pageIndex,
                                                                  int pageSize,
-                                                                 String type);
+                                                                 VoucherFilterRequest request);
     ApiResponse<VoucherResponse> getVoucherById(Long id);
     ApiResponse<Void> createVoucher(VoucherRequest request);
     ApiResponse<Void> updateVoucher(Long id,  VoucherRequest request);

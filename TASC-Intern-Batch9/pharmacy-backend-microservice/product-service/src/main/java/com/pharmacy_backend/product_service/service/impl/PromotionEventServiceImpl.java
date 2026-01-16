@@ -1,19 +1,23 @@
 package com.pharmacy_backend.product_service.service.impl;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.common.enums.ErrorCode;
-import com.pharmacy_backend.common.enums.FileCategoryEnum;
-import com.pharmacy_backend.common.enums.JobKeyEnum;
-import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
+import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.ProductEvent;
+import com.pharmacy_backend.common.kafka.event.base.Event;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.dto.request.PromotionEventRequest;
 import com.pharmacy_backend.product_service.dto.response.PromotionEventResponse;
+import com.pharmacy_backend.product_service.entity.OutboxEvent;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.entity.PromotionEvent;
 import com.pharmacy_backend.product_service.entity.PromotionItem;
 import com.pharmacy_backend.product_service.mapper.PromotionEventMapper;
+import com.pharmacy_backend.product_service.repository.OutboxRepository;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
 import com.pharmacy_backend.product_service.repository.PromotionEventRepository;
 import com.pharmacy_backend.product_service.repository.PromotionItemRepository;
@@ -24,6 +28,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,13 +54,23 @@ public class PromotionEventServiceImpl implements PromotionEventService {
     private final PromotionItemRepository promotionItemRepository;
     private final QuartzService quartzService;
     private final ProductRedisService productRedisService;
+    private final ObjectMapper objectMapper;
+    private final OutboxRepository outboxRepository;
+
+
+    @Value("${spring.application.name}")
+    private String appName;
 
     @Override
     public ApiResponse<List<PromotionEventResponse>> getCurrentEvent() {
         List<PromotionEvent> currentEvents = promotionEventRepository.findCurrentPromotionEvents();
 
         List<PromotionEventResponse> responses = currentEvents.stream()
-                .map(promotionEventMapper::toResponse)
+                .map(promotionEvent -> {
+                    PromotionEventResponse response = promotionEventMapper.toResponse(promotionEvent);
+                    response.setThumbnailUrl(AppConfig.getImagePrefix() + promotionEvent.getThumbnailUrl());
+                    return response;
+                })
                 .toList();
         return ApiResponse.buildOkResponse(responses, "Lấy danh sách sự kiện flash sale hiện tại thành công");
     }
@@ -70,19 +86,23 @@ public class PromotionEventServiceImpl implements PromotionEventService {
         }
 
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
-        Page<PromotionEvent> flashSaleEventPage = promotionEventRepository.findAll(pageable);
+        Page<PromotionEvent> promotionEventPage = promotionEventRepository.findAll(pageable);
 
-        List<PromotionEventResponse> promotionEventResponseList = flashSaleEventPage.getContent().stream()
-                .map(promotionEventMapper::toResponse)
+        List<PromotionEventResponse> promotionEventResponseList = promotionEventPage.getContent().stream()
+                .map(promotionEvent -> {
+                    PromotionEventResponse response = promotionEventMapper.toResponse(promotionEvent);
+                    response.setThumbnailUrl(AppConfig.getImagePrefix() + promotionEvent.getThumbnailUrl());
+                    return response;
+                })
                 .toList();
 
         PageResponse<List<PromotionEventResponse>> pageResponse = PageResponse.<List<PromotionEventResponse>>builder()
                 .content(promotionEventResponseList)
                 .currentPage(pageIndex)
-                .totalElements(flashSaleEventPage.getTotalElements())
-                .totalPages(flashSaleEventPage.getTotalPages())
-                .hasNext(flashSaleEventPage.hasNext())
-                .hasPrevious(flashSaleEventPage.hasPrevious())
+                .totalElements(promotionEventPage.getTotalElements())
+                .totalPages(promotionEventPage.getTotalPages())
+                .hasNext(promotionEventPage.hasNext())
+                .hasPrevious(promotionEventPage.hasPrevious())
                 .build();
 
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách sự kiện flash sale thành công");
@@ -95,6 +115,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
         );
 
         PromotionEventResponse response = promotionEventMapper.toResponse(promotionEvent);
+        response.setThumbnailUrl(AppConfig.getImagePrefix() + promotionEvent.getThumbnailUrl());
         return ApiResponse.buildOkResponse(response, "Lấy thông tin sự kiện flash sale thành công");
     }
 
@@ -110,7 +131,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
                 throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
             }
             String thumbnailUuid = uploadResponse.getData().getId().toString();
-            String thumbnailUrl = uploadResponse.getData().getFileUrl();
+            String thumbnailUrl = uploadResponse.getData().getPath();
             promotionEvent.setThumbnailUUID(thumbnailUuid);
             promotionEvent.setThumbnailUrl(thumbnailUrl);
         }
@@ -162,7 +183,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
             }
 
             String thumbnailUuid = uploadResponse.getData().getId().toString();
-            String thumbnailUrl = uploadResponse.getData().getFileUrl();
+            String thumbnailUrl = uploadResponse.getData().getPath();
             event.setThumbnailUUID(thumbnailUuid);
             event.setThumbnailUrl(thumbnailUrl);
         }
@@ -239,6 +260,26 @@ public class PromotionEventServiceImpl implements PromotionEventService {
         productRedisService.deleteCacheProductDetail(
                 products.stream().map(Product::getSlug).toList()
         );
+
+        Set<ProductEvent> productEvents = productMap.values().stream()
+                .map(product -> ProductEvent.builder()
+                        .productId(product.getId())
+                        .priceOld(product.getPriceOld())
+                        .priceNew(product.getPriceNew())
+                        .active(product.getActive())
+                        .title(product.getTitle())
+                        .slug(product.getSlug())
+                        .quantity(product.getQuantity())
+                        .thumbnailUrl(product.getThumbnail())
+                        .build()
+                ).collect(Collectors.toSet());
+        Event<Set<ProductEvent>> promotionActivatedEvent = Event.<Set<ProductEvent>>builder()
+                .eventType(EventTypeEnum.PRODUCT_UPDATED_ALL.name())
+                .source(appName)
+                .data(productEvents)
+                .key(String.format("%s-%d", PartitionKeyEnum.PRODUCT.getName(), promotionEvent.getId()))
+                .build();
+        handleSaveOutboxEvent(promotionActivatedEvent);
     }
 
     @Override
@@ -268,6 +309,26 @@ public class PromotionEventServiceImpl implements PromotionEventService {
                     productRedisService.deleteCacheProductDetail(
                             products.stream().map(Product::getSlug).toList()
                     );
+
+                    Set<ProductEvent> productEvents = productMap.values().stream()
+                            .map(product -> ProductEvent.builder()
+                                    .productId(product.getId())
+                                    .priceOld(product.getPriceOld())
+                                    .priceNew(product.getPriceNew())
+                                    .active(product.getActive())
+                                    .title(product.getTitle())
+                                    .slug(product.getSlug())
+                                    .quantity(product.getQuantity())
+                                    .thumbnailUrl(product.getThumbnail())
+                                    .build()
+                            ).collect(Collectors.toSet());
+                    Event<Set<ProductEvent>> promotionActivatedEvent = Event.<Set<ProductEvent>>builder()
+                            .eventType(EventTypeEnum.PRODUCT_UPDATED_ALL.name())
+                            .source(appName)
+                            .data(productEvents)
+                            .key(String.format("%s-%d", PartitionKeyEnum.PRODUCT.getName(), promotionEvent.getId()))
+                            .build();
+                    handleSaveOutboxEvent(promotionActivatedEvent);
                 } else if (promotionEvent.getStatus() == PromotionEventStatusEnum.UPCOMING) {
                     quartzService.removeScheduledPromotionActivation(promotionEvent.getId());
                 }
@@ -281,5 +342,20 @@ public class PromotionEventServiceImpl implements PromotionEventService {
         promotionEventRepository.save(promotionEvent);
 
         return ApiResponse.buildOkResponse(null, "Chuyển đổi sự kiện khuyến mãi thành công");
+    }
+
+    public void handleSaveOutboxEvent(Event<?> event) {
+        OutboxEvent outboxEvent = new OutboxEvent();
+        outboxEvent.setAggregateType(PartitionKeyEnum.PRODUCT.getName());
+        outboxEvent.setAggregateId(event.getKey());
+        outboxEvent.setEventType(event.getEventType());
+        outboxEvent.setTopic(TopicEnum.PRODUCT_TOPIC.getName());
+        try {
+            outboxEvent.setPayload(objectMapper.writeValueAsString(event));
+            outboxRepository.save(outboxEvent);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
+                    e.getMessage());
+        }
     }
 }

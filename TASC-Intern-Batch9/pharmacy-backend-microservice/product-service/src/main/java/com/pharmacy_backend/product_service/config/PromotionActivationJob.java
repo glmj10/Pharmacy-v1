@@ -1,6 +1,7 @@
 package com.pharmacy_backend.product_service.config;
 
 import com.pharmacy_backend.common.enums.JobKeyEnum;
+import com.pharmacy_backend.product_service.service.OutboxService;
 import com.pharmacy_backend.product_service.service.PromotionEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

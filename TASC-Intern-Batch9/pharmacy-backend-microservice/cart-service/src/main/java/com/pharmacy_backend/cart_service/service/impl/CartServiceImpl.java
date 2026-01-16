@@ -1,5 +1,6 @@
 package com.pharmacy_backend.cart_service.service.impl;
 
+import com.pharmacy_backend.cart_service.config.AppConfig;
 import com.pharmacy_backend.cart_service.dto.request.CartItemRequest;
 import com.pharmacy_backend.cart_service.dto.response.CartItemResponse;
 import com.pharmacy_backend.cart_service.dto.response.CartResponse;
@@ -66,7 +67,7 @@ public class CartServiceImpl implements CartService {
                             .build();
                     ProductResponse productResponse = productMapper.toProductResponse(cartItem.getProduct());
 
-                    productResponse.setThumbnailUrl(cartItem.getProduct().getThumbnailUrl());
+                    productResponse.setThumbnailUrl(AppConfig.getImagePrefix() + cartItem.getProduct().getThumbnailUrl());
 
                     cartItemResponse.setProduct(productResponse);
                     return cartItemResponse;
@@ -306,7 +307,7 @@ public class CartServiceImpl implements CartService {
                             .build();
                     ProductResponse productResponse = productMapper.toProductResponse(cartItem.getProduct());
 
-                    productResponse.setThumbnailUrl(cartItem.getProduct().getThumbnailUrl());
+                    productResponse.setThumbnailUrl(AppConfig.getImagePrefix() + cartItem.getProduct().getThumbnailUrl());
                     cartItemResponse.setProduct(productResponse);
                     return cartItemResponse;
                 })
@@ -347,5 +348,10 @@ public class CartServiceImpl implements CartService {
         Cart cart = new Cart();
         cart.setUser(user);
         return cartRepository.createCart(cart);
+    }
+
+    @Override
+    public ApiResponse<List<CartItemResponse>> addMultipleItemsToCart(List<CartItemRequest> requests) {
+        return null;
     }
 }

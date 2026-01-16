@@ -3,6 +3,7 @@ package com.pharmacy_backend.product_service.service;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.request.PromotionItemRequest;
 import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
 import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 
@@ -16,4 +17,5 @@ public interface PromotionItemService {
 
     ApiResponse<AllPromotionItemResponse> createPromotionItems(AllPromotionItemRequest request);
     ApiResponse<Void> removePromotionItems(List<Long> ids);
+    ApiResponse<Void> updatePromotionItems(Long promotionItemId, PromotionItemRequest request);
 }

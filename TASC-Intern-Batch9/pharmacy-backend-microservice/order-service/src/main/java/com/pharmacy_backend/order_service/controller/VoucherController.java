@@ -3,6 +3,7 @@ package com.pharmacy_backend.order_service.controller;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.order_service.dto.request.UserVoucherRequest;
+import com.pharmacy_backend.order_service.dto.request.VoucherFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.VoucherRequest;
 import com.pharmacy_backend.order_service.dto.response.VoucherResponse;
 import com.pharmacy_backend.order_service.service.VoucherService;
@@ -21,12 +22,11 @@ public class VoucherController {
 
     private final VoucherService voucherService;
 
-    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<List<VoucherResponse>>>> getVouchers(@RequestParam(defaultValue = "1") int pageIndex,
                                                                                         @RequestParam(defaultValue = "10") Integer pageSize,
-                                                                                        @RequestParam(required = false) String type) {
-        ApiResponse<PageResponse<List<VoucherResponse>>> response = voucherService.getVouchers(pageIndex, pageSize, type);
+                                                                                        @ModelAttribute VoucherFilterRequest request) {
+        ApiResponse<PageResponse<List<VoucherResponse>>> response = voucherService.getVouchers(pageIndex, pageSize, request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

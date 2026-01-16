@@ -16,7 +16,9 @@ public enum RedisKeyTypeEnum {
     PRODUCT_STOCK("PRODUCT_STOCK"),
     USER_CLICK("USER_CLICK"),
     LAST_RUN_TIME("LAST_RUN_TIME"),
-    FLASH_SALE_EVENT("FLASH_SALE_EVENT");
+    PROMOTION_EVENT("PROMOTION_EVENT"),
+    USER_CLAIMED_VOUCHER("USER_CLAIMED_VOUCHER"),
+    WISHLIST_USER("WISHLIST_USER");
 
 
     private final String key;
@@ -35,7 +37,8 @@ public enum RedisKeyTypeEnum {
             case RESET_PASSWORD_OTP -> 5 * 60L; // 5 minutes
             case VERIFICATION_OTP -> 12 * 60 * 60L; // 12 hours
             case USER_CLICK -> 60L; // 1 minute
-            case FLASH_SALE_EVENT -> 2 * 60 * 60L; // 2 hours
+            case PROMOTION_EVENT -> 2 * 60 * 60L; // 2 hours
+            case USER_CLAIMED_VOUCHER, WISHLIST_USER -> 3 * 24 * 60 * 60L; // 3 days
         };
     }
 

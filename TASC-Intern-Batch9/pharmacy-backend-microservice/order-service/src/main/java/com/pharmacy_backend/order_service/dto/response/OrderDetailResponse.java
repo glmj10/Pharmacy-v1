@@ -12,6 +12,6 @@ public class OrderDetailResponse {
     Long id;
     Long quantity;
     Long priceAtOrder;
-    boolean isRated;
+    Boolean rated;
     ProductResponse product;
 }

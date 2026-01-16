@@ -68,7 +68,7 @@ public class FileCloudinaryService implements FileMetadataService {
             FileMetadataResponse response = FileMetadataResponse.builder()
                     .id(fileMetadata.getUuid())
                     .storedFileName(publicId)
-                    .fileUrl(url)
+//                    .fileUrl(url)
                     .build();
 
             return ApiResponse.buildCreatedResponse(response, "Upload file thành công");

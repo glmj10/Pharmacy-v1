@@ -106,9 +106,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         Brand brand = null;
         Category category = null;
 
-        if (filterCustomerRequest.getBrand() != null) {
+        if (filterCustomerRequest.getBrandSlug() != null) {
             sql.append(" JOIN brands b ON p.brand_id = b.id");
-            brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
+            brand = brandRepository.findBySlug(filterCustomerRequest.getBrandSlug());
             if (brand == null) {
                 return new ArrayList<>();
             }
@@ -154,7 +154,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterCustomerRequest.getPriceTo());
         }
 
-        if (filterCustomerRequest.isAscending()) {
+        if (filterCustomerRequest.isAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
         } else {
@@ -325,22 +325,22 @@ public class ProductRepositoryImpl implements ProductRepository {
         Brand brand = null;
         Category category = null;
 
-        if (filterCustomerRequest.getBrand() != null) {
+        if (filterCustomerRequest.getBrandSlug() != null) {
+            brand = brandRepository.findBySlug(filterCustomerRequest.getBrandSlug());
             sql.append(" JOIN brands b ON p.brand_id = b.id");
-            brand = brandRepository.findBySlug(filterCustomerRequest.getBrand());
             if (brand == null) {
                 return 0L;
             }
         }
 
         if (filterCustomerRequest.getCategory() != null) {
-            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
-            sql.append(" JOIN categories c ON pc.category_id = c.id");
             category = categoryRepository.findBySlug(filterCustomerRequest.getCategory())
                     .orElse(null);
             if (category == null) {
                 return 0L;
             }
+            sql.append(" JOIN products_categories pc ON pc.product_id = p.id");
+            sql.append(" JOIN categories c ON pc.category_id = c.id");
         }
 
         sql.append(" WHERE 1=1");

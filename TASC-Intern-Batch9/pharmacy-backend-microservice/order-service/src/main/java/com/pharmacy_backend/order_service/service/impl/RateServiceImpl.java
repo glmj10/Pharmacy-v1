@@ -6,6 +6,7 @@ import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.OrderStatusEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.order_service.config.AppConfig;
 import com.pharmacy_backend.order_service.dto.request.RateRequest;
 import com.pharmacy_backend.order_service.dto.response.RateResponse;
 import com.pharmacy_backend.order_service.dto.response.UserResponse;
@@ -52,6 +53,7 @@ public class RateServiceImpl implements RateService {
                     RateResponse response = rateMapper.toRateResponse(rate);
                     User user = userRepository.findById(rate.getUser().getId()).orElse(null);
                     UserResponse userResponse = userMapper.toUserResponse(user);
+                    userResponse.setProfilePicUrl(AppConfig.getImagePrefix() + userResponse.getProfilePicUrl());
                     response.setUserResponse(userResponse);
                     return response;
                 }
@@ -77,7 +79,7 @@ public class RateServiceImpl implements RateService {
 
         OrderDetail orderDetail = orderDetailRepository.findById(request.getOrderDetailId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND));
-        if(orderDetail.isRated()) {
+        if(Boolean.TRUE.equals(orderDetail.getRated())) {
             throw new CustomException(ErrorCode.ORDER_DETAIL_ALREADY_RATED);
         }
 

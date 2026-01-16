@@ -2,17 +2,20 @@ package com.pharmacy_backend.order_service.controller;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
+import com.pharmacy_backend.order_service.dto.projection.RevenueStatisticProjection;
 import com.pharmacy_backend.order_service.dto.request.OrderFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.OrderRequest;
 import com.pharmacy_backend.order_service.dto.response.OrderDetailResponse;
 import com.pharmacy_backend.order_service.dto.response.OrderResponse;
 import com.pharmacy_backend.order_service.service.OrderService;
+import com.pharmacy_backend.order_service.service.StatisticService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -20,6 +23,7 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrderController {
     private final OrderService orderService;
+    private final StatisticService statisticService;
 
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/my-orders")
@@ -94,6 +98,14 @@ public class OrderController {
     @GetMapping("/statistic/newest")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getFiveNewestOrder() {
         ApiResponse<List<OrderResponse>> response = orderService.getFiveNewestOrder();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @GetMapping("/statistic/time-range")
+    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByDate(@RequestParam LocalDateTime startDate,
+                                                                                        @RequestParam LocalDateTime endDate) {
+        ApiResponse<List<RevenueStatisticProjection>> response = statisticService.getRevenueStatistics(startDate, endDate);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

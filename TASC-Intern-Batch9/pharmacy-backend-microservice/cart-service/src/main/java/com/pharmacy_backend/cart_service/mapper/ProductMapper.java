@@ -5,6 +5,7 @@ import com.pharmacy_backend.cart_service.entity.Product;
 import com.pharmacy_backend.common.kafka.event.ProductEvent;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface ProductMapper {
@@ -13,4 +14,6 @@ public interface ProductMapper {
 
     @Mapping(target = "id", source = "productEvent.productId")
     Product toProduct(ProductEvent productEvent);
+
+    Product toProductUpdateFromRequest(ProductEvent productEvent, @MappingTarget Product product);
 }

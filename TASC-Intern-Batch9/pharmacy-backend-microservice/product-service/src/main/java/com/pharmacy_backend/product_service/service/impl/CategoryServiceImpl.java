@@ -10,6 +10,7 @@ import com.pharmacy_backend.common.kafka.event.CategoryEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.utils.SlugUtils;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.repository.CategoryRepository;
 import com.pharmacy_backend.product_service.service.CategoryService;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
@@ -112,7 +113,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                 FileCategoryEnum.CATEGORY.getSubDirectory());
-        category.setThumbnail(thumbnailResponse.getData().getFileUrl());
+        category.setThumbnail(thumbnailResponse.getData().getPath());
         category.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         Type type = typeRepository.findByCode(request.getType())
                 .orElseThrow(() -> new CustomException(ErrorCode.TYPE_NOT_FOUND,
@@ -165,7 +166,7 @@ public class CategoryServiceImpl implements CategoryService {
             fileServiceClient.deleteFile(existingCategory.getThumbnailUUID());
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
-            updatedCategory.setThumbnail(thumbnailResponse.getData().getFileUrl());
+            updatedCategory.setThumbnail(thumbnailResponse.getData().getPath());
         }
 
         if(request.getParentId() != null) {
@@ -258,7 +259,6 @@ public class CategoryServiceImpl implements CategoryService {
         );
     }
 
-
     @Override
     public ApiResponse<List<CategoryResponse>> getAllBlogCategories() {
         Type type = typeRepository.findByCode(CategoryTypeEnum.BLOG.toString())
@@ -269,6 +269,7 @@ public class CategoryServiceImpl implements CategoryService {
                 .map(category -> {
                     CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
                     categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
+                    categoryResponse.setThumbnail(AppConfig.getImagePrefix() + category.getThumbnail());
                     return categoryResponse;
                 })
                 .toList();
@@ -295,6 +296,7 @@ public class CategoryServiceImpl implements CategoryService {
         for (Category category : allCategories) {
             CategoryResponse categoryResponse = categoryMapper.toCategoryResponse(category);
             categoryResponse.setChildren(new ArrayList<>());
+            categoryResponse.setThumbnail(AppConfig.getImagePrefix() + category.getThumbnail());
 
             categoryResponse.setType(typeMapper.toTypeResponse(category.getType()));
             idToCategoryMap.put(category.getId(), categoryResponse);

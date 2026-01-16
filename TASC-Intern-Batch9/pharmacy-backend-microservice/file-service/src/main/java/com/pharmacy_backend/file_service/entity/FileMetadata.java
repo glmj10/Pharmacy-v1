@@ -32,6 +32,8 @@ public class FileMetadata {
     @Column(name = "file_extension", nullable = false)
     String fileExtension;
 
+    String path;
+
     @Column(name = "file_size", nullable = false)
     long fileSize;
 

@@ -10,14 +10,8 @@ import com.pharmacy_backend.common.kafka.event.OrderDetailEvent;
 import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.common.kafka.event.PaymentEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
-import com.pharmacy_backend.order_service.entity.Order;
-import com.pharmacy_backend.order_service.entity.OrderDetail;
-import com.pharmacy_backend.order_service.entity.Voucher;
-import com.pharmacy_backend.order_service.entity.VoucherUsage;
-import com.pharmacy_backend.order_service.repository.OrderDetailRepository;
-import com.pharmacy_backend.order_service.repository.OrderRepository;
-import com.pharmacy_backend.order_service.repository.VoucherRepository;
-import com.pharmacy_backend.order_service.repository.VoucherUsageRepository;
+import com.pharmacy_backend.order_service.entity.*;
+import com.pharmacy_backend.order_service.repository.*;
 import com.pharmacy_backend.order_service.service.OrderService;
 import com.pharmacy_backend.order_service.service.OutboxService;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
@@ -42,6 +36,7 @@ public class PaymentConsumer {
     private final OutboxService outboxService;
     private final VoucherRepository voucherRepository;
     private final VoucherUsageRepository voucherUsageRepository;
+    private final UserVoucherRepository userVoucherRepository;
     
     @Value("${spring.application.name}")
     private String appName;
@@ -66,6 +61,21 @@ public class PaymentConsumer {
 
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.PAYMENT_COMPLETED.getName())) {
                 orderService.changePaymentStatus(paymentEvent.getOrderId(), paymentEvent.getPaymentStatus());
+
+                if(order.getVoucherId() != null) {
+                    VoucherUsage voucherUsage = VoucherUsage.builder()
+                            .voucherId(order.getVoucherId())
+                            .orderId(order.getId())
+                            .userId(order.getUser().getId())
+                            .build();
+                    voucherUsageRepository.save(voucherUsage);
+
+                    UserVoucher userVoucher = userVoucherRepository.findByUserIdAndVoucherId(
+                            order.getUser().getId(), order.getVoucherId()
+                    );
+                    userVoucher.setIsUsed(true);
+                    userVoucherRepository.save(userVoucher);
+                }
 
                 OrderEvent orderEvent = OrderEvent.builder()
                         .orderId(order.getId())

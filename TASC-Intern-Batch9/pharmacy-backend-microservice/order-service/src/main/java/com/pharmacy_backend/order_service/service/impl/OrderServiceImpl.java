@@ -16,7 +16,9 @@ import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.common.kafka.event.OrderReserveEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
+import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.common.utils.StateUtils;
+import com.pharmacy_backend.order_service.config.AppConfig;
 import com.pharmacy_backend.order_service.dto.request.OrderFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.OrderRequest;
 import com.pharmacy_backend.order_service.dto.response.*;
@@ -29,7 +31,6 @@ import com.pharmacy_backend.order_service.service.OrderService;
 import com.pharmacy_backend.order_service.service.PaymentServiceClient;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
 import com.pharmacy_backend.order_service.specification.OrderSpecification;
-import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +45,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,6 +74,7 @@ public class OrderServiceImpl implements OrderService {
     final VoucherRepository voucherRepository;
     final VoucherUsageRepository voucherUsageRepository;
     final UserVoucherRepository userVoucherRepository;
+    final RedisService redisService;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
@@ -198,7 +202,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + orderId));
-        List<OrderDetail> orderDetails = orderDetailRepository.findByOrder(order)
+        List<OrderDetail> orderDetails = orderDetailRepository.findByOrderId(order.getId())
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_DETAIL_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy chi tiết đơn hàng với ID: " + orderId));
 
@@ -206,6 +210,7 @@ public class OrderServiceImpl implements OrderService {
                 .map(orderDetail -> {
                     OrderDetailResponse response = orderMapper.toOrderDetailResponse(orderDetail);
                     ProductResponse productResponse = productMapper.toProductResponse(orderDetail.getProduct());
+                    productResponse.setThumbnailUrl(AppConfig.getImagePrefix() + orderDetail.getProduct().getThumbnailUrl());
                     response.setProduct(productResponse);
                     return response;
                 })
@@ -356,15 +361,6 @@ public class OrderServiceImpl implements OrderService {
                     order.setPaymentMethod(PaymentMethodEnum.VNPAY);
                     order = orderRepository.save(order);
 
-                    if(request.getVoucherId() != null) {
-                        VoucherUsage voucherUsage = VoucherUsage.builder()
-                                .voucherId(request.getVoucherId())
-                                .orderId(order.getId())
-                                .userId(user.getId())
-                                .build();
-                        voucherUsageRepository.save(voucherUsage);
-                    }
-
                     orderEvent.setOrderId(order.getId());
                     orderEvent.setCreatedAt(order.getCreatedAt());
                     List<OrderDetail> orderDetails = createOrderDetails(order, cartItems);
@@ -406,6 +402,13 @@ public class OrderServiceImpl implements OrderService {
                                 .userId(user.getId())
                                 .build();
                         voucherUsageRepository.save(voucherUsage);
+
+                        UserVoucher userVoucher = userVoucherRepository.findByUserIdAndVoucherId(
+                                user.getId(), order.getVoucherId()
+                        );
+                        userVoucher.setIsUsed(true);
+
+                        userVoucherRepository.save(userVoucher);
                     }
 
                     orderEvent.setOrderId(order.getId());
@@ -424,9 +427,8 @@ public class OrderServiceImpl implements OrderService {
             List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
                     cartItems);
             orderEvent.setOrderDetailEventList(orderDetailEventsFromCart);
-            handleSaveOutboxEvent(event);
-            order.setStatus(OrderStatusEnum.FAILED);
-            orderRepository.save(order);
+            handleSaveFailedOrder(order, event);
+
             throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi trong quá trình tạo đơn hàng");
         }
@@ -436,6 +438,13 @@ public class OrderServiceImpl implements OrderService {
         return ApiResponse.buildCreatedResponse(orderResponse, "Tạo đơn hàng thành công");
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void handleSaveFailedOrder(Order order, Event<?> event) {
+        order.setStatus(OrderStatusEnum.FAILED);
+        handleSaveOutboxEvent(event);
+        orderRepository.save(order);
+    }
+
     @Transactional
     @Override
     public ApiResponse<OrderResponse> changeOrderStatus(Long id, String status) {
@@ -443,18 +452,21 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
 
-        if (!StateUtils.isValidTransition(order.getStatus(), OrderStatusEnum.valueOf(status.toUpperCase()))) {
+        OrderStatusEnum statusEnum;
+        try {
+            statusEnum = OrderStatusEnum.valueOf(status.toUpperCase());
+        } catch (RuntimeException e) {
+            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
+                    HttpStatus.BAD_REQUEST, "Trạng thái đơn hàng không hợp lệ: " + status);
+        }
+
+        if (!StateUtils.isValidTransition(order.getStatus(), statusEnum)) {
             throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
                     HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái đơn hàng từ "
                     + order.getStatus() + " sang " + status);
         }
 
-        try {
-            order.setStatus(OrderStatusEnum.valueOf(status.toUpperCase()));
-        } catch (RuntimeException e) {
-            throw new CustomException(ErrorCode.INVALID_ORDER_STATUS,
-                    HttpStatus.BAD_REQUEST, "Trạng thái đơn hàng không hợp lệ: " + status);
-        }
+        order.setStatus(statusEnum);
 
         orderRepository.save(order);
 
@@ -641,6 +653,12 @@ public class OrderServiceImpl implements OrderService {
                     order.getId(), voucher.getId()
             );
             voucherUsageRepository.delete(voucherUsage);
+
+            UserVoucher userVoucher = UserVoucher.builder()
+                    .userId(order.getUser().getId())
+                    .voucherId(voucher.getId())
+                    .build();
+            userVoucherRepository.save(userVoucher);
         }
 
         OrderReserveEvent orderReserveEvent = OrderReserveEvent.builder()

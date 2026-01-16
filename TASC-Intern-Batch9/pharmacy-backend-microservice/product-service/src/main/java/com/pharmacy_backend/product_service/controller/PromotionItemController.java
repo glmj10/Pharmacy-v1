@@ -3,6 +3,7 @@ package com.pharmacy_backend.product_service.controller;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
+import com.pharmacy_backend.product_service.dto.request.PromotionItemRequest;
 import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
 import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 import com.pharmacy_backend.product_service.service.PromotionItemService;
@@ -34,17 +35,26 @@ public class PromotionItemController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')" )
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('STAFF')")
     @PostMapping
     public ResponseEntity<ApiResponse<AllPromotionItemResponse>> createPromotionItems(@RequestBody @Valid AllPromotionItemRequest request) {
         ApiResponse<AllPromotionItemResponse> response = promotionItemService.createPromotionItems(request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('STAFF')")
     @DeleteMapping
     public ResponseEntity<ApiResponse<Void>> removePromotionItems(@RequestBody List<Long> id) {
         ApiResponse<Void> response = promotionItemService.removePromotionItems(id);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN') OR hasRole('STAFF')")
+    @PutMapping("/{promotionItemId}")
+    public ResponseEntity<ApiResponse<Void>> updatePromotionItems(
+            @PathVariable Long promotionItemId,
+            @RequestBody @Valid PromotionItemRequest request) {
+        ApiResponse<Void> response = promotionItemService.updatePromotionItems(promotionItemId, request);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

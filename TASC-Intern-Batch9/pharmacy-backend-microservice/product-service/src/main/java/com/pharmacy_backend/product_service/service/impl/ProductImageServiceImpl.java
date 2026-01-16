@@ -5,6 +5,7 @@ import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.FileCategoryEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.dto.response.ProductImageResponse;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.entity.ProductImage;
@@ -35,7 +36,7 @@ public class ProductImageServiceImpl implements ProductImageService {
                 .stream()
                 .map(productImage -> {
                     ProductImageResponse response = productImageMapper.toProductImageResponse(productImage);
-
+                    response.setImageUrl(AppConfig.getImagePrefix() + response.getImageUrl());
                     return response;
                 })
                 .toList();
@@ -55,15 +56,17 @@ public class ProductImageServiceImpl implements ProductImageService {
                         ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(image,
                                 FileCategoryEnum.PRODUCT.getSubDirectory());
                         productImage.setProduct(product);
-                        productImage.setImageUrl(thumbnailResponse.getData().getFileUrl());
+                        productImage.setImageUrl(thumbnailResponse.getData().getPath());
                         productImage.setImageUUID(thumbnailResponse.getData().getId().toString());
                         productImageRepository.save(productImage);
 
                     } catch (Exception e) {
                         throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi tải ảnh lên máy chủ");
                     }
+                    ProductImageResponse response = productImageMapper.toProductImageResponse(productImage);
+                    response.setImageUrl(AppConfig.getImagePrefix() + response.getImageUrl());
 
-                    return productImageMapper.toProductImageResponse(productImage);
+                    return response;
                 })
                 .toList();
     }
