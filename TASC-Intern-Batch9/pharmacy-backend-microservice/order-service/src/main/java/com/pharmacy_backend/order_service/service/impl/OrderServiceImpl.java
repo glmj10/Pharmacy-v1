@@ -110,15 +110,23 @@ public class OrderServiceImpl implements OrderService {
                 .and(OrderSpecification.hasOrderId(filterRequest.getId()));
 
         if (filterRequest.getOrderStatus() != null) {
-            orderSpecification = orderSpecification.and(OrderSpecification.hasStatus(
-                    OrderStatusEnum.valueOf(filterRequest.getOrderStatus().toUpperCase()).toString())
-            );
+            try {
+                orderSpecification = orderSpecification.and(OrderSpecification.hasStatus(
+                        OrderStatusEnum.valueOf(filterRequest.getOrderStatus().toUpperCase()).toString())
+                );
+            } catch (IllegalArgumentException e) {
+                throw new CustomException(ErrorCode.INVALID_ORDER_STATUS, HttpStatus.BAD_REQUEST, e.getMessage());
+            }
         }
 
         if (filterRequest.getPaymentStatus() != null) {
-            orderSpecification = orderSpecification.and(OrderSpecification.hasPaymentStatus(
-                    PaymentStatusEnum.valueOf(filterRequest.getPaymentStatus().toUpperCase()).toString())
-            );
+            try {
+                orderSpecification = orderSpecification.and(OrderSpecification.hasPaymentStatus(
+                        PaymentStatusEnum.valueOf(filterRequest.getPaymentStatus().toUpperCase()).toString())
+                );
+            } catch (IllegalArgumentException e) {
+                throw new CustomException(ErrorCode.INVALID_PAYMENT_STATUS, HttpStatus.BAD_REQUEST, e.getMessage());
+            }
         }
 
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
@@ -240,7 +248,6 @@ public class OrderServiceImpl implements OrderService {
         order.setCustomerPhoneNumber(profile.getPhoneNumber());
         order.setCustomerAddress(profile.getAddress());
         order.setUser(user);
-
         ApiResponse<CartResponse> cartResponse = cartServiceClient.getCartItemToCheckout();
         List<CartItemResponse> cartItems = cartResponse.getData().getCartItems();
         if (cartItems.isEmpty()) {
@@ -248,6 +255,7 @@ public class OrderServiceImpl implements OrderService {
                     HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
         }
 
+        try {
         List<ReserveRequest> reserveRequests = cartItems.stream()
                 .map(cartItem -> {
                     ReserveRequest reserveRequest = new ReserveRequest();
@@ -273,6 +281,7 @@ public class OrderServiceImpl implements OrderService {
         for (ProductCheckResponse productCheckResponse : reserveResponse.getData().getProductCheckResponses()) {
             totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
         }
+        order.setSubtotalPrice(totalPrice);
 
         if(request.getVoucherId() != null) {
             Voucher voucher = voucherRepository.findById(request.getVoucherId())
@@ -325,8 +334,6 @@ public class OrderServiceImpl implements OrderService {
                 );
             }
 
-            order.setSubtotalPrice(totalPrice);
-
             totalPrice -= discountAmount;
             order.setVoucherDiscountPrice((long) discountAmount);
             order.setVoucherId(voucher.getId());
@@ -355,7 +362,6 @@ public class OrderServiceImpl implements OrderService {
                 .source(appName)
                 .build();
 
-        try {
             switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
                 case VNPAY -> {
                     order.setPaymentMethod(PaymentMethodEnum.VNPAY);
@@ -421,21 +427,19 @@ public class OrderServiceImpl implements OrderService {
                 default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD);
             }
 
+        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+        orderResponse.setPaymentStatus(order.getPaymentStatus().name());
+        return ApiResponse.buildCreatedResponse(orderResponse, "Tạo đơn hàng thành công");
         } catch (RuntimeException e) {
             log.error("Lỗi khi xử lý phương thức thanh toán: {}", e.getMessage());
-            event.setEventType(EventTypeEnum.ORDER_FAILED.getName());
             List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
                     cartItems);
-            orderEvent.setOrderDetailEventList(orderDetailEventsFromCart);
-            handleSaveFailedOrder(order, event);
+            Event<OrderEvent> orderFailedEvent = createRollBackEvent(order, orderDetailEventsFromCart);
+            handleSaveFailedOrder(order, orderFailedEvent);
 
             throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi trong quá trình tạo đơn hàng");
         }
-
-        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-        orderResponse.setPaymentStatus(order.getPaymentStatus().name());
-        return ApiResponse.buildCreatedResponse(orderResponse, "Tạo đơn hàng thành công");
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -443,6 +447,26 @@ public class OrderServiceImpl implements OrderService {
         order.setStatus(OrderStatusEnum.FAILED);
         handleSaveOutboxEvent(event);
         orderRepository.save(order);
+    }
+
+    private Event<OrderEvent> createRollBackEvent(Order order, List<OrderDetailEvent> orderDetailEvents) {
+        OrderEvent orderEvent = OrderEvent.builder()
+                .orderId(order.getId())
+                .customerName(order.getCustomerName())
+                .customerPhoneNumber(order.getCustomerPhoneNumber())
+                .customerAddress(order.getCustomerAddress())
+                .userEmail(order.getUser().getEmail())
+                .totalPrice(order.getTotalPrice())
+                .createdAt(order.getCreatedAt())
+                .orderDetailEventList(orderDetailEvents)
+                .build();
+
+        return Event.<OrderEvent>builder()
+                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                .eventType(EventTypeEnum.ORDER_FAILED.getName())
+                .data(orderEvent)
+                .source(appName)
+                .build();
     }
 
     @Transactional

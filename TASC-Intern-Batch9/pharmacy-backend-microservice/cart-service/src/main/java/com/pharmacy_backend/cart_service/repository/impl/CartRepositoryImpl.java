@@ -47,7 +47,7 @@ public class CartRepositoryImpl implements CartRepository {
 
     @Override
     public Cart createCart(Cart cart) {
-        String sql = "INSERT INTO carts (user_id, total_price, created_at, updated_at) " +
+        String sql = "INSERT INTO carts (user_id, created_at, updated_at) " +
                 "VALUES(:userId, :createdAt, :updatedAt)";
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("userId", cart.getUser().getId());

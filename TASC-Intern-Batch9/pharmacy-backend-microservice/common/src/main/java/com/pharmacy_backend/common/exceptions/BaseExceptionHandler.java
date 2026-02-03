@@ -7,12 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -97,6 +99,20 @@ public class BaseExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalStateException(IllegalStateException ex, WebRequest request) {
         CustomException customException = new CustomException(
                 ErrorCode.ILLEGAL_STATE,
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage() != null ? ex.getMessage() : "Trạng thái không hợp lệ"
+        );
+
+        ErrorResponse errorResponse = buildErrorResponse(customException, request);
+        log.warn("Illegal state: {}", ex.getMessage());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DateTimeParseException.class)
+    public ResponseEntity<ErrorResponse> handleDateTimeParseException(DateTimeParseException ex, WebRequest request) {
+        CustomException customException = new CustomException(
+                ErrorCode.INVALID_DATE_TIME_FORMAT,
                 HttpStatus.BAD_REQUEST,
                 ex.getMessage() != null ? ex.getMessage() : "Trạng thái không hợp lệ"
         );

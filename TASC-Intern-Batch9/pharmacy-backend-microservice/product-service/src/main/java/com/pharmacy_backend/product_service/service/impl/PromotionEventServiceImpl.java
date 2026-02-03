@@ -174,10 +174,9 @@ public class PromotionEventServiceImpl implements PromotionEventService {
         }
 
         PromotionEvent event = promotionEventMapper.toPromotionEventUpdateFromRequest(request, existingEvent);
-
         if (thumbnail != null && !thumbnail.isEmpty()) {
             fileServiceClient.deleteFile(existingEvent.getThumbnailUUID());
-            ApiResponse<FileMetadataResponse> uploadResponse = fileServiceClient.uploadFile(thumbnail, "promotion-event-thumbnails");
+            ApiResponse<FileMetadataResponse> uploadResponse = fileServiceClient.uploadFile(thumbnail, FileCategoryEnum.PROMOTION.getSubDirectory());
             if (uploadResponse.getStatus() != HttpStatus.SC_OK) {
                 throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
             }

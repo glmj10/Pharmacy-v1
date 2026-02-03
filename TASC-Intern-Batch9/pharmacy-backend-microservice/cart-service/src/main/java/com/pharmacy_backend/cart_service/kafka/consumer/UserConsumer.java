@@ -3,6 +3,7 @@ package com.pharmacy_backend.cart_service.kafka.consumer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pharmacy_backend.cart_service.service.CartService;
 import com.pharmacy_backend.cart_service.service.UserService;
 import com.pharmacy_backend.common.enums.EventTypeEnum;
 import com.pharmacy_backend.common.kafka.event.UserEvent;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class UserConsumer {
     private final ObjectMapper objectMapper;
     private final UserService userService;
+    private final CartService cartService;
 
     @KafkaListener(topics = "${spring.kafka.consumer.topic.user-topic}",
             groupId = "${spring.kafka.consumer.group-id}",
@@ -30,6 +32,7 @@ public class UserConsumer {
                 UserEvent userEvent = objectMapper.convertValue(event.getData(),
                         UserEvent.class);
                 userService.createUserAndCreateCart(userEvent.getUserId(), userEvent.getEmail());
+//                cartService.createCart(userEvent.getUserId());
                 log.info("Consumed USER_CREATED event: {}", message);
             }
             acknowledgment.acknowledge();

@@ -3,6 +3,7 @@ package com.pharmacy_backend.order_service.controller;
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.order_service.dto.projection.RevenueStatisticProjection;
+import com.pharmacy_backend.order_service.dto.projection.TotalOrderStatusProjection;
 import com.pharmacy_backend.order_service.dto.request.OrderFilterRequest;
 import com.pharmacy_backend.order_service.dto.request.OrderRequest;
 import com.pharmacy_backend.order_service.dto.response.OrderDetailResponse;
@@ -87,7 +88,7 @@ public class OrderController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/statistic/allRevenue")
     public ResponseEntity<ApiResponse<Long>> getAllRevenue() {
         ApiResponse<Long> response = orderService.getAllRevenue();
@@ -101,11 +102,24 @@ public class OrderController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/statistic/days")
+    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByDate(@RequestParam(defaultValue = "30") Integer days) {
+        ApiResponse<List<RevenueStatisticProjection>> response = statisticService.getRevenueStatistics(days);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/statistic/time-range")
-    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByDate(@RequestParam LocalDateTime startDate,
-                                                                                        @RequestParam LocalDateTime endDate) {
-        ApiResponse<List<RevenueStatisticProjection>> response = statisticService.getRevenueStatistics(startDate, endDate);
+    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByTimeRange(@RequestParam String startDate,
+                                                                                             @RequestParam String endDate) {
+        return null;
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/statistic/order-status")
+    public ResponseEntity<ApiResponse<List<TotalOrderStatusProjection>>> getTotalOrderStatus() {
+        ApiResponse<List<TotalOrderStatusProjection>> response = statisticService.getTotalOrdersByStatus();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

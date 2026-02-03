@@ -5,9 +5,11 @@ import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.PromotionEventStatusEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.product_service.config.AppConfig;
 import com.pharmacy_backend.product_service.dto.request.AllPromotionItemRequest;
 import com.pharmacy_backend.product_service.dto.request.PromotionItemRequest;
 import com.pharmacy_backend.product_service.dto.response.AllPromotionItemResponse;
+import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import com.pharmacy_backend.product_service.dto.response.PromotionItemResponse;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.entity.PromotionEvent;
@@ -56,8 +58,11 @@ public class PromotionItemServiceImpl implements PromotionItemService {
         List<PromotionItemResponse> promotionItemResponses = promotionItems.getContent().stream()
                 .map(item -> {
                     PromotionItemResponse response = promotionItemMapper.toPromotionItemResponse(item);
-                    productRepository.findById(item.getProductId()).ifPresent(product ->
-                            response.setProduct(productMapper.toProductResponse(product)));
+                    productRepository.findById(item.getProductId()).ifPresent(product ->{;
+                        ProductResponse productResponse = productMapper.toProductResponse(product);
+                        productResponse.setThumbnail(AppConfig.getImagePrefix() + productResponse.getThumbnail());
+                        response.setProduct(productResponse);
+                    });
                     return response;
                 })
                 .toList();

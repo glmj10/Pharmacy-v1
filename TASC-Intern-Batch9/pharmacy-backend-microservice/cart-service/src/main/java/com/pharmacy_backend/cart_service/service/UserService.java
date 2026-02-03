@@ -18,11 +18,15 @@ public class UserService {
 
     public void createUserAndCreateCart(Long userId, String email) {
         User user = new User(userId, email);
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
 
-        userRepository.flush();
-        Cart cart = cartService.createCart(user.getId());
-        user.setCart(cart);
-        userRepository.save(user);
+            userRepository.flush();
+            Cart cart = cartService.createCart(user.getId());
+            user.setCart(cart);
+            userRepository.save(user);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

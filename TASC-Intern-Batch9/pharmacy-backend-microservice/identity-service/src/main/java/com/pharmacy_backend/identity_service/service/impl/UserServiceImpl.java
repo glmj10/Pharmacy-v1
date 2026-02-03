@@ -2,6 +2,7 @@ package com.pharmacy_backend.identity_service.service.impl;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.enums.RoleEnums;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.identity_service.config.AppConfig;
@@ -46,9 +47,18 @@ public class UserServiceImpl implements UserService {
                     HttpStatus.BAD_REQUEST, "Người dùng không thể thay đổi vai trò của chính mình");
         }
 
+
         List<String> validRoleCodes = roleRepository.findAll().stream()
                 .map(Role::getCode)
                 .toList();
+
+        if(validRoleCodes.contains(RoleEnums.ADMIN.toString().toUpperCase())) {
+            throw new CustomException(
+                    ErrorCode.INVALID_ROLE,
+                    HttpStatus.BAD_REQUEST,
+                    "Không thể gán vai trò ADMIN cho người dùng"
+            );
+        }
 
         if (request.getRoleCodes() == null || request.getRoleCodes().isEmpty()) {
             throw new CustomException(
@@ -138,7 +148,10 @@ public class UserServiceImpl implements UserService {
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
         UserResponse userResponse = userMapper.toUserResponse(currentUser);
         userResponse.setRoles(null);
-        userResponse.setProfilePic(AppConfig.getImagePrefix() + currentUser.getProfilePic());
+        userResponse.setProfilePic(
+                (userResponse.getProfilePic() != null)
+                        ? AppConfig.getImagePrefix() + currentUser.getProfilePic() : null
+        );
         return ApiResponse.buildOkResponse(userResponse, "Lấy thông tin người dùng thành công");
     }
 

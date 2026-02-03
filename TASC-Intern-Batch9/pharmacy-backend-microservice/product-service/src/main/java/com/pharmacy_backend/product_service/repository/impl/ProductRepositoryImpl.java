@@ -31,6 +31,21 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
 
+    private void setBrandForProducts(List<Product> products) {
+        products.forEach(product -> {
+            try {
+                Long brandId = jdbcTemplate.queryForObject(
+                        "SELECT brand_id FROM products WHERE id = ?",
+                        Long.class,
+                        product.getId()
+                );
+                if (brandId != null) {
+                    brandRepository.findById(brandId).ifPresent(product::setBrand);
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
     @Override
     public List<Product> findAll(int size, int offSet, ProductCMSFilterRequest filterRequest) {
         StringBuilder sql = new StringBuilder("SELECT p.* FROM products p");
@@ -95,8 +110,12 @@ public class ProductRepositoryImpl implements ProductRepository {
         sql.append(" LIMIT ? OFFSET ?");
         params.add(size);
         params.add(offSet);
-        return jdbcTemplate.query(sql.toString(),
+        List<Product> products = jdbcTemplate.query(sql.toString(),
                 new BeanPropertyRowMapper<>(Product.class), params.toArray());
+
+        setBrandForProducts(products);
+
+        return products;
     }
 
     @Override
@@ -164,8 +183,12 @@ public class ProductRepositoryImpl implements ProductRepository {
         sql.append(" LIMIT ? OFFSET ?");
         params.add(size);
         params.add(offSet);
-        return jdbcTemplate.query(sql.toString(),
+        List<Product> products = jdbcTemplate.query(sql.toString(),
                 new BeanPropertyRowMapper<>(Product.class), params.toArray());
+
+        setBrandForProducts(products);
+
+        return products;
     }
 
     @Override
@@ -194,9 +217,9 @@ public class ProductRepositoryImpl implements ProductRepository {
                 p.setActive(rs.getBoolean("active"));
                 p.setProductType(rs.getString("product_type"));
 
-                Brand brand = brandRepository.findById(rs.getLong("brand_id"))
+                Brand b = brandRepository.findById(rs.getLong("brand_id"))
                         .orElse(null);
-                p.setBrand(brand);
+                p.setBrand(b);
 
                 List<Category> categories = categoryRepository.findAllByProductId(p.getId());
                 p.setCategories(categories);
@@ -235,12 +258,13 @@ public class ProductRepositoryImpl implements ProductRepository {
                 p.setActive(rs.getBoolean("active"));
                 p.setProductType(rs.getString("product_type"));
 
-                Brand brand = brandRepository.findById(rs.getLong("brand_id"))
+                Brand b = brandRepository.findById(rs.getLong("brand_id"))
                         .orElse(null);
-                p.setBrand(brand);
+                p.setBrand(b);
 
                 return p;
             }, slug);
+
             return Optional.ofNullable(product);
         } catch (org.springframework.dao.EmptyResultDataAccessException e) {
             return Optional.empty();
@@ -257,15 +281,19 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<Product> findTop15ByActiveTrue() {
         String sql = "SELECT * FROM products WHERE active = true ORDER BY modified_at DESC LIMIT ? OFFSET ? ";
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), 15, 0);
+        List<Product> products = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), 15, 0);
+        setBrandForProducts(products);
+        return products;
     }
 
     @Override
     public List<Product> findTop15ByBrandAndActive(Brand brand, boolean b) {
         String sql = "SELECT * FROM products " +
                 "WHERE brand_id = ? AND active = ? ORDER BY modified_at DESC LIMIT 15 ";
-        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class),
+        List<Product> products = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class),
                 brand.getId(), b);
+        products.forEach(p -> p.setBrand(brand));
+        return products;
     }
 
     @Override

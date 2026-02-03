@@ -86,18 +86,11 @@ public class AuthController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USER') OR hasRole('STAFF')")
     @PutMapping("/info")
     public ResponseEntity<ApiResponse<UserResponse>> changeInfo(@RequestPart(value = "info", required = false) @Valid UserInfoRequest request,
                                                                 @RequestPart(value = "profilePic", required = false) MultipartFile avatar) {
         ApiResponse<UserResponse> response = authService.changeInfo(request, avatar);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
-
-    @PostMapping("/test-event")
-    public ResponseEntity<String> testEvent(@RequestParam String message) {
-        userProducer.sendMessage(message);
-        return ResponseEntity.ok("Message sent to Kafka topic");
-    }
-
 }

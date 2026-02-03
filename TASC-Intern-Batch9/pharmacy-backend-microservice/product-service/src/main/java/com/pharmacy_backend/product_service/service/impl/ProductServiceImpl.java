@@ -28,13 +28,13 @@ import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
 import com.pharmacy_backend.product_service.service.ProductService;
 import com.pharmacy_backend.product_service.service.StockCacheService;
-import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
@@ -187,7 +187,7 @@ public class ProductServiceImpl implements ProductService {
         if(productResponse != null) {
             Integer stockResponse = stockCacheService.getStock(productResponse.getId());
             productResponse.setQuantity(stockResponse);
-            productResponse.setThumbnail(AppConfig.getImagePrefix() + productResponse.getThumbnail());
+            productResponse.setThumbnail(productResponse.getThumbnail());
             Set<String> wishlist = redisService.getSetMembers(String.format("%s:%d",
                     RedisKeyTypeEnum.WISHLIST_USER.getKey(),
                     SecurityUtils.getCurrentUserId()));
@@ -267,6 +267,7 @@ public class ProductServiceImpl implements ProductService {
             thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.PRODUCT.getSubDirectory());
             product.setThumbnail(thumbnailResponse.getData().getPath());
+            product.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_STORAGE_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi khi tải lên hình ảnh đại diện: " + e.getMessage());
@@ -322,6 +323,7 @@ public class ProductServiceImpl implements ProductService {
             ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
                     FileCategoryEnum.CATEGORY.getSubDirectory());
             product.setThumbnail(thumbnailResponse.getData().getPath());
+            product.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         }
 
         Brand brand = brandRepository.findById(request.getBrandId())

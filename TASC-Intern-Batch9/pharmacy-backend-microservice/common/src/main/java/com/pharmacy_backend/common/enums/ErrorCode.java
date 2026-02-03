@@ -4,6 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum ErrorCode {
+    INVALID_DATE_TIME_FORMAT("Định dạng ngày giờ không hợp lệ"),
+    INVALID_DATE_TIME("Giá trị ngày giờ không hợp lệ"),
     BANNER_NOT_FOUND("Banner không tồn tại"),
     TOO_MANY_REQUESTS("Quá nhiều yêu cầu, vui lòng thử lại sau"),
     FILE_SIZE_EXCEEDED("Kích thước tệp vượt quá giới hạn cho phép"),
@@ -56,6 +58,7 @@ public enum ErrorCode {
     VALIDATION_ERROR("Lỗi xác thực dữ liệu"),
     BUSINESS_ERROR("Lỗi nghiệp vụ"),
     INTERNAL_SERVER_ERROR("Lỗi máy chủ nội bộ"),
+
 
     UNSUPPORTED_MEDIA_TYPE("Định dạng không được hỗ trợ"),
     UNSUPPORTED_OPERATION("Phương thức không được hỗ trợ"),

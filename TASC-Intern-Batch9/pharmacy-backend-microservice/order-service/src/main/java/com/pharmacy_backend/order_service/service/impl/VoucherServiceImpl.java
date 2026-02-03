@@ -65,8 +65,21 @@ public class VoucherServiceImpl implements VoucherService {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
         Page<Voucher> voucherPage;
         try{
-            Specification<Voucher> specification = VoucherSpecification.hasType(request.getType())
-                    .and(VoucherSpecification.hasStatus(request.getType()));
+            // Build specification safely depending on provided filters
+            Specification<Voucher> specification = null;
+            if (request != null) {
+                boolean hasType = request.getType() != null;
+                boolean hasStatus = request.getStatus() != null;
+
+                if (hasType && hasStatus) {
+                    specification = VoucherSpecification.hasType(request.getType())
+                            .and(VoucherSpecification.hasStatus(request.getStatus()));
+                } else if (hasType) {
+                    specification = VoucherSpecification.hasType(request.getType());
+                } else if (hasStatus) {
+                    specification = VoucherSpecification.hasStatus(request.getStatus());
+                }
+            }
 
             voucherPage = voucherRepository.findAll(specification, pageable);
         } catch (Exception e) {
@@ -282,7 +295,7 @@ public class VoucherServiceImpl implements VoucherService {
 
         PageResponse<List<VoucherResponse>> pageResponse = PageResponse.<List<VoucherResponse>>builder()
                 .currentPage(pageIndex)
-                .totalPages(pageSize)
+                .totalPages(voucherPage.getTotalPages())
                 .totalElements(voucherPage.getTotalElements())
                 .content(voucherResponses)
                 .hasNext(voucherPage.hasNext())

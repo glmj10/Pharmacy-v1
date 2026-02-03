@@ -14,7 +14,6 @@ import io.minio.GetObjectArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +21,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -46,7 +46,7 @@ public class FileMinioService implements FileMetadataService {
     @Value("${minio.public-base-url:}")
     private String publicBaseUrl;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ApiResponse<FileMetadataResponse> storeFile(MultipartFile file, String category) {
         FileCategoryEnum fileCategoryEnum = FileCategoryEnum.valueOf(category.toUpperCase());
@@ -163,7 +163,6 @@ public class FileMinioService implements FileMetadataService {
         }
 
         String objectKey = fileMetadata.getFileType() + "/" + fileMetadata.getStoredFileName();
-        // Nếu DB đã lưu URL, trả lại luôn; nếu bạn đổi domain CDN, có thể dựng lại theo config:
         String url = Optional.ofNullable(fileMetadata.getUrl())
                 .filter(u -> !u.isBlank())
                 .orElse(buildPublicUrl(bucket, objectKey));

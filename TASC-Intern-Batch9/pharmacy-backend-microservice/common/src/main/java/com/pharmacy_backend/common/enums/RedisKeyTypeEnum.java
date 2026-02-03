@@ -32,7 +32,7 @@ public enum RedisKeyTypeEnum {
             case RESET_PASSWORD_TOKEN -> 15 * 60L; // 15 minutes
             case VERIFICATION_TOKEN -> 24 * 60 * 60L; // 24 hours
             case USER_VERSION, WISHLIST -> 7 * 24 * 60 * 60L; // 7 days
-            case PRODUCT_DETAIL, RELATED_PRODUCTS -> 6 * 60 * 60L; // 6 hours
+            case PRODUCT_DETAIL, RELATED_PRODUCTS -> 30 * 60L; // 30 minutes
             case PRODUCT_STOCK, LAST_RUN_TIME -> 0L;
             case RESET_PASSWORD_OTP -> 5 * 60L; // 5 minutes
             case VERIFICATION_OTP -> 12 * 60 * 60L; // 12 hours

@@ -110,11 +110,6 @@ public class CategoryServiceImpl implements CategoryService {
             throw new CustomException(ErrorCode.BAD_REQUEST,
                     HttpStatus.BAD_REQUEST, "Thumbnail không được để trống");
         }
-
-        ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
-                FileCategoryEnum.CATEGORY.getSubDirectory());
-        category.setThumbnail(thumbnailResponse.getData().getPath());
-        category.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         Type type = typeRepository.findByCode(request.getType())
                 .orElseThrow(() -> new CustomException(ErrorCode.TYPE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy loại danh mục với code: " + request.getType()));
@@ -123,8 +118,17 @@ public class CategoryServiceImpl implements CategoryService {
             Category parentCategory = categoryRepository.findById(request.getParentId())
                     .orElseThrow(() -> new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
                             HttpStatus.NOT_FOUND, "Không tìm thấy danh mục cha với ID: " + request.getParentId()));
+            if(category.getType() != parentCategory.getType()) {
+                throw new CustomException(ErrorCode.BAD_REQUEST, "Danh mục con không cùng loại với danh mục cha");
+            }
             category.setParent(parentCategory);
         }
+
+
+        ApiResponse<FileMetadataResponse> thumbnailResponse = fileServiceClient.uploadFile(thumbnail,
+                FileCategoryEnum.CATEGORY.getSubDirectory());
+        category.setThumbnail(thumbnailResponse.getData().getPath());
+        category.setThumbnailUUID(thumbnailResponse.getData().getId().toString());
         Category savedCategory = categoryRepository.save(category);
 
         CategoryEvent categoryEvent = CategoryEvent.builder()

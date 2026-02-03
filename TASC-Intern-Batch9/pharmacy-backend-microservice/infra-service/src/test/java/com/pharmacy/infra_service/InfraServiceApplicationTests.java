@@ -1,10 +1,10 @@
-package com.pharmacy.config_server;
+package com.pharmacy.infra_service;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class ConfigServerApplicationTests {
+class InfraServiceApplicationTests {
 
 	@Test
 	void contextLoads() {

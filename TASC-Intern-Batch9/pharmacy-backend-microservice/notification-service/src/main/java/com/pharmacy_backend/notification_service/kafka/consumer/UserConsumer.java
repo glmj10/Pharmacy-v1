@@ -49,11 +49,4 @@ public class UserConsumer {
         }
     }
 
-    @KafkaListener(topics = "test-topic", groupId = "notification-service")
-    public void consume(String message, Acknowledgment ack) throws JsonProcessingException {
-        String response = objectMapper.readValue(message, String.class);
-        System.out.println("Received message: " + response);
-        ack.acknowledge();
-    }
-
 }

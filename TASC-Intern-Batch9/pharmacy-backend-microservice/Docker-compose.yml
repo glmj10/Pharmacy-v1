@@ -13,6 +13,7 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - D:/orders_2019_2026.csv:/var/lib/mysql-files/orders.csv
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - backend

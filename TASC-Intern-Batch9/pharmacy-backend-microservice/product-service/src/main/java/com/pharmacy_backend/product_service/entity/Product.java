@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,6 +62,9 @@ public class Product extends BaseModifyEntity {
     @JoinTable(name = "products_categories", joinColumns = @JoinColumn(name = "product_id"),
                                             inverseJoinColumns = @JoinColumn(name = "category_id"))
     List<Category> categories = new ArrayList<>();
+
+    @Column(name = "expiration_date")
+    LocalDateTime expirationDate;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     List<Wishlist> wishlists = new ArrayList<>();
