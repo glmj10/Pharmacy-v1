@@ -20,6 +20,7 @@ public class ProductResponse {
     Integer priceNew;
     Integer importPrice;
     Integer quantity;
+    Integer minStockLevel;
     String manufacturer;
     String productType;
     String noted;

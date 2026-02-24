@@ -27,7 +27,7 @@ public interface ProductRepository {
     long countProducts(ProductCMSFilterRequest filterRequest);
     long countProducts(ProductFilterCustomerRequest filterCustomerRequest);
     long countProducts();
-
+    long countLowStockProducts();
     Product createProduct(Product product);
 
     Product updateProduct(Long id, Product product);
@@ -49,4 +49,5 @@ public interface ProductRepository {
     List<Product> findTop20ByCategoriesInAndIdNotAndActiveTrue(List<Category> categories, Long productId);
     List<Product> findAllByIds(List<Long> ids);
     List<Product> findAllByPromotionId(Long promotionId);
+    List<Product> findAllLowStockProduct(int size, int offSet);
 }

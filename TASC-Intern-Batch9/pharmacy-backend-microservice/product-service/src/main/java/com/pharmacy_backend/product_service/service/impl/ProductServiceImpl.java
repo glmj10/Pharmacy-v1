@@ -22,7 +22,6 @@ import com.pharmacy_backend.product_service.entity.*;
 import com.pharmacy_backend.product_service.mapper.BrandMapper;
 import com.pharmacy_backend.product_service.mapper.CategoryMapper;
 import com.pharmacy_backend.product_service.mapper.ProductMapper;
-import com.pharmacy_backend.product_service.mapper.PromotionEventMapper;
 import com.pharmacy_backend.product_service.repository.*;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
 import com.pharmacy_backend.product_service.service.ProductImageService;
@@ -59,9 +58,6 @@ public class ProductServiceImpl implements ProductService {
     final OutboxRepository outboxRepository;
     final StockRepository stockRepository;
     final StockCacheService stockCacheService;
-    final PromotionEventRepository promotionEventRepository;
-    final PromotionItemRepository promotionItemRepository;
-    final PromotionEventMapper promotionEventMapper;
     final RedisService redisService;
 
     @Value("${spring.application.name}")
@@ -176,6 +172,8 @@ public class ProductServiceImpl implements ProductService {
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
         productResponse.setImportPrice(product.getImportPrice());
+        productResponse.setDescription(product.getDescription());
+        productResponse.setMinStockLevel(product.getMinStockLevel());
         List<Category> categories = categoryRepository.findAllByProductsContains(product);
         productResponse.setCategories(categories.stream().map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));
         return ApiResponse.buildOkResponse(productResponse, "Lấy thông tin sản phẩm thành công");
@@ -245,7 +243,7 @@ public class ProductServiceImpl implements ProductService {
         for (Category category : categories) {
             if (category == null) {
                 throw new CustomException(ErrorCode.CATEGORY_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID: " + category.getId());
+                        HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với ID đã cho");
             }
 
             if (category.getType().getCode().equalsIgnoreCase(CategoryTypeEnum.BLOG.name())) {
@@ -529,6 +527,41 @@ public class ProductServiceImpl implements ProductService {
             productRedisService.cacheRelatedProducts(productId, slugsToCache);
             return ApiResponse.buildOkResponse(relatedProductResponses, "Lấy sản phẩm liên quan thành công");
         }
+    }
+
+    @Override
+    public ApiResponse<PageResponse<List<ProductResponse>>> getAllLowStockProduct(int pageIndex, int pageSize) {
+        if(pageIndex <= 0) {
+            pageIndex = 1;
+        }
+        if(pageSize <= 0) {
+            pageSize = 10;
+        }
+
+        List<Product> products = productRepository.findAllLowStockProduct(pageSize, (pageIndex - 1) * pageSize);
+        List<ProductResponse> productResponses = products
+                .stream()
+                .map(product -> {
+                    ProductResponse response = productMapper.toProductResponse(product);
+                    response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
+                    return response;
+                })
+                .toList();
+        long totalElements = productRepository.countLowStockProducts();
+        int totalPage = (int) Math.ceil((double) totalElements / pageSize);
+        boolean hasNext = pageIndex < totalPage;
+        boolean hasPrevious = pageIndex > 1;
+
+        PageResponse<List<ProductResponse>> pageResponse = PageResponse.<List<ProductResponse>>builder()
+                .content(productResponses)
+                .currentPage(pageIndex)
+                .totalPages(totalPage)
+                .totalElements(totalElements)
+                .hasNext(hasNext)
+                .hasPrevious(hasPrevious)
+                .build();
+
+        return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách sản phẩm sắp hết hàng thành công");
     }
 
 

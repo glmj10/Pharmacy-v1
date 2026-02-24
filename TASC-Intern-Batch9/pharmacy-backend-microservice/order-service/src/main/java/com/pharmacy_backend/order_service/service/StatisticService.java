@@ -11,4 +11,5 @@ public interface StatisticService {
     ApiResponse<List<RevenueStatisticProjection>> getRevenueStatistics(LocalDateTime startDate, LocalDateTime endDate);
     ApiResponse<List<RevenueStatisticProjection>> getRevenueStatistics(Integer days);
     ApiResponse<List<TotalOrderStatusProjection>> getTotalOrdersByStatus();
+    ApiResponse<Long> getCurrentRevenue();
 }

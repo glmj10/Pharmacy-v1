@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -34,6 +35,7 @@ public class UserVoucher extends BaseEntity {
     @Column(name = "is_used")
     Boolean isUsed = false;
 
+    @CreationTimestamp
     @Column(name = "obtained_at")
     LocalDateTime obtainedAt;
 }

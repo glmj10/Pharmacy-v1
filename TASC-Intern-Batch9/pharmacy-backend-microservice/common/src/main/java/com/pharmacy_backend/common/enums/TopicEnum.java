@@ -11,6 +11,8 @@ public enum TopicEnum {
     CATEGORY_TOPIC,
     PRODUCT_TOPIC,
     PAYMENT_TOPIC,
+    VOUCHER_TOPIC,
+    FILE_TOPIC,
     ORDER_TOPIC;
 
     public String getName() {

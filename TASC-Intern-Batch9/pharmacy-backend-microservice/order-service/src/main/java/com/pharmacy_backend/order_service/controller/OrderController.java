@@ -95,6 +95,13 @@ public class OrderController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/statistic/current-revenue")
+    public ResponseEntity<ApiResponse<Long>> getCurrentRevenue() {
+        ApiResponse<Long> response = statisticService.getCurrentRevenue();
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/statistic/newest")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getFiveNewestOrder() {
@@ -109,12 +116,12 @@ public class OrderController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/statistic/time-range")
-    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByTimeRange(@RequestParam String startDate,
-                                                                                             @RequestParam String endDate) {
-        return null;
-    }
+//    @PreAuthorize("hasRole('ADMIN')")
+//    @GetMapping("/statistic/time-range")
+//    public ResponseEntity<ApiResponse<List<RevenueStatisticProjection>>> getRevenueByTimeRange(@RequestParam String startDate,
+//                                                                                             @RequestParam String endDate) {
+//        return null;
+//    }
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/statistic/order-status")

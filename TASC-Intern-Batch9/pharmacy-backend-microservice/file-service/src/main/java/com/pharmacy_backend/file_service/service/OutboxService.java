@@ -1,4 +1,4 @@
-package com.pharmacy_backend.order_service.service;
+package com.pharmacy_backend.file_service.service;
 
 import com.pharmacy_backend.common.enums.TopicEnum;
 import com.pharmacy_backend.common.kafka.event.base.Event;

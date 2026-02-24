@@ -48,7 +48,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAll(int size, int offSet, ProductCMSFilterRequest filterRequest) {
-        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p");
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.* FROM products p");
         List<Object> params = new ArrayList<>();
         Brand brand = null;
         Category category = null;
@@ -101,10 +101,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
 
         if (filterRequest.isAscending() != null) {
-            sql.append(" ORDER BY price_new ");
+            sql.append(" ORDER BY p.price_new ");
             sql.append(Boolean.TRUE.equals(filterRequest.isAscending()) ? "ASC" : "DESC");
+            sql.append(", p.id ASC");
         } else {
-            sql.append(" ORDER BY modified_at DESC");
+            sql.append(" ORDER BY p.created_at DESC, p.id ASC");
         }
 
         sql.append(" LIMIT ? OFFSET ?");
@@ -120,7 +121,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAll(int size, int offSet, ProductFilterCustomerRequest filterCustomerRequest) {
-        StringBuilder sql = new StringBuilder("SELECT p.* FROM products p");
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT p.* FROM products p");
         List<Object> params = new ArrayList<>();
         Brand brand = null;
         Category category = null;
@@ -173,11 +174,11 @@ public class ProductRepositoryImpl implements ProductRepository {
             params.add(filterCustomerRequest.getPriceTo());
         }
 
-        if (filterCustomerRequest.isAscending() != null) {
+        if (filterCustomerRequest.getIsAscending() != null) {
             sql.append(" ORDER BY price_new ");
             sql.append(Boolean.TRUE.equals(filterCustomerRequest.isAscending()) ? "ASC" : "DESC");
         } else {
-            sql.append(" ORDER BY modified_at DESC, created_at DESC");
+            sql.append(" ORDER BY p.created_at DESC, p.id ASC");
         }
 
         sql.append(" LIMIT ? OFFSET ?");
@@ -216,6 +217,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 p.setNumberOfLikes(rs.getInt("number_of_likes"));
                 p.setActive(rs.getBoolean("active"));
                 p.setProductType(rs.getString("product_type"));
+                p.setMinStockLevel(rs.getInt("min_stock_level"));
 
                 Brand b = brandRepository.findById(rs.getLong("brand_id"))
                         .orElse(null);
@@ -413,15 +415,22 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public long countLowStockProducts() {
+        String sql = "SELECT COUNT(*) FROM products WHERE quantity <= min_stock_level AND active = true";
+        Long count = jdbcTemplate.queryForObject(sql, Long.class);
+        return count != null ? count : 0L;
+    }
+
+    @Override
     public Product createProduct(Product product) {
         String sql = """
                 INSERT INTO products (
                     title, active_ingredient, dosage_form, description,
                     indication, manufacturer, price_old, price_new,
                     import_price, priority, quantity, registration_number,
-                    slug, thumbnail, number_of_likes, active, brand_id, product_type,
+                    slug, min_stock_level, thumbnail, number_of_likes, active, brand_id, product_type,
                     created_by, modified_by, created_at, modified_at, noted
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)
                 """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -441,14 +450,15 @@ public class ProductRepositoryImpl implements ProductRepository {
             ps.setObject(11, product.getQuantity());
             ps.setString(12, product.getRegistrationNumber());
             ps.setString(13, product.getSlug());
-            ps.setString(14, product.getThumbnail());
-            ps.setObject(15, product.getNumberOfLikes());
-            ps.setObject(16, product.getActive());
-            ps.setObject(17, product.getBrand() != null ? product.getBrand().getId() : null);
-            ps.setString(18, product.getProductType());
-            ps.setObject(19, product.getCreatedBy());
-            ps.setObject(20, product.getModifiedBy());
-            ps.setString(21, product.getNoted());
+            ps.setObject(14, product.getMinStockLevel());
+            ps.setString(15, product.getThumbnail());
+            ps.setObject(16, product.getNumberOfLikes());
+            ps.setObject(17, product.getActive());
+            ps.setObject(18, product.getBrand() != null ? product.getBrand().getId() : null);
+            ps.setString(19, product.getProductType());
+            ps.setObject(20, product.getCreatedBy());
+            ps.setObject(21, product.getModifiedBy());
+            ps.setString(22, product.getNoted());
             return ps;
         }, keyHolder);
 
@@ -474,7 +484,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                     title=?, active_ingredient=?, dosage_form=?, description=?,
                     indication=?, manufacturer=?, price_old=?, price_new=?,
                     import_price=?, priority=?, quantity=?, registration_number=?,
-                    slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
+                    slug=?, min_stock_level=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
                     modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW(), embedding=?
                 WHERE id=?
                 """;
@@ -484,7 +494,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 product.getDescription(), product.getIndication(), product.getManufacturer(),
                 product.getPriceOld(), product.getPriceNew(), product.getImportPrice(),
                 product.getPriority(), product.getQuantity(), product.getRegistrationNumber(),
-                product.getSlug(), product.getThumbnail(), product.getNumberOfLikes(),
+                product.getSlug(), product.getMinStockLevel(), product.getThumbnail(), product.getNumberOfLikes(),
                 product.getActive(), product.getBrand() != null ? product.getBrand().getId() : null,
                 product.getProductType(), product.getModifiedBy(), product.getNoted(), product.getEmbedding(), id
         );
@@ -512,8 +522,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         String deleteWishlistSql = "DELETE FROM wishlists WHERE product_id = ?";
         jdbcTemplate.update(deleteWishlistSql, id);
 
-        String deleteProductImageSql = "DELETE FROM product_images WHERE product_id = ?";
-        jdbcTemplate.update(deleteProductImageSql, id);
 
         String stockDeleteSql = "DELETE FROM stocks WHERE product_id = ?";
         jdbcTemplate.update(stockDeleteSql, id);
@@ -651,5 +659,16 @@ public class ProductRepositoryImpl implements ProductRepository {
                                 WHERE pi.promotion_event_id = ?
                 """;
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), promotionId);
+    }
+
+    @Override
+    public List<Product> findAllLowStockProduct(int size, int offSet) {
+        String sql = """
+                SELECT * FROM products 
+                WHERE quantity <= min_stock_level AND active = true
+                ORDER BY quantity ASC, modified_at DESC
+                LIMIT ? OFFSET ?
+                """;
+        return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class), size, offSet);
     }
 }

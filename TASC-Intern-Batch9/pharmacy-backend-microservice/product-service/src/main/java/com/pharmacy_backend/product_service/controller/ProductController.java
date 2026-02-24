@@ -44,6 +44,7 @@ public class ProductController {
         ApiResponse<PageResponse<List<ProductResponse>>> response = productService.getAllCMSProduct(pageIndex, pageSize, filterRequest);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long id) {
@@ -98,6 +99,15 @@ public class ProductController {
     public ResponseEntity<ApiResponse<Long>> getTotalProduct() {
         ApiResponse<Long> response = productService.getTotalProduct();
         return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/statistic/low-stock")
+    public ResponseEntity<ApiResponse<PageResponse<List<ProductResponse>>>> getAllProductLowStock(@RequestParam(defaultValue = "1", required = false) int pageIndex,
+                                                                                                  @RequestParam(defaultValue = "10", required = false) int pageSize) {
+        ApiResponse<PageResponse<List<ProductResponse>>> getAllProductLowStock =
+                productService.getAllLowStockProduct(pageIndex, pageSize);
+        return ResponseEntity.status(getAllProductLowStock.getStatus()).body(getAllProductLowStock);
     }
 
     @GetMapping("/brand/suggestions/top15")

@@ -4,6 +4,8 @@ import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.VoucherClaimedEvent;
+import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.order_service.dto.projection.VoucherStatusInfoProjection;
@@ -17,6 +19,7 @@ import com.pharmacy_backend.order_service.mapper.VoucherMapper;
 import com.pharmacy_backend.order_service.repository.UserVoucherRepository;
 import com.pharmacy_backend.order_service.repository.VoucherRepository;
 import com.pharmacy_backend.order_service.repository.VoucherUsageRepository;
+import com.pharmacy_backend.order_service.service.OutboxService;
 import com.pharmacy_backend.order_service.service.QuartzService;
 import com.pharmacy_backend.order_service.service.VoucherService;
 import com.pharmacy_backend.order_service.specification.VoucherSpecification;
@@ -25,14 +28,19 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,16 +49,21 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @Transactional
-@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @RequiredArgsConstructor
 public class VoucherServiceImpl implements VoucherService {
-    VoucherRepository voucherRepository;
-    VoucherUsageRepository voucherUsageRepository;
-    UserVoucherRepository userVoucherRepository;
-    VoucherMapper voucherMapper;
-    QuartzService quartzService;
-    RedisService redisService;
+    final VoucherRepository voucherRepository;
+    final VoucherUsageRepository voucherUsageRepository;
+    final UserVoucherRepository userVoucherRepository;
+    final VoucherMapper voucherMapper;
+    final QuartzService quartzService;
+    final RedisService redisService;
+    final StringRedisTemplate redisTemplate;
+    final DefaultRedisScript<Long> claimLuaScript;
+    final OutboxService outboxService;
 
+    @Value("${spring.application.name}")
+    String appName;
 
     @Override
     public ApiResponse<PageResponse<List<VoucherResponse>>> getVouchers(
@@ -188,51 +201,59 @@ public class VoucherServiceImpl implements VoucherService {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND));
         voucherRepository.delete(voucher);
+        redisService.deleteCacheKey(String.format("%s:%s:%d",
+                RedisKeyTypeEnum.VOUCHER.getKey(), RedisKeyTypeEnum.STOCK.getKey(), voucher.getId()));
+
         quartzService.removeJob(voucher.getId());
         return ApiResponse.buildOkResponse(null, "Xóa voucher thành công");
     }
 
     @Override
     public ApiResponse<Void> claimVoucher(UserVoucherRequest request) {
-        Voucher voucher = voucherRepository.findById(request.getVoucherId())
+        Long userId = SecurityUtils.getCurrentUserId();
+        Long voucherId = request.getVoucherId();
+
+        Voucher voucher = voucherRepository.findById(voucherId)
                 .orElseThrow(() -> new CustomException(ErrorCode.VOUCHER_NOT_FOUND, HttpStatus.NOT_FOUND));
 
         if(voucher.getType() == VoucherTypeEnum.PUBLIC) {
             throw new CustomException(ErrorCode.VOUCHER_CANNOT_CLAIM, HttpStatus.BAD_REQUEST);
         }
 
-        if(voucher.getStatus() != VoucherStatusEnum.ACTIVE) {
-            throw new CustomException(ErrorCode.VOUCHER_NOT_ACTIVE, HttpStatus.BAD_REQUEST);
+        String stockKey = String.format("%s:%s:%d",
+                RedisKeyTypeEnum.VOUCHER.getKey(), RedisKeyTypeEnum.STOCK.getKey(), voucherId);
+
+        String claimedKey = String.format("%s:%d",
+                RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getKey(), userId);
+
+        String rateLimitKey = String.format("USER:%s:%d:%d",
+                RedisKeyTypeEnum.LIMIT.getKey(), userId, voucherId);
+
+        Long result = redisTemplate.execute(claimLuaScript,
+                Arrays.asList(stockKey, claimedKey, rateLimitKey),
+                String.valueOf(voucherId));
+
+        if (result < 0) {
+            handleLuaError(result);
         }
 
-        if(voucher.getCollectedCount() > voucher.getUsageLimit()) {
-            throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED, HttpStatus.BAD_REQUEST);
-        }
-        boolean alreadyClaimed = userVoucherRepository.existsByUserIdAndVoucherId(
-                SecurityUtils.getCurrentUserId(), voucher.getId());
-
-        if(alreadyClaimed) {
-            throw new CustomException(ErrorCode.VOUCHER_ALREADY_CLAIMED, HttpStatus.BAD_REQUEST);
-        }
-
-        int rowCnt = voucherRepository.increaseCollectedCount(request.getVoucherId());
-
-        if (rowCnt == 0) {
-            throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED, HttpStatus.BAD_REQUEST);
-        }
-
-        UserVoucher userVoucher = UserVoucher.builder()
-                .userId(SecurityUtils.getCurrentUserId())
-                .voucherId(voucher.getId())
+        VoucherClaimedEvent event = new VoucherClaimedEvent(userId, voucherId);
+        Event<VoucherClaimedEvent> wrapperEvent = Event.<VoucherClaimedEvent>builder()
+                .eventType(EventTypeEnum.VOUCHER_CLAIMED.getName())
+                .key(String.format("%s:%d", PartitionKeyEnum.VOUCHER.getName(), voucherId))
+                .source(appName)
+                .data(event)
                 .build();
 
-        userVoucherRepository.save(userVoucher);
-        String key = RedisKeyTypeEnum.USER_CLAIMED_VOUCHER + ":" + SecurityUtils.getCurrentUserId();
-        redisService.addValueToSet(
-                key, String.valueOf(voucher.getId()), RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration()
-        );
+        outboxService.handleSaveEvent(wrapperEvent, TopicEnum.VOUCHER_TOPIC);
 
-        return ApiResponse.buildCreatedResponse(null, "Nhận voucher thành công");
+        return ApiResponse.buildCreatedResponse(null, "Nhận voucher thành công! Kiểm tra trong ví của bạn nhé.");
+    }
+
+    private void handleLuaError(Long result) {
+        if (result == -1) throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED, HttpStatus.BAD_REQUEST);
+        if (result == -2) throw new CustomException(ErrorCode.VOUCHER_ALREADY_CLAIMED, HttpStatus.BAD_REQUEST);
+        if (result == -4) throw new CustomException(ErrorCode.TOO_MANY_REQUESTS, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     @Override
@@ -304,43 +325,73 @@ public class VoucherServiceImpl implements VoucherService {
         return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách voucher của người dùng thành công");
     }
 
-    private List<VoucherResponse> buildVoucherResponse(List<Voucher> vouchers) {
-        Set<String> claimedVoucherIdsStr = redisService.getSetMembers(
-                RedisKeyTypeEnum.USER_CLAIMED_VOUCHER + ":" + SecurityUtils.getCurrentUserId()
-        );
 
+    private List<VoucherResponse> buildVoucherResponse(List<Voucher> vouchers) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        String claimedKey = String.format("%s:%d", RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getKey(), userId);
+
+        Set<String> claimedVoucherIdsStr = redisService.getSetMembers(claimedKey);
         Set<Long> claimIds;
-        if(claimedVoucherIdsStr.isEmpty()) {
+
+        if (claimedVoucherIdsStr == null || claimedVoucherIdsStr.isEmpty()) {
             List<Long> ids = vouchers.stream().map(Voucher::getId).toList();
-            claimIds = userVoucherRepository.findClaimedVoucherIds(SecurityUtils.getCurrentUserId(), ids);
-            if(!claimIds.isEmpty()) {
+            claimIds = userVoucherRepository.findClaimedVoucherIds(userId, ids);
+            if (!claimIds.isEmpty()) {
                 String[] arr = claimIds.stream().map(String::valueOf).toArray(String[]::new);
-                redisService.addValueToSet(
-                        RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.name() + ":" + SecurityUtils.getCurrentUserId(),
-                        arr, RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration());
+                redisService.addValueToSet(claimedKey, arr, RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration());
             }
         } else {
-            claimIds = claimedVoucherIdsStr.stream().map(Long::valueOf).collect(java.util.stream.Collectors.toSet());
+            claimIds = claimedVoucherIdsStr.stream().map(Long::valueOf).collect(Collectors.toSet());
         }
 
-        Map<Long, Boolean> finalUsedMaps = userVoucherRepository.findUsedStatus(
-                SecurityUtils.getCurrentUserId(), claimIds).stream()
-                .filter(projection -> projection.getVoucherId() != null)
-                .collect(Collectors.toMap(
-                        VoucherStatusInfoProjection::getVoucherId,
-//                        VoucherStatusInfoProjection::getUsed
-                        projection -> projection.getUsed() != null ? projection.getUsed() : false,
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, Boolean> finalUsedMaps = userVoucherRepository.findUsedStatus(userId, claimIds).stream()
+                .collect(Collectors.toMap(VoucherStatusInfoProjection::getVoucherId,
+                        p -> p.getUsed() != null && p.getUsed(), (e, r) -> e));
 
-        return vouchers
-                .stream()
-                .map(voucher -> {
-                    VoucherResponse response = voucherMapper.toVoucherResponse(voucher);
-                    response.setClaimed(claimIds.contains(voucher.getId()));
-                    response.setUsed(finalUsedMaps.getOrDefault(voucher.getId(), false));
-                    return response;
-                })
-                .toList();
+        return vouchers.stream().map(v -> {
+            VoucherResponse res = voucherMapper.toVoucherResponse(v);
+            res.setClaimed(claimIds.contains(v.getId()));
+            res.setUsed(finalUsedMaps.getOrDefault(v.getId(), false));
+            return res;
+        }).toList();
     }
+//    private List<VoucherResponse> buildVoucherResponse(List<Voucher> vouchers) {
+//        Set<String> claimedVoucherIdsStr = redisService.getSetMembers(
+//                RedisKeyTypeEnum.USER_CLAIMED_VOUCHER + ":" + SecurityUtils.getCurrentUserId()
+//        );
+//
+//        Set<Long> claimIds;
+//        if(claimedVoucherIdsStr.isEmpty()) {
+//            List<Long> ids = vouchers.stream().map(Voucher::getId).toList();
+//            claimIds = userVoucherRepository.findClaimedVoucherIds(SecurityUtils.getCurrentUserId(), ids);
+//            if(!claimIds.isEmpty()) {
+//                String[] arr = claimIds.stream().map(String::valueOf).toArray(String[]::new);
+//                redisService.addValueToSet(
+//                        RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.name() + ":" + SecurityUtils.getCurrentUserId(),
+//                        arr, RedisKeyTypeEnum.USER_CLAIMED_VOUCHER.getDuration());
+//            }
+//        } else {
+//            claimIds = claimedVoucherIdsStr.stream().map(Long::valueOf).collect(java.util.stream.Collectors.toSet());
+//        }
+//
+//        Map<Long, Boolean> finalUsedMaps = userVoucherRepository.findUsedStatus(
+//                SecurityUtils.getCurrentUserId(), claimIds).stream()
+//                .filter(projection -> projection.getVoucherId() != null)
+//                .collect(Collectors.toMap(
+//                        VoucherStatusInfoProjection::getVoucherId,
+////                        VoucherStatusInfoProjection::getUsed
+//                        projection -> projection.getUsed() != null ? projection.getUsed() : false,
+//                        (existing, replacement) -> existing
+//                ));
+//
+//        return vouchers
+//                .stream()
+//                .map(voucher -> {
+//                    VoucherResponse response = voucherMapper.toVoucherResponse(voucher);
+//                    response.setClaimed(claimIds.contains(voucher.getId()));
+//                    response.setUsed(finalUsedMaps.getOrDefault(voucher.getId(), false));
+//                    return response;
+//                })
+//                .toList();
+//    }
 }

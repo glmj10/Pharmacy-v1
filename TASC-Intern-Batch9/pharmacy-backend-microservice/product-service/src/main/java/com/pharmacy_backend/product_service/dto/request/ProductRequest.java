@@ -23,6 +23,9 @@ public class ProductRequest {
     @NotNull(message = "Số lượng không được để trống")
     Long quantity;
 
+    @NotNull(message = "Mức tồn kho tối thiểu không được để trống")
+    Integer minStockLevel;
+
     @NotNull(message = "Giá nhập không được để trống")
     Long importPrice;
 

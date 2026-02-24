@@ -96,5 +96,6 @@ public class ProductImageServiceImpl implements ProductImageService {
         }
 
         productImageRepository.deleteAll(productImages);
+        productImageRepository.flush();
     }
 }

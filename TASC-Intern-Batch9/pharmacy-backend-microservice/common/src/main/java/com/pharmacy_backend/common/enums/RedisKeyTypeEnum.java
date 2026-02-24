@@ -17,7 +17,11 @@ public enum RedisKeyTypeEnum {
     USER_CLICK("USER_CLICK"),
     LAST_RUN_TIME("LAST_RUN_TIME"),
     PROMOTION_EVENT("PROMOTION_EVENT"),
-    USER_CLAIMED_VOUCHER("USER_CLAIMED_VOUCHER"),
+    VOUCHER("VOUCHER"),
+    USER_CLAIMED_VOUCHER("USER:CLAIMED"),
+    STOCK("STOCK"),
+    LIMIT("LIMIT"),
+    CLAIMED("CLAIMED"),
     WISHLIST_USER("WISHLIST_USER");
 
 
@@ -39,6 +43,7 @@ public enum RedisKeyTypeEnum {
             case USER_CLICK -> 60L; // 1 minute
             case PROMOTION_EVENT -> 2 * 60 * 60L; // 2 hours
             case USER_CLAIMED_VOUCHER, WISHLIST_USER -> 3 * 24 * 60 * 60L; // 3 days
+            case VOUCHER, STOCK, CLAIMED, LIMIT -> 24 * 60 * 60L; // 1 day
         };
     }
 

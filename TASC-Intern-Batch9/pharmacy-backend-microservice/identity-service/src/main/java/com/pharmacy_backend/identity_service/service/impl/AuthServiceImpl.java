@@ -292,8 +292,7 @@ public class AuthServiceImpl implements AuthService {
         String token = bearerToken.substring(7);
         SignedJWT jwt = SignedJWT.parse(token);
         String jti = jwt.getJWTClaimsSet().getJWTID();
-        Date expiry = jwt.getJWTClaimsSet().getExpirationTime();
-        redisService.storeInvalidatedToken(jti, expiry.getTime());
+        redisService.storeInvalidatedToken(jti, RedisKeyTypeEnum.INVALIDATED_JWT.getDuration());
         return ApiResponse.buildOkResponse(null, "Đăng xuất thành công");
     }
 

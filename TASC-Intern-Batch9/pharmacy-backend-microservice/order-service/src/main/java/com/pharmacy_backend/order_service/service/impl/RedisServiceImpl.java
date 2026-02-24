@@ -25,6 +25,11 @@ public class RedisServiceImpl implements RedisService {
     }
 
     @Override
+    public void setCache(String key, String value) {
+        redisTemplate.opsForValue().set(key, String.valueOf(value));
+    }
+
+    @Override
     public void addValueToSet(String key, String[] value, long duration) {
         redisTemplate.opsForSet().add(key, value);
         redisTemplate.expire(key, Duration.ofSeconds(duration));

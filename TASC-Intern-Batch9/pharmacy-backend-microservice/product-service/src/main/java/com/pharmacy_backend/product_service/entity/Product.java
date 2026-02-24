@@ -44,6 +44,9 @@ public class Product extends BaseModifyEntity {
     String registrationNumber;
     String slug;
 
+    @Column(name = "min_stock_level")
+    Integer minStockLevel;
+
     @Column(columnDefinition = "TEXT")
     String thumbnail;
 

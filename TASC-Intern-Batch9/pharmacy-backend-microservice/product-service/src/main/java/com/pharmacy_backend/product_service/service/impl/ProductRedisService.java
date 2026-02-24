@@ -187,6 +187,7 @@ public class ProductRedisService {
         ProductResponse productResponse = productMapper.toProductResponse(product);
         productResponse.setImages(productImageService.getProductImagesByProduct(product));
         productResponse.setBrand(brandMapper.toBrandResponse(product.getBrand()));
+        productResponse.setDescription(product.getDescription());
         List<Category> categories = categoryRepository.findAllByProductsContains(product);
         productResponse.setCategories(categories.stream()
                 .map(categoryMapper::toCategoryResponse).collect(Collectors.toList()));

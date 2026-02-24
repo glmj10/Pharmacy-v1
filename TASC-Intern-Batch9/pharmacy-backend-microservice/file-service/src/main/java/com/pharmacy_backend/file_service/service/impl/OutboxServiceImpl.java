@@ -1,4 +1,4 @@
-package com.pharmacy_backend.order_service.service.impl;
+package com.pharmacy_backend.file_service.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,9 +9,9 @@ import com.pharmacy_backend.common.enums.TopicEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.kafka.producer.EventProducer;
-import com.pharmacy_backend.order_service.entity.OutboxEvent;
-import com.pharmacy_backend.order_service.repository.OutboxEventRepository;
-import com.pharmacy_backend.order_service.service.OutboxService;
+import com.pharmacy_backend.file_service.entity.OutboxEvent;
+import com.pharmacy_backend.file_service.repository.OutboxEventRepository;
+import com.pharmacy_backend.file_service.service.OutboxService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,10 +52,10 @@ public class OutboxServiceImpl implements OutboxService {
     @Override
     public void handleSaveEvent(Event<?> event) {
         OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateType(PartitionKeyEnum.ORDER.getName());
+        outboxEvent.setAggregateType(PartitionKeyEnum.FILE.getName());
         outboxEvent.setAggregateId(event.getKey());
         outboxEvent.setEventType(event.getEventType());
-        outboxEvent.setTopic(TopicEnum.ORDER_TOPIC.getName());
+        outboxEvent.setTopic(TopicEnum.FILE_TOPIC.getName());
         try {
             outboxEvent.setPayload(objectMapper.writeValueAsString(event));
             outboxRepository.save(outboxEvent);
@@ -68,7 +68,7 @@ public class OutboxServiceImpl implements OutboxService {
     @Override
     public void handleSaveEvent(Event<?> event, TopicEnum topic) {
         OutboxEvent outboxEvent = new OutboxEvent();
-        outboxEvent.setAggregateType(PartitionKeyEnum.ORDER.getName());
+        outboxEvent.setAggregateType(PartitionKeyEnum.FILE.getName());
         outboxEvent.setAggregateId(event.getKey());
         outboxEvent.setEventType(event.getEventType());
         outboxEvent.setTopic(topic.getName());

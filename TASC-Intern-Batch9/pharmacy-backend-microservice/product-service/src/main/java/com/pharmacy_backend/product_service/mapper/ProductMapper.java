@@ -20,7 +20,6 @@ public interface ProductMapper {
     @Mapping(target = "brand", ignore = true)
     @Mapping(target = "wishlists", ignore = true)
     @Mapping(target = "active", constant = "true")
-    @Mapping(target = "description", ignore = true)
     Product toProduct(ProductRequest request);
 
     @Mapping(target = "slug", ignore = true)
@@ -40,6 +39,7 @@ public interface ProductMapper {
     @Mapping(target = "inWishlist", ignore = true)
     @Mapping(target = "categories", ignore = true)
     @Mapping(target = "importPrice", ignore = true)
+    @Mapping(target = "description", ignore = true)
     ProductResponse toProductResponse(Product product);
 
 }

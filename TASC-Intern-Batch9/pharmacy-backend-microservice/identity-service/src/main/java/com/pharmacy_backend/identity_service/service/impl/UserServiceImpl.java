@@ -52,20 +52,17 @@ public class UserServiceImpl implements UserService {
                 .map(Role::getCode)
                 .toList();
 
-        if(validRoleCodes.contains(RoleEnums.ADMIN.toString().toUpperCase())) {
-            throw new CustomException(
-                    ErrorCode.INVALID_ROLE,
-                    HttpStatus.BAD_REQUEST,
-                    "Không thể gán vai trò ADMIN cho người dùng"
-            );
-        }
-
         if (request.getRoleCodes() == null || request.getRoleCodes().isEmpty()) {
             throw new CustomException(
                     ErrorCode.VALIDATION_ERROR,
                     HttpStatus.BAD_REQUEST,
                     "Danh sách vai trò không được để trống"
             );
+        }
+
+        if(request.getRoleCodes().contains(RoleEnums.ADMIN.name())) {
+            throw new CustomException(ErrorCode.VALIDATION_ERROR,
+                    HttpStatus.BAD_REQUEST, "Không thể gán vai trò ADMIN cho người dùng");
         }
 
         for (String roleCode : request.getRoleCodes()) {

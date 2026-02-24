@@ -23,7 +23,6 @@ public interface OrderService {
     ApiResponse<Long> getTotalOrder();
 
     ApiResponse<Long> getAllRevenue();
-
     ApiResponse<List<OrderResponse>> getFiveNewestOrder();
     ApiResponse<Void> cancelOrder(Long id);
 

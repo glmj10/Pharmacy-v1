@@ -16,6 +16,7 @@ spring:
         user-topic: USER_TOPIC
         product-topic: PRODUCT_TOPIC
         profile-topic: PROFILE_TOPIC
+        voucher-topic: VOUCHER_TOPIC
   quartz:
     job-store-type: jdbc
     jdbc:

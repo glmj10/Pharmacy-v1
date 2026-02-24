@@ -55,86 +55,82 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
                                                           @Param("endDate") LocalDateTime endDate);
 
     @Query(value = """
-        SELECT 
-            DATE(o.created_at) AS date,
-            -- Cast về SIGNED để tránh lỗi type mapping với Long trong Java
-            CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
-            COUNT(o.id) AS orderCount
-        FROM 
-            orders o
-        WHERE 
-            DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
-            AND o.order_status = 'DELIVERED'
-            AND o.payment_status = 'COMPLETED'
-        GROUP BY 
-            DATE(o.created_at) -- <--- BẮT BUỘC PHẢI CÓ DÒNG NÀY
-        ORDER BY 
-            date ASC
-""", nativeQuery = true)
+                    SELECT 
+                        DATE(o.created_at) AS date,
+                        -- Cast về SIGNED để tránh lỗi type mapping với Long trong Java
+                        CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
+                        COUNT(o.id) AS orderCount
+                    FROM 
+                        orders o
+                    WHERE 
+                        DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
+                        AND o.order_status = 'DELIVERED'
+                        AND o.payment_status = 'COMPLETED'
+                    GROUP BY 
+                        DATE(o.created_at) 
+                    ORDER BY 
+                        date ASC
+            """, nativeQuery = true)
     List<RevenueStatisticProjection> getRevenueStatisticsByDate(@Param("days") Integer days);
 
     @Query(value = """
-    SELECT 
-        -- Sử dụng %v (Tuần 01-53) và %x (Năm chuẩn của tuần đó)
-        -- Kết quả sẽ ra: "W12/2024"
-        DATE_FORMAT(o.created_at, 'W%v/%x') AS date,
-        
-        CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
-        COUNT(o.id) AS orderCount
-    FROM 
-        orders o
-    WHERE 
-        DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
-        AND o.order_status = 'DELIVERED'
-        AND o.payment_status = 'COMPLETED'
-    GROUP BY 
-        -- Group By chính cái chuỗi đã format -> MySQL hiểu ngay lập tức
-        DATE_FORMAT(o.created_at, 'W%v/%x'),
-        DATE_FORMAT(o.created_at, '%x%v')
-    ORDER BY 
-        -- Sắp xếp theo Năm-Tuần (dùng %x%v để sort string cho đúng thứ tự số)
-        DATE_FORMAT(o.created_at, '%x%v') ASC
-    """, nativeQuery = true)
+            SELECT 
+                -- Sử dụng %v (Tuần 01-53) và %x (Năm chuẩn của tuần đó)
+                -- Kết quả sẽ ra: "W12/2024"
+                DATE_FORMAT(o.created_at, 'W%v/%x') AS date,
+            
+                CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
+                COUNT(o.id) AS orderCount
+            FROM 
+                orders o
+            WHERE 
+                DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
+                AND o.order_status = 'DELIVERED'
+                AND o.payment_status = 'COMPLETED'
+            GROUP BY 
+                DATE_FORMAT(o.created_at, 'W%v/%x'),
+                DATE_FORMAT(o.created_at, '%x%v')
+            ORDER BY 
+                DATE_FORMAT(o.created_at, '%x%v') ASC
+            """, nativeQuery = true)
     List<RevenueStatisticProjection> getRevenueStatisticsByWeek(@Param("days") int days);
 
     @Query(value = """
-    SELECT 
-        -- Map vào getDate(): Format dạng "2024-02"
-        DATE_FORMAT(o.created_at, '%Y-%m') AS date,
-        
-        CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
-        COUNT(o.id) AS orderCount
-    FROM 
-        orders o
-    WHERE 
-        DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
-        AND o.order_status = 'DELIVERED'
-        AND o.payment_status = 'COMPLETED'
-    GROUP BY 
-        DATE_FORMAT(o.created_at, '%Y-%m') -- Group theo Tháng-Năm
-    ORDER BY 
-        date ASC
-    """, nativeQuery = true)
+            SELECT 
+                DATE_FORMAT(o.created_at, '%Y-%m') AS date,
+            
+                CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
+                COUNT(o.id) AS orderCount
+            FROM 
+                orders o
+            WHERE 
+                DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
+                AND o.order_status = 'DELIVERED'
+                AND o.payment_status = 'COMPLETED'
+            GROUP BY 
+                DATE_FORMAT(o.created_at, '%Y-%m') 
+            ORDER BY 
+                date ASC
+            """, nativeQuery = true)
     List<RevenueStatisticProjection> getRevenueStatisticsByMonth(@Param("days") Integer days);
 
     @Query(value = """
-    SELECT 
-        -- Map vào getDate(): Format dạng "2024"
-        DATE_FORMAT(o.created_at, '%Y') AS date,
-        
-        CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
-        COUNT(o.id) AS orderCount
-    FROM 
-        orders o
-    WHERE 
-        DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
-        AND o.order_status = 'DELIVERED'
-        AND o.payment_status = 'COMPLETED'
-    GROUP BY 
-        DATE_FORMAT(o.created_at, '%Y')
-    ORDER BY 
-        date ASC
-    """, nativeQuery = true)
+            SELECT 
+                DATE_FORMAT(o.created_at, '%Y') AS date,
+            
+                CAST(SUM(o.total_price) AS SIGNED) AS totalRevenue,
+                COUNT(o.id) AS orderCount
+            FROM 
+                orders o
+            WHERE 
+                DATE(o.created_at) BETWEEN DATE_SUB(CURDATE(), INTERVAL :days DAY) AND CURDATE()
+                AND o.order_status = 'DELIVERED'
+                AND o.payment_status = 'COMPLETED'
+            GROUP BY 
+                DATE_FORMAT(o.created_at, '%Y')
+            ORDER BY 
+                date ASC
+            """, nativeQuery = true)
     List<RevenueStatisticProjection> getRevenueStatisticsByYear(@Param("days") int days);
 
     @Query(value = """
@@ -142,4 +138,12 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
             """, nativeQuery = true
     )
     List<TotalOrderStatusProjection> getTotalOrderStatus();
+
+    @Query(value = """
+                        SELECT SUM(o.total_price) FROM orders o 
+                        WHERE o.order_status = :orderStatus 
+                        AND o.payment_status = :paymentStatus
+                        AND o.created_at >= CURRENT_DATE()
+            """, nativeQuery = true)
+    Long getCurrentRevenue(String orderStatus, String paymentStatus);
 }

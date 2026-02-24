@@ -129,7 +129,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
+        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize, Sort.by("createdAt").descending());
         Page<Order> orderPage = orderRepository.findAll(orderSpecification, pageable);
 
         List<OrderResponse> orderResponses = orderPage.getContent().stream()

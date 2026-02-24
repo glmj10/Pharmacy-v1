@@ -7,6 +7,7 @@ import com.pharmacy_backend.common.dto.response.FileMetadataResponse;
 import com.pharmacy_backend.common.dto.response.PageResponse;
 import com.pharmacy_backend.common.enums.*;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import com.pharmacy_backend.common.kafka.event.FileEvent;
 import com.pharmacy_backend.common.kafka.event.ProductEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.product_service.config.AppConfig;
@@ -22,6 +23,7 @@ import com.pharmacy_backend.product_service.repository.ProductRepository;
 import com.pharmacy_backend.product_service.repository.PromotionEventRepository;
 import com.pharmacy_backend.product_service.repository.PromotionItemRepository;
 import com.pharmacy_backend.product_service.service.FileServiceClient;
+import com.pharmacy_backend.product_service.service.OutboxService;
 import com.pharmacy_backend.product_service.service.PromotionEventService;
 import com.pharmacy_backend.product_service.service.QuartzService;
 import jakarta.transaction.Transactional;
@@ -35,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +59,7 @@ public class PromotionEventServiceImpl implements PromotionEventService {
     private final ProductRedisService productRedisService;
     private final ObjectMapper objectMapper;
     private final OutboxRepository outboxRepository;
+    private final OutboxService outboxService;
 
 
     @Value("${spring.application.name}")
@@ -121,6 +125,18 @@ public class PromotionEventServiceImpl implements PromotionEventService {
 
     @Override
     public ApiResponse<Void> createEvent(PromotionEventRequest request, MultipartFile thumbnail) {
+        if(request.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVALID_PROMOTION_TIME, "Thời gian bắt đầu phải sau thời gian hiện tại");
+        }
+
+        if(request.getEndTime().isBefore(LocalDateTime.now())) {
+            throw new CustomException(ErrorCode.INVALID_PROMOTION_TIME, "Thời gian kết thúc phải sau thời gian hiện tại");
+        }
+
+        if(request.getStartTime().isAfter(request.getEndTime())) {
+            throw new CustomException(ErrorCode.INVALID_PROMOTION_TIME, "Thời gian kết thúc phải sau thời gian bắt đầu");
+        }
+
         PromotionEvent promotionEvent = promotionEventMapper.toPromotionEvent(request);
 
         if (thumbnail != null && !thumbnail.isEmpty()) {
@@ -175,14 +191,26 @@ public class PromotionEventServiceImpl implements PromotionEventService {
 
         PromotionEvent event = promotionEventMapper.toPromotionEventUpdateFromRequest(request, existingEvent);
         if (thumbnail != null && !thumbnail.isEmpty()) {
-            fileServiceClient.deleteFile(existingEvent.getThumbnailUUID());
-            ApiResponse<FileMetadataResponse> uploadResponse = fileServiceClient.uploadFile(thumbnail, FileCategoryEnum.PROMOTION.getSubDirectory());
-            if (uploadResponse.getStatus() != HttpStatus.SC_OK) {
+//            fileServiceClient.deleteFile(existingEvent.getThumbnailUUID());
+            ApiResponse<FileMetadataResponse> uploadResponse = fileServiceClient.uploadFile(
+                    thumbnail, FileCategoryEnum.PROMOTION.getSubDirectory()
+            );
+            if (uploadResponse.getStatus() != HttpStatus.SC_CREATED) {
                 throw new CustomException(ErrorCode.FILE_UPLOAD_FAILED);
             }
 
             String thumbnailUuid = uploadResponse.getData().getId().toString();
             String thumbnailUrl = uploadResponse.getData().getPath();
+
+            FileEvent fileEvent = new FileEvent(existingEvent.getThumbnailUUID());
+            Event<FileEvent> fileDeletedEvent = Event.<FileEvent>builder()
+                    .eventType(EventTypeEnum.FILE_DELETED.name())
+                    .source(appName)
+                    .data(fileEvent)
+                    .key(String.format("%s-%s", PartitionKeyEnum.FILE.getName(), existingEvent.getThumbnailUUID()))
+                    .build();
+            outboxService.handleSaveEvent(fileDeletedEvent, TopicEnum.FILE_TOPIC, PartitionKeyEnum.FILE);
+
             event.setThumbnailUUID(thumbnailUuid);
             event.setThumbnailUrl(thumbnailUrl);
         }

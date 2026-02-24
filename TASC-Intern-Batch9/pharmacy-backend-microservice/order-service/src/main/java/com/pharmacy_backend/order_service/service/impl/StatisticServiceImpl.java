@@ -2,6 +2,8 @@ package com.pharmacy_backend.order_service.service.impl;
 
 import com.pharmacy_backend.common.dto.response.ApiResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
+import com.pharmacy_backend.common.enums.OrderStatusEnum;
+import com.pharmacy_backend.common.enums.PaymentStatusEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.order_service.dto.projection.RevenueStatisticProjection;
 import com.pharmacy_backend.order_service.dto.projection.TotalOrderStatusProjection;
@@ -55,5 +57,12 @@ public class StatisticServiceImpl implements StatisticService {
     public ApiResponse<List<TotalOrderStatusProjection>> getTotalOrdersByStatus() {
         List<TotalOrderStatusProjection> totalOrderStatusProjections = orderRepository.getTotalOrderStatus();
         return ApiResponse.buildOkResponse(totalOrderStatusProjections, "Lấy thống kê đơn hàng theo trạng thái thành công");
+    }
+
+    @Override
+    public ApiResponse<Long> getCurrentRevenue() {
+        Long totalRevenue = orderRepository.getCurrentRevenue(OrderStatusEnum.DELIVERED.getName(),
+                PaymentStatusEnum.COMPLETED.getName());
+        return ApiResponse.buildOkResponse(totalRevenue, "Lấy doanh thu hiện tại thành công");
     }
 }

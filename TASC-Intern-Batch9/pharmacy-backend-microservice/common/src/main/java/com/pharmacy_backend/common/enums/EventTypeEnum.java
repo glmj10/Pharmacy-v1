@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum EventTypeEnum {
+    FILE_DELETED,
     USER_CREATED,
     USER_UPDATED,
     PROFILE_CREATED,
@@ -31,6 +32,9 @@ public enum EventTypeEnum {
     PROMOTION_ACTIVATED,
     PROMOTION_DEACTIVATED,
     PROMOTION_EXPIRED,
+    VOUCHER_CLAIMED,
+    VOUCHER_REDEEMED,
+    VOUCHER_EXPIRED,
     PASSWORD_RESET;
 
     public String getName() {
