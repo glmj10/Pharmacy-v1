@@ -20,19 +20,18 @@ const ProductDetail: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { toast } = useToast(); // <== Khai báo
+  const { toast } = useToast(); 
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState<string>('');
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]); // State lưu sản phẩm liên quan
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
-  const [isExpanded, setIsExpanded] = useState(false); // Trạng thái đang mở hay đóng
-  const [isOverflowing, setIsOverflowing] = useState(false); // Nội dung có dài quá mức quy định không?
-  const descriptionRef = useRef<HTMLDivElement>(null); // Ref để đo chiều cao
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const descriptionRef = useRef<HTMLDivElement>(null);
 
-  // Tabs: Mô tả | Chỉ định | Thông tin chi tiết
   const [activeTab, setActiveTab] = useState<'description' | 'indication' | 'details'>('description');
 
   const mapProductFromBackend = (item: any): Product => ({
@@ -61,12 +60,11 @@ const ProductDetail: React.FC = () => {
       name: item.promotionEvent.name,
       thumbnailUrl: item.promotionEvent.thumbnailUrl,
       startTime: item.promotionEvent.startTime,
-      endTime: item.promotionEvent.endTime, // Nếu cần đếm ngược
+      endTime: item.promotionEvent.endTime,
       status: item.promotionEvent.status
     } : null
   });
 
-  // Reset trạng thái khi đổi sản phẩm
   useEffect(() => {
     setIsExpanded(false);
     setIsOverflowing(false);
@@ -83,11 +81,11 @@ const ProductDetail: React.FC = () => {
             setIsOverflowing(false);
           }
         }
-      }, 100); // Delay 100ms
+      }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [product, activeTab]); // Chạy lại khi product đổi HOẶC activeTab đổi
+  }, [product, activeTab]);
 
 
   useEffect(() => {
@@ -98,10 +96,9 @@ const ProductDetail: React.FC = () => {
       try {
         if (slug) {
           const res: any = await productService.getBySlug(slug);
-          const backendData = res.data; // ApiResponse.data -> ProductResponse
+          const backendData = res.data;
           console.log(backendData)
           if (backendData) {
-            // ===> MAPPING DỮ LIỆU TỪ BACKEND <===
             const mappedProduct = mapProductFromBackend(backendData);
             console.log(mappedProduct)
             setProduct(mappedProduct);
@@ -132,7 +129,6 @@ const ProductDetail: React.FC = () => {
   }, [slug]);
 
   const handleAddToCart = async (isBuyNow = false) => {
-    // 1. Check Đăng nhập
     if (!isAuthenticated) {
       toast.info("Yêu cầu đăng nhập", "Vui lòng đăng nhập để mua hàng.");
       navigate('/login');
@@ -142,17 +138,15 @@ const ProductDetail: React.FC = () => {
     if (!product) return;
 
     try {
-      // 2. Gọi API thêm vào giỏ
       await cartService.addItemToCart({
         productId: product.id,
         quantity: quantity
       });
 
-      // 3. Cập nhật lại số lượng trên Header
       dispatch(fetchTotalItems());
 
       if (isBuyNow) {
-        navigate('/cart'); // Chuyển sang giỏ hàng (để user tick chọn và mua)
+        navigate('/cart');
       } else {
         toast.success("Thành công", "Đã thêm sản phẩm vào giỏ hàng.");
       }
@@ -174,7 +168,6 @@ const ProductDetail: React.FC = () => {
       <Breadcrumb items={breadcrumbItems} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        {/* CỘT TRÁI: HÌNH ẢNH */}
         <div className="space-y-4">
           <div className="aspect-square bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center relative group">
             <AsyncImage src={selectedImage} alt={product.title} className="w-full h-full object-contain p-4" />
@@ -196,48 +189,39 @@ const ProductDetail: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* CỘT PHẢI: THÔNG TIN */}
         <div>
           {/* Brand & Type */}
           <div className="flex items-center gap-2 mb-2 text-sm">
             {product.brand && <span className="text-primary font-bold uppercase">{product.brand.name}</span>}
             <span className="text-gray-300">|</span>
-            <span className="text-gray-500">{product.productType || 'Dược phẩm'}</span>
+            <span className="text-gray-500">{'Dược phẩm'}</span>
           </div>
 
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4 leading-tight">
             {product.title}
           </h1>
 
-          {/* Short Info (Dành cho thuốc) */}
+          {/* Short Info */}
           <div className="mb-6 space-y-1 text-sm text-gray-600">
             {product.registrationNumber && <p><span className="font-semibold">Số đăng ký:</span> {product.registrationNumber}</p>}
             {product.manufacturer && <p><span className="font-semibold">Nhà sản xuất:</span> {product.manufacturer}</p>}
             {product.activeIngredient && <p><span className="font-semibold">Hoạt chất:</span> {product.activeIngredient}</p>}
           </div>
 
-          {/* ===> 1. BANNER CHƯƠNG TRÌNH KHUYẾN MÃI (THIẾT KẾ MỚI) <=== */}
           {product.promotionEvent && (
             <Link 
               to={`/promotions/${product.promotionEvent.id}`}
               className="block mb-6 group relative overflow-hidden rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-all"
             >
               <div className="flex h-24 md:h-28">
-                {/* Ảnh Banner Khuyến Mãi */}
                 <div className="w-1/3 md:w-2/5 relative bg-gray-100">
                   <AsyncImage 
-                    // Ưu tiên dùng thumbnailUrl (link) hoặc uuid
                     src={product.promotionEvent.thumbnailUrl}
-                    // Nếu dùng cơ chế cũ là uuid thì uncomment dòng dưới:
-                    // uuid={product.promotion.thumbnailUrl} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  {/* Overlay nhẹ để tách biệt ảnh */}
                   <div className="absolute inset-0 bg-black/5"></div>
                 </div>
 
-                {/* Nội dung text bên cạnh */}
                 <div className="flex-1 p-4 flex flex-col justify-center bg-gradient-to-r from-white to-blue-50/50">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-100 text-blue-700 tracking-wider">
@@ -255,11 +239,13 @@ const ProductDetail: React.FC = () => {
             </Link>
           )}
 
-          {/* ===> 2. KHỐI GIÁ TIỀN (VỀ LẠI GIAO DIỆN CHUẨN) <=== */}
           <div className="bg-blue-50 p-6 rounded-xl mb-6 border border-blue-100">
             <div className="flex items-end gap-3 mb-2">
               <span className="text-3xl font-bold text-primary">
                 {product.priceNew.toLocaleString('vi-VN')} đ
+                {product.productType && (
+                  <span className="text-lg font-medium text-blue-400"> / {product.productType}</span>
+                )}
               </span>
               
               {product.priceOld > product.priceNew && (
@@ -269,7 +255,6 @@ const ProductDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Tag tiết kiệm hiển thị tinh tế hơn */}
             {product.priceOld > product.priceNew && (
                <div className="flex items-center gap-2 mt-2">
                  <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded">
@@ -306,7 +291,6 @@ const ProductDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* TABS THÔNG TIN CHI TIẾT */}
       <div className="mt-12 bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div className="flex border-b border-gray-200 overflow-x-auto">
           {[
@@ -335,24 +319,20 @@ const ProductDetail: React.FC = () => {
               <div
                 className={cn(
                   "relative",
-                  // Nếu chưa mở rộng và nội dung dài -> Giới hạn chiều cao và ẩn phần thừa
                   !isExpanded && isOverflowing ? "max-h-[300px] overflow-hidden" : ""
                 )}
               >
-                {/* Nội dung HTML */}
                 <div
                   ref={descriptionRef}
                   className="prose prose-blue max-w-none prose-img:rounded-xl prose-headings:text-slate-800"
                   dangerouslySetInnerHTML={{ __html: product.description || "<p>Đang cập nhật mô tả...</p>" }}
                 />
 
-                {/* Hiệu ứng mờ dần ở đáy khi chưa mở rộng */}
                 {!isExpanded && isOverflowing && (
                   <div className="absolute bottom-0 left-0 w-full h-24 bg-gradient-to-t from-white to-transparent pointer-events-none" />
                 )}
               </div>
 
-              {/* Nút Xem thêm / Thu gọn */}
               {isOverflowing && (
                 <div className="mt-4 text-center">
                   <button
@@ -370,7 +350,6 @@ const ProductDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: CÔNG DỤNG / CHỈ ĐỊNH */}
           {activeTab === 'indication' && (
             <div>
               <h3 className="font-bold text-gray-900 mb-2">Công dụng / Chỉ định:</h3>
@@ -384,7 +363,6 @@ const ProductDetail: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 3: THÔNG SỐ KỸ THUẬT */}
           {activeTab === 'details' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
               <div className="border-b border-gray-100 pb-2">
@@ -418,13 +396,11 @@ const ProductDetail: React.FC = () => {
 
       <ProductReviews productId={product.id} />
 
-      {/* ===> HIỂN THỊ SẢN PHẨM LIÊN QUAN <=== */}
       {relatedProducts.length > 0 && (
         <div className="mt-16 mb-8 border-t border-gray-100 pt-10">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 border-l-4 border-primary pl-3">
             Sản phẩm liên quan
           </h2>
-          {/* Sử dụng ProductSlider */}
           <ProductSlider products={relatedProducts} />
         </div>
       )}

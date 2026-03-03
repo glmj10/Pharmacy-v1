@@ -130,4 +130,9 @@ axiosClient.interceptors.response.use(
   }
 );
 
+// Xóa JWT khỏi bộ nhớ (axiosClient defaults) – gọi khi logout
+export const clearAuthHeader = () => {
+  delete axiosClient.defaults.headers.common['Authorization'];
+};
+
 export default axiosClient;

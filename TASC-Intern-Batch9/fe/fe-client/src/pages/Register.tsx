@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, User, Mail, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, Mail, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import identityService from '../api/identityService';
 import { cn } from '../lib/utils';
 import { REGEX } from '../lib/constants';
@@ -12,18 +12,17 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
 
-  // Setup Form
   const { 
     register, 
     handleSubmit, 
     watch, 
     formState: { errors } 
   } = useForm({
-    mode: 'onBlur' // Validate khi người dùng rời khỏi ô input
+    mode: 'onBlur'
   });
 
-  // Theo dõi giá trị password để so sánh với confirmPassword
   const passwordValue = watch("password", "");
 
   const onSubmit = async (data: any) => {
@@ -31,22 +30,17 @@ const Register: React.FC = () => {
     setApiError(null);
     
     try {
-      // Gọi API đăng ký
-      // Payload khớp với RegistrationRequest của Backend
       await identityService.register({
         email: data.email,
         username: data.username,
         password: data.password,
-        confirmPassword: data.confirmPassword // Backend yêu cầu trường này
+        confirmPassword: data.confirmPassword
       });
 
-      // Thành công -> Thông báo và chuyển sang Login
-      alert("Đăng ký thành công! Vui lòng đăng nhập.");
-      navigate('/login');
+      setSuccessEmail(data.email);
       
     } catch (error: any) {
       console.error(error);
-      // Hiển thị lỗi từ backend (Ví dụ: "Email đã tồn tại")
       setApiError(error.response?.data?.message || 'Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
       setIsLoading(false);
@@ -55,13 +49,35 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-[90vh] flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+
+      {successEmail && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-in zoom-in-95">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-9 h-9 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 mb-2">Đăng ký thành công!</h2>
+            <p className="text-slate-600 mb-1">Chúng tôi đã gửi mã OTP đến</p>
+            <p className="font-bold text-primary text-lg mb-6">{successEmail}</p>
+            <p className="text-sm text-slate-500 mb-6">
+              Vui lòng kiểm tra hộp thư (kể cả thư mục Spam) và nhập mã để kích hoạt tài khoản.
+            </p>
+            <button
+              onClick={() => navigate(`/verify-account?email=${encodeURIComponent(successEmail)}`)}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white font-bold rounded-xl hover:bg-blue-600 transition shadow-lg shadow-blue-200"
+            >
+              Xác thực tài khoản ngay <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
         <div className="text-center">
           <h2 className="mt-2 text-3xl font-bold text-slate-900">Đăng ký tài khoản</h2>
           <p className="mt-2 text-sm text-slate-600">Tạo tài khoản để mua sắm và tích điểm</p>
         </div>
 
-        {/* Hiển thị lỗi API (nếu có) */}
         {apiError && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm text-center">
             {apiError}
@@ -70,7 +86,6 @@ const Register: React.FC = () => {
 
         <form className="mt-8 space-y-4" onSubmit={handleSubmit(onSubmit)}>
           
-          {/* 1. EMAIL */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
             <div className="relative">
@@ -90,7 +105,6 @@ const Register: React.FC = () => {
             {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message as string}</p>}
           </div>
 
-          {/* 2. USERNAME */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Tên đăng nhập *</label>
             <div className="relative">
@@ -110,7 +124,6 @@ const Register: React.FC = () => {
             {errors.username && <p className="mt-1 text-xs text-red-500">{errors.username.message as string}</p>}
           </div>
 
-          {/* 3. PASSWORD */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Mật khẩu *</label>
             <div className="relative">
@@ -138,7 +151,6 @@ const Register: React.FC = () => {
             {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message as string}</p>}
           </div>
 
-          {/* 4. CONFIRM PASSWORD */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Xác nhận mật khẩu *</label>
             <div className="relative">

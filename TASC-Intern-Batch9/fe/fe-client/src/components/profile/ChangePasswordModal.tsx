@@ -4,6 +4,7 @@ import { X, Loader2, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from '../../store/hooks';
 import { clearAuth } from '../../store/slices/authSlice';
+import { clearAuthHeader } from '../../api/axiosClient';
 import identityService, { type ChangePasswordRequest } from '../../api/identityService';
 import { useModal } from '../../context/ModalContext'; // <== 1. Import useModal
 import { useToast } from '../../context/ToastContext'; // Vẫn giữ toast để báo lỗi hệ thống nếu cần
@@ -53,7 +54,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
         'Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại bằng mật khẩu mới để tiếp tục.', 
         () => {
           // 3. Callback này chạy khi người dùng bấm nút "Đóng" trên Modal
-          dispatch(clearAuth()); // Xóa token cũ
+          clearAuthHeader();     // Xóa JWT khỏi memory
+          dispatch(clearAuth()); // Xóa token khỏi Redux + localStorage
           navigate('/login');    // Chuyển về trang đăng nhập
         }
       );

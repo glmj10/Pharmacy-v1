@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useModal } from '../../context/ModalContext';
 import { useAppDispatch } from '../../store/hooks';
 import { clearAuth } from '../../store/slices/authSlice';
+import { clearAuthHeader } from '../../api/axiosClient';
 import { AUTH_EVENTS } from '../../lib/events';
 
 const SessionManager: React.FC = () => {
@@ -13,6 +14,7 @@ const SessionManager: React.FC = () => {
   useEffect(() => {
     const handleSessionExpired = () => {
       // 1. Xóa sạch dữ liệu đăng nhập ngay lập tức để tránh lỗi lặp lại
+      clearAuthHeader(); // Xóa JWT khỏi memory (axiosClient defaults)
       dispatch(clearAuth());
 
       // 2. Hiển thị Modal thông báo riêng biệt

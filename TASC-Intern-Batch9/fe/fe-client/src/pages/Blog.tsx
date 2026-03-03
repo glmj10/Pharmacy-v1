@@ -24,7 +24,7 @@ const Blog: React.FC = () => {
         const pageData = res.data || res.result;
         
         setBlogs(pageData?.content || []);
-        setTotalPages(pageData?.totalPages || 1);
+        setTotalPages(pageData?.totalPages);
       } catch (error) {
         console.error("Error fetching blogs", error);
       } finally {
@@ -60,20 +60,41 @@ const Blog: React.FC = () => {
               ))}
             </div>
             
-            {/* Pagination UI đơn giản */}
-            {totalPages > 1 && (
-               <div className="flex justify-center gap-2 mt-10">
-                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
-                   <button
-                     key={pageNum}
-                     onClick={() => setPage(pageNum)}
-                     className={`w-10 h-10 rounded-lg border ${page === pageNum ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 hover:bg-gray-50'}`}
-                   >
-                     {pageNum}
-                   </button>
-                 ))}
-               </div>
-            )}
+            {/* Pagination với truncation */}
+            {totalPages > 1 && (() => {
+              const delta = 2;
+              const pages: (number | 'dots')[] = [];
+              const left = Math.max(2, page - delta);
+              const right = Math.min(totalPages - 1, page + delta);
+              pages.push(1);
+              if (left > 2) pages.push('dots');
+              for (let i = left; i <= right; i++) pages.push(i);
+              if (right < totalPages - 1) pages.push('dots');
+              if (totalPages > 1) pages.push(totalPages);
+              return (
+                <div className="flex items-center justify-center gap-1.5 mt-10 flex-wrap">
+                  <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                  >← Trước</button>
+                  {pages.map((p, idx) =>
+                    p === 'dots'
+                      ? <span key={`dots-${idx}`} className="px-1 text-gray-400 select-none">…</span>
+                      : <button
+                          key={p}
+                          onClick={() => setPage(p as number)}
+                          className={`w-10 h-10 rounded-lg border text-sm font-medium transition ${page === p ? 'bg-primary text-white border-primary' : 'bg-white border-gray-200 hover:bg-gray-50 text-gray-700'}`}
+                        >{p}</button>
+                  )}
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="px-3 py-2 rounded-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                  >Sau →</button>
+                </div>
+              );
+            })()}
           </>
         ) : (
           <div className="text-center py-20 text-gray-500">Chưa có bài viết nào.</div>

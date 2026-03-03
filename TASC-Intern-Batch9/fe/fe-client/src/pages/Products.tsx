@@ -11,7 +11,6 @@ import { cn } from '../lib/utils';
 const Products: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // State Filter
   const [filters, setFilters] = useState<ProductFilterRequest>({
     title: searchParams.get('search') || undefined,
     category: searchParams.get('category') || undefined,
@@ -30,7 +29,6 @@ const Products: React.FC = () => {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
 
-  // Reset khi đổi filter
   useEffect(() => {
     setProducts([]);
     setPage(1);
@@ -57,7 +55,6 @@ const Products: React.FC = () => {
         category: categoryFromUrl || undefined,
         title: searchFromUrl || undefined,
         brandSlug: brandFromUrl || undefined,
-        // Reset về trang 1 khi đổi danh mục
         page: 1
       };
     });
@@ -76,8 +73,6 @@ const Products: React.FC = () => {
 
         console.log("Full API Response:", response);
         const pageData = response.data;
-
-        // 4. Lấy danh sách từ 'content'
         const rawList = pageData?.content || [];
         const totalPages = pageData?.totalPages || 1;
 
@@ -93,7 +88,7 @@ const Products: React.FC = () => {
 
           slug: item.slug || `product-${item.id}`,
           quantity: item.quantity || 0,
-          active: item.active !== false // Mặc định true nếu ko có
+          active: item.active !== false 
         }));
 
         setProducts(prev => {
@@ -117,20 +112,6 @@ const Products: React.FC = () => {
 
     fetchProducts();
   }, [filters, page]);
-
-  // Handler thay đổi Filter
-  // const handleFilterChange = (newFilters: ProductFilterRequest) => {
-  //   setFilters(newFilters);
-  //   window.scrollTo({ top: 0, behavior: 'smooth' });
-  // };
-
-  // const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   const value = e.target.value;
-  //   let isAscending: boolean | undefined = undefined;
-  //   if (value === 'price-asc') isAscending = true;
-  //   if (value === 'price-desc') isAscending = false;
-  //   handleFilterChange({ ...filters, isAscending });
-  // };
 
   const handleLoadMore = () => {
     if (!loading && hasMore) {
@@ -159,7 +140,6 @@ const Products: React.FC = () => {
   };
 
   useEffect(() => {
-    // Lấy giá trị mới từ URL
     const newFilters: ProductFilterRequest = {
       title: searchParams.get('search') || undefined,
       category: searchParams.get('category') || undefined,
@@ -167,59 +147,48 @@ const Products: React.FC = () => {
       priceFrom: searchParams.get('priceFrom') ? Number(searchParams.get('priceFrom')) : undefined,
       priceTo: searchParams.get('priceTo') ? Number(searchParams.get('priceTo')) : undefined,
       isAscending: searchParams.get('sort') === 'asc' ? true : searchParams.get('sort') === 'desc' ? false : undefined,
-      page: 1, // Luôn reset về trang 1 khi filter đổi
+      page: 1, 
     };
 
     setFilters(newFilters);
   }, [searchParams]);
 
-  // ===> 3. HÀM CẬP NHẬT URL KHI USER THAO TÁC <===
   const updateUrlParams = (newFilters: ProductFilterRequest) => {
     const params = new URLSearchParams();
 
-    // Mapping từng trường vào URL
     if (newFilters.title) params.set('search', newFilters.title);
     if (newFilters.category) params.set('category', newFilters.category);
     if (newFilters.brandSlug) params.set('brand', newFilters.brandSlug);
     if (newFilters.priceFrom) params.set('priceFrom', newFilters.priceFrom.toString());
     if (newFilters.priceTo) params.set('priceTo', newFilters.priceTo.toString());
 
-    // Mapping Sort
     if (newFilters.isAscending === true) params.set('sort', 'asc');
     else if (newFilters.isAscending === false) params.set('sort', 'desc');
 
-    // Đẩy lên URL (Trình duyệt sẽ không reload, nhưng searchParams sẽ đổi)
     setSearchParams(params);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Handler khi Component con (Filter Sidebar) thay đổi
   const handleFilterChange = (newFilters: ProductFilterRequest) => {
-    // Giữ lại từ khóa tìm kiếm nếu đang có, các cái khác theo newFilters
     const mergedFilters = {
       ...filters,
       ...newFilters,
-      // Nếu component con gửi lên object rỗng (reset), ta cần handle kỹ hơn nếu muốn giữ search
-      // Ở đây giả định newFilters ghi đè logic cũ
     };
     updateUrlParams(mergedFilters);
   };
 
-  // Handler khi đổi Sort
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     let isAscending: boolean | undefined = undefined;
     if (value === 'price-asc') isAscending = true;
     if (value === 'price-desc') isAscending = false;
 
-    // Cập nhật URL với sort mới, giữ nguyên các filter khác
     updateUrlParams({ ...filters, isAscending });
   };
   return (
     <div className="bg-slate-50 min-h-screen py-8 relative">
       <div className="container mx-auto px-4">
 
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Tất cả sản phẩm</h1>
@@ -239,13 +208,12 @@ const Products: React.FC = () => {
               <select
                 className="..."
                 onChange={handleSortChange}
-                // Logic check value hiển thị
                 value={
                   filters.isAscending === true ? 'price-asc' :
                     filters.isAscending === false ? 'price-desc' : 'default'
                 }
               >
-                <option value="default">Mới nhất</option>
+                <option value="default">Mặc định</option>
                 <option value="price-asc">Giá: Thấp đến Cao</option>
                 <option value="price-desc">Giá: Cao đến Thấp</option>
               </select>
@@ -254,18 +222,12 @@ const Products: React.FC = () => {
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start relative">
-
-          {/* ===> SIDEBAR STICKY (BỘ LỌC ĐI THEO) <=== */}
           <aside className={cn(
             "w-full md:w-1/4 md:block",
             showMobileFilter ? "block" : "hidden",
-            // ===> SỬA TẠI ĐÂY <===
-            // 1. Chuyển sticky và top-24 ra thẻ aside này
-            // 2. Thêm 'h-fit' hoặc 'self-start' để nó không bị kéo giãn
             "sticky top-24 h-fit self-start"
           )}>
 
-            {/* Thẻ div bên trong bỏ sticky đi, chỉ giữ lại transition nếu muốn */}
             <div className="transition-all duration-300">
               <ProductFilter currentFilters={filters} onFilterChange={handleFilterChange} />
             </div>
@@ -325,7 +287,7 @@ const Products: React.FC = () => {
         </div>
       </div>
 
-      {/* ===> NÚT BACK TO TOP (ĐÃ CHỈNH VỊ TRÍ) <=== */}
+      {/* BACK TO TOP*/}
       <button
         onClick={scrollToTop}
         className={cn(

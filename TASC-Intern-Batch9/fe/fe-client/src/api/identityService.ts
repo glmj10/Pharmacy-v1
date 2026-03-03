@@ -19,6 +19,7 @@ export interface UserResponse {
   username: string;
   email: string;
   profilePic?: string;
+  createdAt?: string;
 }
 
 export interface ChangePasswordRequest {

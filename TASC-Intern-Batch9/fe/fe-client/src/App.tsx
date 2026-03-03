@@ -15,7 +15,6 @@ import VerifyAccount from './pages/VerifyAccount';
 import Contact from './pages/Contact';
 import SessionManager from './components/auth/SessionManager';
 import PaymentResult from './pages/PaymentResult';
-import ArticleDetail from './pages/BlogDetail';
 import Blog from './pages/Blog';
 import PromotionDetail from './pages/PromotionDetail';
 import VoucherCenter from './pages/VoucherCenter';

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Calendar, MapPin, Phone, User, Package, CreditCard, DollarSign, Loader2, Star, PenTool, CheckCircle } from 'lucide-react';
+import { X, Calendar, MapPin, Phone, User, Package, CreditCard, DollarSign, Loader2, Star, PenTool, CheckCircle, Printer } from 'lucide-react';
 import orderService from '../../api/orderService';
 import type { OrderResponse, OrderDetailResponse } from '../../types/order.types';
 import AsyncImage from '../common/AsyncImage';
@@ -46,6 +46,109 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ isOpen, onClose, or
             product: item.product
         });
         setIsRateOpen(true);
+    };
+
+    // Handler xuất hóa đơn
+    const handlePrintInvoice = () => {
+        if (!order) return;
+        const printWindow = window.open('', '_blank', 'width=800,height=900');
+        if (!printWindow) return;
+
+        const rows = details.map(item => `
+            <tr>
+                <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;">${item.product.title}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${item.priceAtOrder.toLocaleString('vi-VN')} đ</td>
+                <td style="padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;">${(item.priceAtOrder * item.quantity).toLocaleString('vi-VN')} đ</td>
+            </tr>
+        `).join('');
+
+        const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hóa đơn #${order.id}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; background: #fff; padding: 40px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #3b82f6; }
+    .brand { font-size: 26px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px; }
+    .brand span { color: #1e293b; }
+    .invoice-title { text-align: right; }
+    .invoice-title h2 { font-size: 22px; font-weight: 700; color: #1e293b; }
+    .invoice-title p { font-size: 13px; color: #64748b; margin-top: 4px; }
+    .section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }  
+    .info-box h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; margin-bottom: 10px; }
+    .info-box p { font-size: 14px; color: #1e293b; line-height: 1.7; }
+    .info-box p strong { font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    thead tr { background: #f1f5f9; }
+    thead th { padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+    thead th:last-child, thead th:nth-child(3), thead th:nth-child(2) { text-align: right; }
+    thead th:nth-child(2) { text-align: center; }
+    tbody td { font-size: 14px; color: #334155; }
+    .total-box { width: 280px; margin-left: auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; }
+    .total-row { display: flex; justify-content: space-between; padding: 10px 16px; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+    .total-row:last-child { border-bottom: none; background: #3b82f6; color: #fff; font-size: 16px; font-weight: 700; border-radius: 0 0 9px 9px; }
+    .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #94a3b8; }
+    @media print { body { padding: 24px; } button { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="brand">Pharmacy</span></div>
+      <p style="font-size:12px;color:#64748b;margin-top:4px;">Hệ thống nhà thuốc trực tuyến</p>
+    </div>
+    <div class="invoice-title">
+      <h2>HÓA ĐƠN BÁN HÀNG</h2>
+      <p>Mã đơn: #${order.id}</p>
+      <p>Ngày: ${new Date(order.createdAt).toLocaleString('vi-VN')}</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="info-box">
+      <h4>Thông tin người nhận</h4>
+      <p><strong>${order.customerName}</strong></p>
+      <p>Số điện thoại ${order.customerPhoneNumber}</p>
+      <p>Địa chỉ: ${order.customerAddress}</p>
+    </div>
+    <div class="info-box">
+      <h4>Thông tin thanh toán</h4>
+      <p>Phương thức: <strong>${order.paymentMethod}</strong></p>
+      <p>Trạng thái TT: <strong>${order.paymentStatus}</strong></p>
+      ${order.note ? `<p>Ghi chú: <em>${order.note}</em></p>` : ''}
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Sản phẩm</th>
+        <th style="text-align:center">SL</th>
+        <th style="text-align:right">Đơn giá</th>
+        <th style="text-align:right">Tạm tính</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <div class="total-box">
+    <div class="total-row"><span>Tổng cộng</span><span>${order.totalPrice.toLocaleString('vi-VN')} đ</span></div>
+  </div>
+
+  <div class="footer">
+    <p>Cảm ơn quý khách đã tin tưởng và mua hàng tại Pharmacy!</p>
+    <p style="margin-top:4px;">Hotline: 1800-xxxx | Email: support@pharmacy.vn</p>
+  </div>
+
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+
+        printWindow.document.write(html);
+        printWindow.document.close();
     };
 
 
@@ -208,9 +311,18 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ isOpen, onClose, or
                 </div>
 
                 {/* Footer: Tổng tiền */}
-                <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-end items-center gap-4">
-                    <span className="text-gray-500 font-medium">Tổng tiền thanh toán:</span>
-                    <span className="text-2xl font-bold text-primary">{order.totalPrice.toLocaleString('vi-VN')} đ</span>
+                <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-between items-center gap-4">
+                    <button
+                        onClick={handlePrintInvoice}
+                        disabled={loading || details.length === 0}
+                        className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-700 border border-gray-300 bg-white hover:bg-gray-50 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        <Printer className="w-4 h-4" /> Xuất hóa đơn
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <span className="text-gray-500 font-medium">Tổng tiền thanh toán:</span>
+                        <span className="text-2xl font-bold text-primary">{order.totalPrice.toLocaleString('vi-VN')} đ</span>
+                    </div>
                 </div>
             </div>
 

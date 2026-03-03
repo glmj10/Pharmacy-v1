@@ -10,6 +10,7 @@ import {
 // Hooks & Context
 import { useAppDispatch } from '../store/hooks';
 import { clearAuth } from '../store/slices/authSlice';
+import { clearAuthHeader } from '../api/axiosClient';
 import { useModal } from '../context/ModalContext';
 import { useToast } from '../context/ToastContext';
 import { cn } from '../lib/utils';
@@ -42,9 +43,12 @@ const Profile: React.FC = () => {
     const [vouchersLoading, setVouchersLoading] = useState(false);
 
     // --- STATE DATA ---
+    const [searchParams] = useSearchParams();
+    const tabFromUrl = searchParams.get('tab');
+
     const [profile, setProfile] = useState<UserResponse | null>(null);
     const [orders, setOrders] = useState<OrderResponse[]>([]);
-    const [orderStatus, setOrderStatus] = useState<string>('ALL'); // 'ALL', 'PENDING', ...
+    const [orderStatus, setOrderStatus] = useState<string>(searchParams.get('orderStatus') || 'ALL');
 
     const ORDER_STATUSES = [
         { id: 'ALL', label: 'Tất cả' },
@@ -56,9 +60,9 @@ const Profile: React.FC = () => {
     // --- STATE UI ---
     const [loading, setLoading] = useState(true);
     const [ordersLoading, setOrdersLoading] = useState(false);
-    const [searchParams] = useSearchParams(); // <== 2. Khai báo hook
-
-    const tabFromUrl = searchParams.get('tab');
+    const [orderPage, setOrderPage] = useState(Number(searchParams.get('orderPage')) || 1);
+    const [orderTotalPages, setOrderTotalPages] = useState(1);
+    const [orderTotalElements, setOrderTotalElements] = useState<number | null>(null);
 
     const [activeTab, setActiveTab] = useState<'info' | 'address' | 'orders' | 'vouchers'>(
         (tabFromUrl === 'orders' || tabFromUrl === 'address' || tabFromUrl === 'vouchers') ? tabFromUrl : 'info'
@@ -89,7 +93,11 @@ const Profile: React.FC = () => {
     // Khi click vào nút Tab, ta cũng nên update URL để đồng bộ
     const handleTabChange = (tab: 'info' | 'address' | 'orders') => {
         setActiveTab(tab);
-        navigate(`/profile?tab=${tab}`, { replace: true }); // Update URL không reload
+        if (tab === 'orders') {
+            navigate(`/profile?tab=orders&orderStatus=${orderStatus}&orderPage=${orderPage}`, { replace: true });
+        } else {
+            navigate(`/profile?tab=${tab}`, { replace: true });
+        }
     };
 
     // 1. Fetch Profile
@@ -106,17 +114,25 @@ const Profile: React.FC = () => {
 
     useEffect(() => {
         fetchProfile();
+        // Lấy tổng số đơn hàng cho tab thông tin
+        orderService.getMyOrders(1, undefined).then((res: any) => {
+            const pageData = res.data || res.result;
+            setOrderTotalElements(pageData?.totalElements ?? null);
+        }).catch(() => {});
     }, []);
 
     // 2. Fetch Orders (Chỉ gọi khi switch sang tab Orders)
-    const fetchOrders = async () => {
+    const fetchOrders = async (page: number = orderPage) => {
         setOrdersLoading(true);
         try {
             // Nếu status là 'ALL' thì gửi undefined để lấy tất cả
             const statusParam = orderStatus === 'ALL' ? undefined : orderStatus;
 
-            const res: any = await orderService.getMyOrders(1, 20, statusParam);
-            setOrders(res.data?.content || res.result?.content || []);
+            const res: any = await orderService.getMyOrders(page, statusParam);
+            const pageData = res.data || res.result;
+            setOrders(pageData?.content || []);
+            setOrderTotalPages(pageData?.totalPages ?? 1);
+            if (orderStatus === 'ALL') setOrderTotalElements(pageData?.totalElements ?? null);
         } catch (error) {
             console.error("Lỗi lấy đơn hàng", error);
         } finally {
@@ -126,9 +142,21 @@ const Profile: React.FC = () => {
 
     useEffect(() => {
         if (activeTab === 'orders') {
-            fetchOrders();
+            fetchOrders(orderPage);
         }
-    }, [activeTab, orderStatus]);
+    }, [activeTab, orderStatus, orderPage]);
+
+    // Reset về trang 1 khi đổi filter, đồng bộ URL
+    const handleOrderStatusChange = (status: string) => {
+        setOrderStatus(status);
+        setOrderPage(1);
+        navigate(`/profile?tab=orders&orderStatus=${status}&orderPage=1`, { replace: true });
+    };
+
+    const handleOrderPageChange = (page: number) => {
+        setOrderPage(page);
+        navigate(`/profile?tab=orders&orderStatus=${orderStatus}&orderPage=${page}`, { replace: true });
+    };
 
     // --- HANDLERS ---
 
@@ -139,6 +167,7 @@ const Profile: React.FC = () => {
             } catch (error) {
                 console.warn("Logout API failed", error);
             } finally {
+                clearAuthHeader();
                 dispatch(clearAuth());
                 navigate('/login');
             }
@@ -210,17 +239,14 @@ const Profile: React.FC = () => {
 
             <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
-                {/* === COVER PHOTO === */}
                 <div className="h-40 bg-gradient-to-r from-blue-600 to-cyan-500 relative">
                     <div className="absolute inset-0 bg-black/10"></div>
                 </div>
 
                 <div className="px-6 md:px-10 pb-10">
 
-                    {/* === HEADER PROFILE === */}
                     <div className="relative mb-8">
 
-                        {/* Avatar (Absolute để đè lên cover) */}
                         <div className="absolute -top-16 left-0 md:left-0 w-full md:w-auto flex justify-center md:justify-start">
                             <div className="relative group">
                                 <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-md">
@@ -240,7 +266,6 @@ const Profile: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Info & Actions */}
                         <div className="pt-20 md:pt-0 md:pl-36 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
 
                             <div className="text-center md:text-left w-full md:w-auto mt-2 md:mt-0">
@@ -286,7 +311,6 @@ const Profile: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* === TABS NAVIGATION === */}
                     <div className="flex border-b border-gray-200 mb-8 overflow-x-auto no-scrollbar">
                         {[
                             { id: 'info', label: 'Thông tin tài khoản', icon: User },
@@ -308,10 +332,8 @@ const Profile: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* === TAB CONTENT === */}
                     <div className="min-h-[300px]">
 
-                        {/* 1. Tab Info */}
                         {activeTab === 'info' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <div className="space-y-6">
@@ -336,25 +358,26 @@ const Profile: React.FC = () => {
                                 </div>
                                 <div className="space-y-6">
                                     <h3 className="text-lg font-bold text-slate-800 border-l-4 border-orange-500 pl-3">Hoạt động</h3>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 gap-4">
                                         <div className="bg-orange-50 p-5 rounded-xl border border-orange-100 text-center">
-                                            <p className="text-3xl font-bold text-orange-600 mb-1">{orders.length || 0}</p>
+                                            <p className="text-3xl font-bold text-orange-600 mb-1">
+                                                {orderTotalElements ?? '...'}
+                                            </p>
                                             <p className="text-xs font-semibold text-orange-800 uppercase">Đơn hàng</p>
                                         </div>
-                                        <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 text-center">
-                                            <p className="text-3xl font-bold text-blue-600 mb-1">0</p>
-                                            <p className="text-xs font-semibold text-blue-800 uppercase">Điểm tích lũy</p>
-                                        </div>
-                                        <div className="col-span-2 bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between">
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between">
                                             <div className="flex items-center gap-3"><Calendar className="w-5 h-5 text-gray-400" /><span className="text-sm text-gray-600">Ngày tham gia</span></div>
-                                            <span className="font-medium text-slate-800">{new Date().toLocaleDateString('vi-VN')}</span>
+                                            <span className="font-medium text-slate-800">
+                                                {profile?.createdAt
+                                                    ? new Date(profile.createdAt).toLocaleDateString('vi-VN')
+                                                    : '—'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         )}
 
-                        {/* 2. Tab Address */}
                         {activeTab === 'address' && (
                             <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 max-w-3xl">
                                 <div className="mb-6 flex justify-between items-center">
@@ -364,18 +387,16 @@ const Profile: React.FC = () => {
                             </div>
                         )}
 
-                        {/* 3. TAB ORDERS */}
                         {activeTab === 'orders' && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
                                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                                     <h3 className="text-lg font-bold text-slate-800 border-l-4 border-purple-500 pl-3">Lịch sử đơn hàng</h3>
 
-                                    {/* BỘ LỌC TRẠNG THÁI (SCROLLABLE ON MOBILE) */}
                                     <div className="flex gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
                                         {ORDER_STATUSES.map(st => (
                                             <button
                                                 key={st.id}
-                                                onClick={() => setOrderStatus(st.id)}
+                                                onClick={() => handleOrderStatusChange(st.id)}
                                                 className={cn(
                                                     "px-4 py-2 rounded-full text-sm font-medium transition whitespace-nowrap",
                                                     orderStatus === st.id
@@ -424,7 +445,6 @@ const Profile: React.FC = () => {
                                             </div>
 
                                             <div className="flex justify-end gap-3 pt-2">
-                                                {/* Nút Hủy & Thanh toán lại (Giữ nguyên logic cũ) */}
                                                 {order.status === 'PENDING' && (
                                                     <button onClick={() => handleCancelOrder(order.id)} className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition">Hủy đơn</button>
                                                 )}
@@ -432,7 +452,6 @@ const Profile: React.FC = () => {
                                                     <button onClick={() => handleRepay(order.id)} className="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-blue-600 rounded-lg transition">Thanh toán ngay</button>
                                                 )}
 
-                                                {/* Nút Xem chi tiết */}
                                                 <button
                                                     onClick={() => handleViewDetail(order)}
                                                     className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-50 rounded-lg transition"
@@ -443,6 +462,58 @@ const Profile: React.FC = () => {
                                         </div>
                                     ))
                                 )}
+
+                            {orderTotalPages > 1 && (() => {
+                                const delta = 2;
+                                const pages: (number | 'dots')[] = [];
+                                const left = Math.max(2, orderPage - delta);
+                                const right = Math.min(orderTotalPages - 1, orderPage + delta);
+
+                                pages.push(1);
+                                if (left > 2) pages.push('dots');
+                                for (let i = left; i <= right; i++) pages.push(i);
+                                if (right < orderTotalPages - 1) pages.push('dots');
+                                if (orderTotalPages > 1) pages.push(orderTotalPages);
+
+                                return (
+                                    <div className="flex items-center justify-center gap-1.5 pt-4 flex-wrap">
+                                        <button
+                                            onClick={() => handleOrderPageChange(Math.max(1, orderPage - 1))}
+                                            disabled={orderPage === 1}
+                                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                        >
+                                            ← Trước
+                                        </button>
+
+                                        {pages.map((page, idx) =>
+                                            page === 'dots' ? (
+                                                <span key={`dots-${idx}`} className="w-9 h-9 flex items-center justify-center text-gray-400 text-sm select-none">…</span>
+                                            ) : (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => handleOrderPageChange(page as number)}
+                                                    className={cn(
+                                                        "w-9 h-9 rounded-lg text-sm font-medium transition",
+                                                        orderPage === page
+                                                            ? "bg-primary text-white shadow-md shadow-blue-200"
+                                                            : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                                                    )}
+                                                >
+                                                    {page}
+                                                </button>
+                                            )
+                                        )}
+
+                                        <button
+                                            onClick={() => handleOrderPageChange(Math.min(orderTotalPages, orderPage + 1))}
+                                            disabled={orderPage === orderTotalPages}
+                                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                        >
+                                            Sau →
+                                        </button>
+                                    </div>
+                                );
+                            })()}
                             </div>
                         )}
 

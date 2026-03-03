@@ -54,7 +54,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     ? Math.round(((priceOld - priceNew) / priceOld) * 100) 
     : 0;
 
-  // Xác định đơn vị tính (Ưu tiên dosageForm, nếu không có thì mặc định là 'Hộp')
   const unit = product.dosageForm || 'Hộp';
 
   return (
@@ -94,11 +93,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
       {/* Thông tin chi tiết */}
       <div className="p-3 flex flex-col flex-1">
-        {/* Loại sản phẩm / Brand */}
-        <div className="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wider">
-            {product.brand?.name || product.productType || 'Pharmacy'}
-        </div>
-        
         {/* Tên sản phẩm */}
         <Link to={`/products/${product.slug}`} className="mb-2 block">
           <h3 className="font-semibold text-slate-800 text-sm line-clamp-2 hover:text-primary transition leading-snug min-h-[40px]">
@@ -106,24 +100,37 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
         </Link>
 
-        {/* ===> PHẦN GIÁ / ĐƠN VỊ (CẬP NHẬT) <=== */}
+        {/* Giá / Đơn vị */}
         <div className="mt-auto">
           <div className="flex items-baseline gap-1 flex-wrap">
-            <span className="text-lg font-bold text-primary">
+            <span className="text-base sm:text-lg font-bold text-primary">
               {priceNew.toLocaleString('vi-VN')} đ
             </span>
-            {/* Hiển thị đơn vị tính màu xám nhỏ bên cạnh */}
-            <span className="text-xs text-gray-500 font-medium">
-               / {unit}
-            </span>
+            <span className="text-xs text-gray-500 font-medium">/ {unit}</span>
           </div>
 
-          {/* Giá cũ (nếu có) */}
           {priceOld > priceNew && (
             <div className="text-xs text-gray-400 line-through mt-0.5">
               {priceOld.toLocaleString('vi-VN')} đ
             </div>
           )}
+
+          {/* Nút thêm giỏ hàng - luôn hiển thị trên mobile */}
+          <button
+            onClick={handleAddToCart}
+            disabled={isAdding || !product.active || product.quantity === 0}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition
+              bg-primary/10 text-primary hover:bg-primary hover:text-white
+              disabled:opacity-50 disabled:cursor-not-allowed
+              sm:hidden"
+          >
+            {isAdding ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <ShoppingCart className="w-3.5 h-3.5" />
+            )}
+            {product.quantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
+          </button>
         </div>
       </div>
     </div>

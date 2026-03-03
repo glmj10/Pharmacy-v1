@@ -53,60 +53,75 @@ const CartItemRow: React.FC<CartItemRowProps> = ({ item, onUpdate }) => {
   };
 
   return (
-    <div className={`flex items-center gap-4 py-6 border-b border-gray-100 last:border-0 ${item.isOutOfStock ? 'opacity-50' : ''}`}>
+    <div className={`py-5 border-b border-gray-100 last:border-0 ${item.isOutOfStock ? 'opacity-50' : ''}`}>
+      <div className="flex gap-3">
 
-      {/* Checkbox */}
-      <div className="shrink-0">
-        <input
-          type="checkbox"
-          checked={item.selected}
-          onChange={handleToggle}
-          disabled={item.isOutOfStock}
-          className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer"
-        />
-      </div>
+        {/* Checkbox */}
+        <div className="shrink-0 pt-1">
+          <input
+            type="checkbox"
+            checked={item.selected}
+            onChange={handleToggle}
+            disabled={item.isOutOfStock}
+            className="w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary cursor-pointer"
+          />
+        </div>
 
-      {/* Ảnh & Tên */}
-      <div className="flex items-center gap-4 flex-1 min-w-0">
-        <Link to={`/products/${item.product.slug}`} className="w-20 h-20 shrink-0 border rounded-md overflow-hidden bg-gray-50">
+        {/* Image */}
+        <Link to={`/products/${item.product.slug}`} className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 border rounded-lg overflow-hidden bg-gray-50">
           <AsyncImage
-            src={item.product.thumbnailUrl} 
+            src={item.product.thumbnailUrl}
             alt={item.product.title}
             className="w-full h-full object-cover"
           />
         </Link>
-        <div className="flex-1 min-w-0">
-          <Link to={`/products/${item.product.slug}`} className="font-medium text-slate-800 line-clamp-2 hover:text-primary transition">
-            {item.product.title}
-          </Link>
-          {item.isOutOfStock && <span className="text-xs text-red-500 font-bold">Hết hàng</span>}
+
+        {/* Content */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+          {/* Name + Delete */}
+          <div className="flex items-start justify-between gap-2">
+            <Link to={`/products/${item.product.slug}`} className="font-medium text-slate-800 line-clamp-2 hover:text-primary transition text-sm sm:text-base leading-snug">
+              {item.product.title}
+            </Link>
+            <button onClick={handleRemove} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition shrink-0">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          {item.isOutOfStock && (
+            <span className="text-xs text-red-500 font-bold">Hết hàng</span>
+          )}
+
+          {/* Quantity + Price row */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Quantity Control */}
+            <div className="flex items-center border border-gray-300 rounded-lg h-9">
+              <button
+                onClick={() => handleQuantityChange(item.quantity - 1)}
+                disabled={isUpdating || item.quantity <= 1}
+                className="px-3 hover:bg-gray-100 text-gray-600 transition h-full flex items-center justify-center disabled:opacity-40"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-9 text-center font-medium text-sm text-slate-800">
+                {isUpdating ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : item.quantity}
+              </span>
+              <button
+                onClick={() => handleQuantityChange(item.quantity + 1)}
+                disabled={isUpdating}
+                className="px-3 hover:bg-gray-100 text-gray-600 transition h-full flex items-center justify-center disabled:opacity-40"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+
+            {/* Price */}
+            <div className="font-bold text-primary text-sm sm:text-base">
+              {(item.priceAtAddition * item.quantity).toLocaleString('vi-VN')} đ
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Quantity Control */}
-      <div className="flex items-center border border-gray-300 rounded-lg h-9">
-        <button onClick={() => handleQuantityChange(item.quantity - 1)} disabled={isUpdating || item.quantity <= 1} className="px-3 hover:bg-gray-100 text-gray-600 transition h-full flex items-center justify-center">
-          <Minus className="w-3 h-3" />
-        </button>
-        <span className="w-10 text-center font-medium text-sm text-slate-800 relative">
-          {isUpdating ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : item.quantity}
-        </span>
-        <button onClick={() => handleQuantityChange(item.quantity + 1)} disabled={isUpdating} className="px-3 hover:bg-gray-100 text-gray-600 transition h-full flex items-center justify-center">
-          <Plus className="w-3 h-3" />
-        </button>
-      </div>
-
-      {/* Price */}
-      <div className="text-right min-w-[100px]">
-        <div className="font-bold text-primary">
-          {(item.priceAtAddition * item.quantity).toLocaleString('vi-VN')} đ
-        </div>
-      </div>
-
-      {/* Delete */}
-      <button onClick={handleRemove} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition ml-2">
-        <Trash2 className="w-5 h-5" />
-      </button>
     </div>
   );
 };

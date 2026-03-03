@@ -32,3 +32,22 @@ export interface OrderDetailResponse {
   rated: boolean
 }
 
+export interface OrderDetail {
+  id: number;
+  quantity: number;
+  priceAtOrder: number; // Giá tại thời điểm đặt
+  product: Product;
+  rated: boolean;       // Đã đánh giá chưa
+}
+
+export interface Order {
+  id: number;
+  totalPrice: number;
+  note: string;
+  customerName: string;
+  customerAddress: string;
+  status: OrderStatus;
+  paymentMethod: 'COD' | 'VNPAY';
+  paymentStatus: string;
+  createdAt: string; // ISO Date String
+}

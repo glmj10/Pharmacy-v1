@@ -1,5 +1,5 @@
 import axiosClient from './axiosClient';
-import type { ApiResponse, PageResponse} from '../types';
+import type { ApiResponse, Order, PageResponse} from '../types';
 import type { OrderRequest, OrderResponse, OrderDetailResponse } from '../types/order.types';
 
 
@@ -8,10 +8,13 @@ const orderService = {
     return axiosClient.post<ApiResponse<{ paymentUrl?: string; orderId: number }>>('/orders', data);
   },
 
-  getMyOrders: (pageIndex: number = 1, pageSize: number = 10, status?: string) => {
-    const params: any = { pageIndex, pageSize };
-    if (status) params.status = status;
-    return axiosClient.get<ApiResponse<PageResponse<OrderResponse[]>>>('/orders/my-orders', { params });
+  getMyOrders: (pageIndex: number = 1, status?: string) => {
+    const params: any = { pageIndex, pageSize: 10 };
+    console.log("status")
+    if (status && status !== 'ALL') {
+      params.status = status;
+    }
+    return axiosClient.get<ApiResponse<PageResponse<Order>>>('/orders/my-orders', { params });
   },
 
   getOrderDetail: (id: number) => {
@@ -20,7 +23,9 @@ const orderService = {
 
   cancelOrder: (id: number) => {
     return axiosClient.put<ApiResponse<void>>(`/orders/cancel/${id}`);
-  }
+  },
+
+  
 };
 
 export default orderService;
