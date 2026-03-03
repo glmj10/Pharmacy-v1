@@ -60,7 +60,7 @@ public class EmailServiceImpl implements EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
-                    HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi gửi email" + e.getMessage());
+                    HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi khi gửi email: " + e.getMessage());
         }
     }
 

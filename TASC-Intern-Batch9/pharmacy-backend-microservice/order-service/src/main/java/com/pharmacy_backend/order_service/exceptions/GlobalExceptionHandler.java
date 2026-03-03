@@ -4,6 +4,7 @@ import com.pharmacy_backend.common.dto.response.ErrorResponse;
 import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.exceptions.BaseExceptionHandler;
 import com.pharmacy_backend.common.exceptions.CustomException;
+import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,4 +28,6 @@ public class GlobalExceptionHandler extends BaseExceptionHandler {
         log.warn("No resource found: {}", ex.getResourcePath());
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
+
+
 }

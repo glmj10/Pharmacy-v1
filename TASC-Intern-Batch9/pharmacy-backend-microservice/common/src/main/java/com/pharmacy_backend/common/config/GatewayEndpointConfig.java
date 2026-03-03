@@ -11,6 +11,7 @@ public class GatewayEndpointConfig {
             "/api/v1/auth/reset-password",
             "/api/v1/auth/refresh-token",
             "/api/v1/payments/test",
+            "/api/v1/payments/ipn",
 
             "/api/v1/brands/customer/public/**",
             "/swagger-ui/**",

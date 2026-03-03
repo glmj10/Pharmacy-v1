@@ -1,83 +1,101 @@
 package com.pharmacy_backend.product_service.service.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pharmacy_backend.common.enums.ErrorCode;
 import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
-import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.product_service.service.StockCacheService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RedisStockService implements StockCacheService {
+
     private final RedisTemplate<String, String> redisTemplate;
-    private final ObjectMapper objectMapper;
+
     private static final String STOCK_KEY_PREFIX = RedisKeyTypeEnum.PRODUCT_STOCK.getKey();
-    private static final String STOCK_DECREASE_LUA = """
-                    local key = KEYS[1]
-                    local qty = tonumber(ARGV[1])
-                    local stock = tonumber(redis.call('GET', key))
-                    if not stock then
-                      return -1
-                    end
-                    if stock < qty then
-                      return 0
-                    end
-                    redis.call('DECRBY', key, qty)
-                    return 1
+    private static final long   TTL_SECONDS      = RedisKeyTypeEnum.PRODUCT_STOCK.getDuration();
+
+    private static final String LUA_RESERVE_STOCK = """
+            local stockKey = KEYS[1]
+            local qty      = tonumber(ARGV[1])
+
+            local stock = tonumber(redis.call('GET', stockKey))
+            if not stock then
+              return -1
+            end
+            if stock < qty then
+              return 0
+            end
+
+            redis.call('SET', stockKey, tostring(stock - qty))
+            return 1
             """;
 
+    private static final String LUA_RELEASE_STOCK = """
+            local stockKey = KEYS[1]
+            local qty      = tonumber(ARGV[1])
 
-    @Override
-    public boolean decreaseStock(Long productId, int quantity) {
-        String key = STOCK_KEY_PREFIX + ":" + productId;
-        Long result = redisTemplate.execute(new DefaultRedisScript<>(STOCK_DECREASE_LUA, Long.class),
-                Collections.singletonList(key), String.valueOf(quantity)
-                );
+            local stock = tonumber(redis.call('GET', stockKey))
+            if not stock then
+              return -1
+            end
 
-        return switch (result.intValue()) {
-            case 1 -> true; // Stock decreased successfully
-            case 0 -> false; // Not enough stock
-            case -1 -> throw new CustomException(ErrorCode.STOCK_NOT_FOUND); // Stock not found
-            default -> false;
-        };
+            redis.call('SET', stockKey, tostring(stock + qty))
+            return 1
+            """;
+
+    private String stockKey(Long productId) {
+        return STOCK_KEY_PREFIX + ":" + productId;
     }
 
     @Override
-    public Integer getStock(Long productId) {
-        String key = STOCK_KEY_PREFIX + ":" + productId;
-        String stockJson = redisTemplate.opsForValue().get(key);
-        if(stockJson != null) {
-            try {
-                return objectMapper.convertValue(stockJson, Integer.class);
-            } catch (Exception e) {
-                throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Failed to parse cached product data");
-            }
-        }
+    public int reserveStock(Long productId, int quantity) {
+        List<String> keys = Collections.singletonList(stockKey(productId));
+        Long result = redisTemplate.execute(
+                new DefaultRedisScript<>(LUA_RESERVE_STOCK, Long.class),
+                keys,
+                String.valueOf(quantity)
+        );
+        return result != null ? result.intValue() : -1;
+    }
 
-        return null;
+    @Override
+    public int releaseStock(Long productId, int quantity) {
+        List<String> keys = Collections.singletonList(stockKey(productId));
+        Long result = redisTemplate.execute(
+                new DefaultRedisScript<>(LUA_RELEASE_STOCK, Long.class),
+                keys,
+                String.valueOf(quantity)
+        );
+        return result != null ? result.intValue() : -1;
     }
 
     @Override
     public void setStock(Long productId, int quantity) {
-        String key = STOCK_KEY_PREFIX + ":" + productId;
+        redisTemplate.opsForValue().set(stockKey(productId), String.valueOf(quantity), TTL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public Integer getStock(Long productId) {
+        String val = redisTemplate.opsForValue().get(stockKey(productId));
+        if (val == null) return null;
         try {
-            String json = objectMapper.writeValueAsString(quantity);
-            redisTemplate.opsForValue().set(key, json);
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, "Failed to cache product stock data");
+            return Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+            log.warn("Không thể parse stock cho product {}: {}", productId, val);
+            return null;
         }
     }
 
     @Override
     public void deleteStock(Long productId) {
-        String key = STOCK_KEY_PREFIX + ":" + productId;
-        redisTemplate.delete(key);
+        redisTemplate.delete(stockKey(productId));
     }
-
 }

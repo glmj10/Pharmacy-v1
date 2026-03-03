@@ -22,17 +22,14 @@ public class FeignErrorDecoder implements ErrorDecoder {
     @Override
     public Exception decode(String methodKey, Response response) {
         try (InputStream bodyIs = response.body().asInputStream()) {
-            // Đọc JSON thô từ Product Service (cấu trúc ErrorResponse)
             ErrorResponse error = objectMapper.readValue(bodyIs, ErrorResponse.class);
 
             log.error("Lỗi từ Service khác: {}", error.getMessage());
 
-            // Ném ra CustomException của Order Service
-            // Chúng ta lấy trường 'data' (danh sách lỗi SP) để truyền tiếp đi
             return new CustomException(
                     ErrorCode.valueOf(error.getErrorCode()),
                     HttpStatus.valueOf(response.status()),
-                    error.getData(), // <--- Quan trọng: Giữ lại danh sách sản phẩm lỗi
+                    error.getData(),
                     error.getMessage()
             );
         } catch (Exception e) {

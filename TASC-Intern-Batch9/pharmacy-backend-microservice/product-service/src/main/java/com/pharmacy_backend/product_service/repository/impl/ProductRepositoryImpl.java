@@ -12,13 +12,16 @@ import com.pharmacy_backend.product_service.repository.CategoryRepository;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -512,6 +515,53 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    @Transactional
+    public void bulkUpdateProduct(List<Product> products) {
+        String sql = """
+            UPDATE products SET
+                title=?, active_ingredient=?, dosage_form=?, description=?,
+                indication=?, manufacturer=?, price_old=?, price_new=?,
+                import_price=?, priority=?, quantity=?, registration_number=?,
+                slug=?, thumbnail=?, number_of_likes=?, active=?, brand_id=?, product_type=?,
+                modified_by=?, modified_at=NOW(), noted=?, updated_at=NOW()
+            WHERE id=?
+            """;
+
+        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+                Product product = products.get(i);
+                ps.setString(1, product.getTitle());
+                ps.setString(2, product.getActiveIngredient());
+                ps.setString(3, product.getDosageForm());
+                ps.setString(4, product.getDescription());
+                ps.setString(5, product.getIndication());
+                ps.setString(6, product.getManufacturer());
+                ps.setDouble(7, product.getPriceOld());
+                ps.setDouble(8, product.getPriceNew());
+                ps.setDouble(9, product.getImportPrice());
+                ps.setInt(10, product.getPriority());
+                ps.setInt(11, product.getQuantity());
+                ps.setString(12, product.getRegistrationNumber());
+                ps.setString(13, product.getSlug());
+                ps.setString(14, product.getThumbnail());
+                ps.setInt(15, product.getNumberOfLikes());
+                ps.setBoolean(16, product.getActive());
+                ps.setObject(17, product.getBrand() != null ? product.getBrand().getId() : null);
+                ps.setString(18, product.getProductType());
+                ps.setString(19, String.valueOf(product.getModifiedBy()));
+                ps.setString(20, product.getNoted());
+                ps.setLong(21, product.getId());
+            }
+
+            @Override
+            public int getBatchSize() {
+                return products.size();
+            }
+        });
+    }
+
+    @Override
     public void deleteProduct(Long id) {
         String deleteCategorySql = "DELETE FROM products_categories WHERE product_id = ?";
         jdbcTemplate.update(deleteCategorySql, id);
@@ -664,7 +714,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<Product> findAllLowStockProduct(int size, int offSet) {
         String sql = """
-                SELECT * FROM products 
+                SELECT * FROM products
                 WHERE quantity <= min_stock_level AND active = true
                 ORDER BY quantity ASC, modified_at DESC
                 LIMIT ? OFFSET ?

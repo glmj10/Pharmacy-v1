@@ -31,6 +31,7 @@ public interface ProductRepository {
     Product createProduct(Product product);
 
     Product updateProduct(Long id, Product product);
+    void bulkUpdateProduct(List<Product> products);
 
     void deleteProduct(Long id);
 

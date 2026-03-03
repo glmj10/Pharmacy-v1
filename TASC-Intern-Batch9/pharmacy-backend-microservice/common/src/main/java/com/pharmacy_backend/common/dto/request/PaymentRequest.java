@@ -2,6 +2,7 @@ package com.pharmacy_backend.common.dto.request;
 
 
 import com.pharmacy_backend.common.enums.PaymentMethodEnum;
+import com.pharmacy_backend.common.enums.PlatformEnum;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 

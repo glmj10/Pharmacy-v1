@@ -7,11 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -21,7 +18,6 @@ import java.util.Map;
 @Slf4j
 public class BaseExceptionHandler {
 
-    // Handle CustomException
     @ExceptionHandler(CustomException.class)
     public ResponseEntity<ErrorResponse> handleCustomException(CustomException ex, WebRequest request) {
         ErrorResponse errorResponse = buildErrorResponse(ex, request);
@@ -29,7 +25,6 @@ public class BaseExceptionHandler {
         return new ResponseEntity<>(errorResponse, ex.getHttpStatus());
     }
 
-    // Handle Spring Validation exceptions
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex, WebRequest request) {
@@ -131,7 +126,8 @@ public class BaseExceptionHandler {
                 .message(ex.getMessage())
                 .path(getRequestPath(request))
                 .errorCode(ex.getErrorCode().name())
-                .details(ex.getDetails().isEmpty() ? null : ex.getDetails())
+                .data(ex.getData())
+                .details(ex.getDetails() != null && !ex.getDetails().isEmpty() ? ex.getDetails() : null)
                 .build();
     }
 

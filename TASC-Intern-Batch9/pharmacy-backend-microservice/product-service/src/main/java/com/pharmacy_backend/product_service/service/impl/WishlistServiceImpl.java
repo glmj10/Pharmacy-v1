@@ -6,16 +6,22 @@ import com.pharmacy_backend.common.enums.RedisKeyTypeEnum;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.security.SecurityUtils;
 import com.pharmacy_backend.common.service.RedisService;
+import com.pharmacy_backend.product_service.config.AppConfig;
+import com.pharmacy_backend.product_service.dto.response.PageResponse;
 import com.pharmacy_backend.product_service.dto.response.ProductResponse;
 import com.pharmacy_backend.product_service.entity.Product;
 import com.pharmacy_backend.product_service.entity.User;
 import com.pharmacy_backend.product_service.entity.Wishlist;
+import com.pharmacy_backend.product_service.mapper.ProductMapper;
 import com.pharmacy_backend.product_service.repository.ProductRepository;
 import com.pharmacy_backend.product_service.repository.UserRepository;
 import com.pharmacy_backend.product_service.repository.WishlistRepository;
 import com.pharmacy_backend.product_service.service.WishlistService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -28,26 +34,45 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
-    private final ProductRedisService productRedisService;
     private final RedisService redisService;
-//    private final CartRepository cartRepository;
+    private final ProductMapper productMapper;
 
     @Transactional
     @Override
-    public ApiResponse<List<ProductResponse>> getMyWishlist() {
+    public ApiResponse<PageResponse<List<ProductResponse>>> getMyWishlist(int pageIndex, int pageSize) {
+        if(pageIndex < 1) {
+            pageIndex = 1;
+        }
+
+        if(pageSize < 1) {
+            pageSize = 10;
+        }
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
-        List<Wishlist> wishlist = wishlistRepository.findAllByUser(user);
 
-        List<ProductResponse> productResponses = wishlist.stream().map(
+        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
+        Page<Wishlist> wishlistPage = wishlistRepository.findAllByUser(user, pageable);
+
+        List<ProductResponse> productResponses = wishlistPage.getContent().stream().map(
                 w -> {
                     Product product = w.getProduct();
-                    return productRedisService.getCachedProductDetail(product.getSlug());
+                    ProductResponse response = productMapper.toProductResponse(product);
+                    response.setThumbnail(AppConfig.getImagePrefix() + product.getThumbnail());
+                    return response;
                 }
         ).toList();
 
-        return ApiResponse.buildOkResponse(productResponses, "Lấy danh sách yêu thích thành công");
+        PageResponse<List<ProductResponse>> pageResponse = PageResponse.<List<ProductResponse>>builder()
+                .currentPage(pageIndex)
+                .totalPages(wishlistPage.getTotalPages())
+                .totalElements(wishlistPage.getTotalElements())
+                .hasNext(wishlistPage.hasNext())
+                .hasPrevious(wishlistPage.hasPrevious())
+                .content(productResponses)
+                .build();
+
+        return ApiResponse.buildOkResponse(pageResponse, "Lấy danh sách yêu thích thành công");
     }
 
     @Transactional
@@ -85,30 +110,32 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Transactional
     @Override
-    public ApiResponse<Void> removeProductFromWishlist(Long productId) {
+    public ApiResponse<Void> removeProductsFromWishlist(List<Long> productIds) {
         User user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Người dùng không tồn tại"));
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND,
-                        HttpStatus.NOT_FOUND, "Sản phẩm không tồn tại"));
-
-        Wishlist wishlist = wishlistRepository.findByUserAndProduct(user, product)
+        List<Wishlist> wishlists = wishlistRepository.findAllByUserAndProductIds(user, productIds)
                 .orElseThrow(() -> new CustomException(ErrorCode.WISHLIST_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Sản phẩm không có trong danh sách yêu thích"));
 
-        if(product.getNumberOfLikes() > 0) {
-            product.setNumberOfLikes(product.getNumberOfLikes() - 1);
-        }
+        List<Product> products = wishlists.stream().map(wishlist -> {
+            Product product = wishlist.getProduct();
+                if(product.getNumberOfLikes() > 0) {
+                    product.setNumberOfLikes(product.getNumberOfLikes() - 1);
+                }
+                product.setModifiedBy(user.getId());
+                return product;
+        }).toList();
 
-        productRepository.updateProduct(productId, product);
-        wishlistRepository.delete(wishlist);
+        productRepository.bulkUpdateProduct(products);
+        wishlistRepository.deleteAll(wishlists);
+        String[] productSlugs = products.stream().map(Product::getSlug).toArray(String[]::new);
         redisService.removeSetMember(String.format("%s:%d",
                 RedisKeyTypeEnum.WISHLIST_USER.getKey(),
-                user.getId()), product.getSlug());
+                user.getId()), productSlugs);
         return ApiResponse.buildOkResponse(null,
-                "Xóa sản phẩm khỏi danh sách yêu thích thành công");
+                "Xóa các sản phẩm khỏi danh sách yêu thích thành công");
     }
 
     @Transactional
@@ -126,11 +153,12 @@ public class WishlistServiceImpl implements WishlistService {
             );
         }
 
-        productRepository.updateAll(wishlists.stream().map(Wishlist::getProduct
+        productRepository.bulkUpdateProduct(wishlists.stream().map(Wishlist::getProduct
         ).peek(product -> {
             if(product.getNumberOfLikes() > 0) {
                 product.setNumberOfLikes(product.getNumberOfLikes() - 1);
             }
+            product.setModifiedBy(user.getId());
         }).toList());
 
         wishlistRepository.deleteAll(wishlists);

@@ -5,11 +5,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pharmacy_backend.common.dto.request.PaymentRequest;
 import com.pharmacy_backend.common.dto.request.ReserveRequest;
-import com.pharmacy_backend.common.dto.response.ApiResponse;
-import com.pharmacy_backend.common.dto.response.PageResponse;
-import com.pharmacy_backend.common.dto.response.ProductCheckResponse;
-import com.pharmacy_backend.common.dto.response.ReserveResponse;
+import com.pharmacy_backend.common.dto.response.*;
 import com.pharmacy_backend.common.enums.*;
+import com.pharmacy_backend.common.exceptions.BusinessException;
 import com.pharmacy_backend.common.exceptions.CustomException;
 import com.pharmacy_backend.common.kafka.event.OrderDetailEvent;
 import com.pharmacy_backend.common.kafka.event.OrderEvent;
@@ -31,6 +29,7 @@ import com.pharmacy_backend.order_service.service.OrderService;
 import com.pharmacy_backend.order_service.service.PaymentServiceClient;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
 import com.pharmacy_backend.order_service.specification.OrderSpecification;
+import feign.FeignException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -237,7 +236,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.PROFILE_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy thông tin nhận hàng với ID: " + request.getProfileId()));
 
-        if(!request.getPaymentMethod().equalsIgnoreCase(PaymentMethodEnum.VNPAY.name()) &&
+        if (!request.getPaymentMethod().equalsIgnoreCase(PaymentMethodEnum.VNPAY.name()) &&
                 !request.getPaymentMethod().equalsIgnoreCase(PaymentMethodEnum.COD.name())) {
             throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
                     HttpStatus.BAD_REQUEST, "Phương thức thanh toán không hợp lệ: " + request.getPaymentMethod());
@@ -251,11 +250,8 @@ public class OrderServiceImpl implements OrderService {
         ApiResponse<CartResponse> cartResponse = cartServiceClient.getCartItemToCheckout();
         List<CartItemResponse> cartItems = cartResponse.getData().getCartItems();
         if (cartItems.isEmpty()) {
-            throw new CustomException(ErrorCode.CART_EMPTY,
-                    HttpStatus.BAD_REQUEST, "Giỏ hàng của bạn đang trống");
+            throw new BusinessException(ErrorCode.CART_EMPTY.getMessage());
         }
-
-        try {
         List<ReserveRequest> reserveRequests = cartItems.stream()
                 .map(cartItem -> {
                     ReserveRequest reserveRequest = new ReserveRequest();
@@ -265,102 +261,111 @@ public class OrderServiceImpl implements OrderService {
                 })
                 .toList();
 
-        ApiResponse<ReserveResponse> reserveResponse = productServiceClient.reserveProduct(
-                reserveRequests
-        );
+        ApiResponse<ReserveResponse> reserveResponse = productServiceClient.reserveProduct(reserveRequests);
+        try {
 
-        if (reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
-            throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED
-                    , (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null
-                    , reserveResponse.getMessage()
-            );
-        }
+//            ApiResponse<ReserveResponse> reserveResponse;
+//            try {
+//                reserveResponse = productServiceClient.reserveProduct(
+//                        reserveRequests
+//                );
+//            } catch (RuntimeException e) {
+//                log.error("Lỗi khi gọi service Product để đặt trước sản phẩm: {}", e.getMessage());
+//                throw new BusinessException(ErrorCode.PRODUCT_RESERVATION_FAILED);
+//            }
 
-        long totalPrice = 0;
+//            if (reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
+//                throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED
+//                        , (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null
+//                        , reserveResponse.getMessage()
+//                );
+//            }
 
-        for (ProductCheckResponse productCheckResponse : reserveResponse.getData().getProductCheckResponses()) {
-            totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
-        }
-        order.setSubtotalPrice(totalPrice);
+            long totalPrice = 0;
 
-        if(request.getVoucherId() != null) {
-            Voucher voucher = voucherRepository.findById(request.getVoucherId())
-                    .orElseThrow(() -> new CustomException(ErrorCode.VOUCHER_NOT_FOUND,
-                            HttpStatus.NOT_FOUND));
-            if(!voucher.getStatus().equals(VoucherStatusEnum.ACTIVE)) {
-                throw new CustomException(ErrorCode.VOUCHER_NOT_ACTIVE,
-                        HttpStatus.BAD_REQUEST, "Voucher không còn hiệu lực");
+            for (ProductCheckResponse productCheckResponse : reserveResponse.getData().getProductCheckResponses()) {
+                totalPrice += (long) productCheckResponse.getPriceNew() * productCheckResponse.getRequestedQuantity();
             }
+            order.setSubtotalPrice(totalPrice);
 
-            boolean existsUsage = voucherUsageRepository.existsVoucherUsageByVoucherIdAndUserId(
-                    voucher.getId(), user.getId()
-            );
+            if (request.getVoucherId() != null) {
+                Voucher voucher = voucherRepository.findById(request.getVoucherId())
+                        .orElseThrow(() -> new CustomException(ErrorCode.VOUCHER_NOT_FOUND,
+                                HttpStatus.NOT_FOUND));
+                if (!voucher.getStatus().equals(VoucherStatusEnum.ACTIVE)) {
+                    throw new CustomException(ErrorCode.VOUCHER_NOT_ACTIVE,
+                            HttpStatus.BAD_REQUEST, "Voucher không còn hiệu lực");
+                }
 
-            if(existsUsage) {
-                throw new CustomException(ErrorCode.VOUCHER_ALREADY_USED,
-                        HttpStatus.BAD_REQUEST);
-            }
+                boolean existsUsage = voucherUsageRepository.existsVoucherUsageByVoucherIdAndUserId(
+                        voucher.getId(), user.getId()
+                );
 
-            if(totalPrice < voucher.getMinOrderValue()) {
-                throw new CustomException(ErrorCode.VOUCHER_MIN_ORDER_VALUE_NOT_MET,
-                        HttpStatus.BAD_REQUEST);
-            }
-
-            if (voucher.getType() == VoucherTypeEnum.PUBLIC
-                    && voucher.getCollectedCount() >= voucher.getUsageLimit()) {
-                throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED,
-                        HttpStatus.BAD_REQUEST);
-            } else if(voucher.getType() == VoucherTypeEnum.PRIVATE) {
-                boolean exist = userVoucherRepository.existsByUserIdAndVoucherId(user.getId(), voucher.getId());
-                if(!exist) {
-                    throw new CustomException(ErrorCode.VOUCHER_NOT_ASSIGNED_TO_USER,
+                if (existsUsage) {
+                    throw new CustomException(ErrorCode.VOUCHER_ALREADY_USED,
                             HttpStatus.BAD_REQUEST);
                 }
-            } else {
-                int rowCnt = voucherRepository.increaseCollectedCount(voucher.getId());
-                if(rowCnt == 0) {
+
+                if (totalPrice < voucher.getMinOrderValue()) {
+                    throw new CustomException(ErrorCode.VOUCHER_MIN_ORDER_VALUE_NOT_MET,
+                            HttpStatus.BAD_REQUEST);
+                }
+
+                if (voucher.getType() == VoucherTypeEnum.PUBLIC
+                        && voucher.getCollectedCount() >= voucher.getUsageLimit()) {
                     throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED,
                             HttpStatus.BAD_REQUEST);
+                } else if (voucher.getType() == VoucherTypeEnum.PRIVATE) {
+                    boolean exist = userVoucherRepository.existsByUserIdAndVoucherId(user.getId(), voucher.getId());
+                    if (!exist) {
+                        throw new CustomException(ErrorCode.VOUCHER_NOT_ASSIGNED_TO_USER,
+                                HttpStatus.BAD_REQUEST);
+                    }
+                } else {
+                    int rowCnt = voucherRepository.increaseCollectedCount(voucher.getId());
+                    if (rowCnt == 0) {
+                        throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED,
+                                HttpStatus.BAD_REQUEST);
+                    }
                 }
+
+                int discountAmount;
+                if (voucher.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
+                    discountAmount = voucher.getDiscountValue();
+                } else {
+                    discountAmount = (int) Math.min(
+                            totalPrice * voucher.getDiscountValue() / 100,
+                            voucher.getMaxDiscountAmount()
+                    );
+                }
+
+                totalPrice -= discountAmount;
+                order.setVoucherDiscountPrice((long) discountAmount);
+                order.setVoucherId(voucher.getId());
+                order.setVoucherCode(voucher.getCode());
             }
 
-            int discountAmount;
-            if(voucher.getDiscountType() == DiscountTypeEnum.FIXED_AMOUNT) {
-                discountAmount = voucher.getDiscountValue();
-            } else {
-                discountAmount = (int) Math.min(
-                        totalPrice * voucher.getDiscountValue() / 100,
-                        voucher.getMaxDiscountAmount()
-                );
-            }
-
-            totalPrice -= discountAmount;
-            order.setVoucherDiscountPrice((long) discountAmount);
-            order.setVoucherId(voucher.getId());
-            order.setVoucherCode(voucher.getCode());
-        }
-
-        order.setTotalPrice(totalPrice);
+            order.setTotalPrice(totalPrice);
 
 
-        OrderEvent orderEvent = OrderEvent.builder()
-                .orderId(order.getId())
-                .customerName(order.getCustomerName())
-                .customerPhoneNumber(order.getCustomerPhoneNumber())
-                .customerAddress(order.getCustomerAddress())
-                .userEmail(user.getEmail())
-                .totalPrice(order.getTotalPrice())
-                .createdAt(order.getCreatedAt())
-                .build();
+            OrderEvent orderEvent = OrderEvent.builder()
+                    .orderId(order.getId())
+                    .customerName(order.getCustomerName())
+                    .customerPhoneNumber(order.getCustomerPhoneNumber())
+                    .customerAddress(order.getCustomerAddress())
+                    .userEmail(user.getEmail())
+                    .totalPrice(order.getTotalPrice())
+                    .createdAt(order.getCreatedAt())
+                    .build();
 
-        List<OrderDetailEvent> orderDetailEvents;
+            List<OrderDetailEvent> orderDetailEvents;
 
-        Event<OrderEvent> event = Event.<OrderEvent>builder()
-                .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
-                .eventType(EventTypeEnum.ORDER_CREATED.getName())
-                .data(orderEvent)
-                .source(appName)
-                .build();
+            Event<OrderEvent> event = Event.<OrderEvent>builder()
+                    .key(String.format("%s-%d", PartitionKeyEnum.ORDER.getName(), order.getId()))
+                    .eventType(EventTypeEnum.ORDER_CREATED.getName())
+                    .data(orderEvent)
+                    .source(appName)
+                    .build();
 
             switch (PaymentMethodEnum.valueOf(request.getPaymentMethod().toUpperCase())) {
                 case VNPAY -> {
@@ -379,7 +384,6 @@ public class OrderServiceImpl implements OrderService {
                             .paymentMethodEnum(PaymentMethodEnum.VNPAY)
                             .build();
 
-                    // Tạo URL thanh toán VNPAY
                     ApiResponse<String> paymentResponse = paymentServiceClient.createPaymentUrl(paymentRequest);
 
                     if (paymentResponse.getStatus() != HttpStatus.OK.value()) {
@@ -393,7 +397,6 @@ public class OrderServiceImpl implements OrderService {
                 }
 
                 case MOMO -> {
-                    // Gọi MoMoService nếu có
                     return ApiResponse.buildOkResponse(null, "Chức năng MoMo đang được phát triển");
                 }
 
@@ -401,7 +404,7 @@ public class OrderServiceImpl implements OrderService {
                     order.setPaymentMethod(PaymentMethodEnum.COD);
                     order = orderRepository.save(order);
 
-                    if(request.getVoucherId() != null) {
+                    if (request.getVoucherId() != null) {
                         VoucherUsage voucherUsage = VoucherUsage.builder()
                                 .voucherId(request.getVoucherId())
                                 .orderId(order.getId())
@@ -427,17 +430,21 @@ public class OrderServiceImpl implements OrderService {
                 default -> throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD);
             }
 
-        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-        orderResponse.setPaymentStatus(order.getPaymentStatus().name());
-        return ApiResponse.buildCreatedResponse(orderResponse, "Tạo đơn hàng thành công");
+            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+            orderResponse.setPaymentStatus(order.getPaymentStatus().name());
+            return ApiResponse.buildCreatedResponse(orderResponse, "Tạo đơn hàng thành công");
+        } catch (BusinessException ex) {
+            throw ex;
         } catch (RuntimeException e) {
             log.error("Lỗi khi xử lý phương thức thanh toán: {}", e.getMessage());
-            List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
-                    cartItems);
-            Event<OrderEvent> orderFailedEvent = createRollBackEvent(order, orderDetailEventsFromCart);
-            handleSaveFailedOrder(order, orderFailedEvent);
+            if(order != null) {
+                List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
+                        cartItems);
+                Event<OrderEvent> orderFailedEvent = createRollBackEvent(order, orderDetailEventsFromCart);
+                handleSaveFailedOrder(order, orderFailedEvent);
+            }
 
-            throw new CustomException(ErrorCode.INVALID_PAYMENT_METHOD,
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi trong quá trình tạo đơn hàng");
         }
     }
@@ -536,7 +543,7 @@ public class OrderServiceImpl implements OrderService {
             event.setEventType(EventTypeEnum.ORDER_CANCELLED.getName());
             handleSaveOutboxEvent(event);
         } else {
-            if(order.getPaymentMethod() == PaymentMethodEnum.COD) {
+            if (order.getPaymentMethod() == PaymentMethodEnum.COD) {
                 event.setEventType(EventTypeEnum.ORDER_RELEASED.getName());
                 handleSaveOutboxEvent(event);
             }
@@ -553,7 +560,7 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new CustomException(ErrorCode.ORDER_NOT_FOUND,
                         HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng với ID: " + id));
 
-        if(!StateUtils.isValidPaymentTransition(order.getPaymentStatus(),
+        if (!StateUtils.isValidPaymentTransition(order.getPaymentStatus(),
                 PaymentStatusEnum.valueOf(paymentStatus.toUpperCase()))) {
             throw new CustomException(ErrorCode.INVALID_PAYMENT_STATUS,
                     HttpStatus.BAD_REQUEST, "Không thể chuyển trạng thái thanh toán từ "
@@ -568,7 +575,7 @@ public class OrderServiceImpl implements OrderService {
                     HttpStatus.BAD_REQUEST, "Trạng thái thanh toán không hợp lệ: " + paymentStatus);
         }
 
-        if(paymentStatus.equalsIgnoreCase(PaymentStatusEnum.FAILED.getName())) {
+        if (paymentStatus.equalsIgnoreCase(PaymentStatusEnum.FAILED.getName())) {
             order.setStatus(OrderStatusEnum.CANCELLED);
         }
 

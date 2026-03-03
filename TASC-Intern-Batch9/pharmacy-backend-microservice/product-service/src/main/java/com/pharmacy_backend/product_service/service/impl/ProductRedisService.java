@@ -118,7 +118,7 @@ public class ProductRedisService {
     public void cacheRelatedProducts(long productId, List<String> relatedProductSLugs){
         try {
             String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
-            redisTemplate.opsForValue().set(key, relatedProductSLugs);
+            redisTemplate.opsForValue().set(key, relatedProductSLugs, RedisKeyTypeEnum.RELATED_PRODUCTS.getDuration());
             log.debug("Successfully cached related products for key: {}", key);
         } catch (Exception e) {
             log.error("Failed to cache related product for productId: {}, error: {}", productId, e.getMessage());
@@ -129,7 +129,7 @@ public class ProductRedisService {
         String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
         try {
             Object cachedObject = redisTemplate.opsForValue().get(key);
-            if (cachedObject != null && cachedObject instanceof List) {
+            if (cachedObject instanceof List) {
                 log.debug("Successfully retrieved cached related products for key: {}", key);
                 return (List<String>) cachedObject;
             }

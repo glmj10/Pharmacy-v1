@@ -122,12 +122,15 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = productRepository.findAll(pageSize, (pageIndex - 1) * pageSize, filterRequest);
         User user;
+        Set<String> wishlist;
         Long userId = SecurityUtils.getCurrentUserId();
         if(userId != null) {
             user = userRepository.findById(userId)
                     .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                             HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+            wishlist = redisService.getSetMembers(String.format("%s:%d", RedisKeyTypeEnum.WISHLIST_USER.getKey(), userId));
         } else {
+            wishlist = null;
             user = null;
         }
 
@@ -137,7 +140,12 @@ public class ProductServiceImpl implements ProductService {
                     ProductResponse response = productMapper.toProductResponse(product);
                     response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
                     if(user != null) {
-                        Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+                        boolean isInWishList;
+                        if(wishlist != null) {
+                            isInWishList = wishlist.contains(product.getSlug());
+                        } else {
+                            isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+                        }
                         response.setInWishlist(isInWishList);
                     } else {
                         response.setInWishlist(false);
@@ -212,6 +220,7 @@ public class ProductServiceImpl implements ProductService {
                 user = userRepository.findById(Objects.requireNonNull(SecurityUtils.getCurrentUserId()))
                         .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND,
                                 HttpStatus.UNAUTHORIZED, "Người dùng không hợp lệ"));
+
                 Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
                 productResponse.setInWishlist(isInWishList);
             } else {

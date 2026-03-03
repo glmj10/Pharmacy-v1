@@ -1,7 +1,9 @@
 package com.pharmacy_backend.product_service.config;
 
 import com.pharmacy_backend.common.config.BaseFeignClientConfig;
+import com.pharmacy_backend.product_service.security.FeignErrorDecoder;
 import feign.codec.Encoder;
+import feign.codec.ErrorDecoder;
 import feign.form.spring.SpringFormEncoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectFactory;
@@ -18,5 +20,10 @@ public class FeignClientConfig extends BaseFeignClientConfig {
     @Bean
     public Encoder feignFormEncoder() {
         return new SpringFormEncoder(new SpringEncoder(messageConverters));
+    }
+
+    @Bean
+    public ErrorDecoder errorDecoder() {
+        return new FeignErrorDecoder();
     }
 }

@@ -6,7 +6,6 @@ import com.pharmacy_backend.product_service.dto.request.ProductCMSFilterRequest;
 import com.pharmacy_backend.product_service.dto.request.ProductFilterCustomerRequest;
 import com.pharmacy_backend.product_service.dto.request.ProductRequest;
 import com.pharmacy_backend.product_service.dto.response.ProductResponse;
-import com.pharmacy_backend.product_service.entity.Product;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;

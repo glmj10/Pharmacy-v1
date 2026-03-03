@@ -18,5 +18,6 @@ public class ErrorResponse {
     String message;
     String path;
     String errorCode;
+    Object data;
     Map<String, Object> details;
 }

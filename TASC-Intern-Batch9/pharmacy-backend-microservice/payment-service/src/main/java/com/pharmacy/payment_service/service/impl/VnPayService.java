@@ -80,7 +80,6 @@ public class VnPayService {
                 .data(paymentEvent)
                 .build();
 
-
         if ("00".equals(vnp_ResponseCode)) {
             if(paymentTransactionRepository.existByOrderIdAndPaymentStatus(orderId,
                     PaymentStatusEnum.COMPLETED.name()) > 0) {
@@ -104,6 +103,63 @@ public class VnPayService {
         }
 
     }
+
+    @Transactional
+    public String handleVnPayIpn(Map<String, String> params) {
+        String vnp_TxnRef = params.get("vnp_TxnRef");
+        String vnp_ResponseCode = params.get("vnp_ResponseCode");
+        String receivedHash = params.get("vnp_SecureHash");
+
+        Map<String, String> sortedParams = new TreeMap<>(params);
+        sortedParams.remove("vnp_SecureHash");
+        sortedParams.remove("vnp_SecureHashType");
+
+        String generatedHash = hmacSHA512(vnPayConfig.getHashSecret(), buildQueryString(sortedParams));
+
+        if (!generatedHash.equals(receivedHash)) {
+            return "97";
+        }
+
+        Long orderId = Long.parseLong(vnp_TxnRef);
+
+        PaymentTransaction paymentTransaction = PaymentTransaction.builder()
+                .orderId(orderId)
+                .amount(Long.parseLong(params.get("vnp_Amount")) / 100)
+                .transactionId(params.get("vnp_TransactionNo"))
+                .responseCode(vnp_ResponseCode)
+                .transactionDate(LocalDateTime.now())
+                .paymentMethod(PaymentMethodEnum.VNPAY)
+                .build();
+
+        PaymentEvent paymentEvent = new PaymentEvent(orderId);
+        Event<PaymentEvent> event = Event.<PaymentEvent>builder()
+                .key(String.format("%d", orderId))
+                .source(appName)
+                .data(paymentEvent)
+                .build();
+
+        if ("00".equals(vnp_ResponseCode)) {
+            if(paymentTransactionRepository.existByOrderIdAndPaymentStatus(orderId,
+                    PaymentStatusEnum.COMPLETED.name()) > 0) {
+                return "02";
+            }
+
+            paymentEvent.setPaymentStatus(PaymentStatusEnum.COMPLETED.getName());
+            event.setEventType(EventTypeEnum.PAYMENT_COMPLETED.getName());
+            paymentTransaction.setPaymentStatus(PaymentStatusEnum.COMPLETED);
+            paymentTransactionRepository.save(paymentTransaction);
+            handleSaveOutboxEvent(event);
+        } else {
+            paymentEvent.setPaymentStatus(PaymentStatusEnum.FAILED.getName());
+            event.setEventType(EventTypeEnum.PAYMENT_FAILED.getName());
+            paymentTransaction.setPaymentStatus(PaymentStatusEnum.FAILED);
+            paymentTransactionRepository.save(paymentTransaction);
+            handleSaveOutboxEvent(event);
+        }
+        return "00";
+    }
+
+
 
     public String createPaymentUrl(PaymentRequest request) {
         Map<String, String> params = new TreeMap<>();
@@ -194,5 +250,9 @@ public class VnPayService {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
                     e.getMessage());
         }
+    }
+
+    public ApiResponse<String> queryDR(String vnpTxnRef) {
+        return null;
     }
 }

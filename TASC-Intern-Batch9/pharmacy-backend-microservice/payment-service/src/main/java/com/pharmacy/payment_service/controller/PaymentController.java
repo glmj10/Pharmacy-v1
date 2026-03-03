@@ -42,4 +42,19 @@ public class PaymentController {
     public String test() {
         return "Payment Service is running!";
     }
+
+    @GetMapping("/ipn")
+    public Map<String, String> handleVnPayIPN(@RequestParam Map<String, String> params) {
+        String code = vnPayService.handleVnPayIpn(params);
+        return Map.of(
+                "RspCode", code,
+                "Message", "Confirm Success"
+        );
+    }
+
+    @GetMapping("/queryDR")
+    public ResponseEntity<?> queryDR(@RequestParam String vnp_TxnRef) {
+        ApiResponse<String> response = vnPayService.queryDR(vnp_TxnRef);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }

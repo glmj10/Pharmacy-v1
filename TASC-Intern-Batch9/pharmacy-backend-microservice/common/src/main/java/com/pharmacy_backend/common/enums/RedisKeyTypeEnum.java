@@ -32,12 +32,10 @@ public enum RedisKeyTypeEnum {
 
     public long getDuration() {
         return switch (this) {
-            case INVALIDATED_JWT -> 60 * 60L; // 1 hour
+            case INVALIDATED_JWT, PRODUCT_STOCK, LAST_RUN_TIME, PRODUCT_DETAIL, RELATED_PRODUCTS -> 60 * 60L; // 1 hour
             case RESET_PASSWORD_TOKEN -> 15 * 60L; // 15 minutes
             case VERIFICATION_TOKEN -> 24 * 60 * 60L; // 24 hours
             case USER_VERSION, WISHLIST -> 7 * 24 * 60 * 60L; // 7 days
-            case PRODUCT_DETAIL, RELATED_PRODUCTS -> 30 * 60L; // 30 minutes
-            case PRODUCT_STOCK, LAST_RUN_TIME -> 0L;
             case RESET_PASSWORD_OTP -> 5 * 60L; // 5 minutes
             case VERIFICATION_OTP -> 12 * 60 * 60L; // 12 hours
             case USER_CLICK -> 60L; // 1 minute

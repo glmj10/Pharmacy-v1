@@ -57,6 +57,14 @@ public class CustomException extends RuntimeException{
         this.details = new HashMap<>();
     }
 
+    public CustomException(ErrorCode errorCode, HttpStatus httpStatus, Object data, String customMessage) {
+        super(customMessage);
+        this.errorCode = errorCode;
+        this.httpStatus = httpStatus;
+        this.data = data;
+        this.details = new HashMap<>();
+    }
+
     public void addDetail(String key, Object value) {
         this.details.put(key, value);
     }

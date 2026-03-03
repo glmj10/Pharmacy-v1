@@ -105,14 +105,13 @@ public class AgentServiceImpl implements AgentService {
         Double distance;
     }
 
-    // Hàm chuyển String JSON -> List<Double>
     private List<Double> parseEmbedding(String json) {
         try {
             if (json == null || json.isEmpty()) return Collections.emptyList();
             return objectMapper.readValue(json, new TypeReference<>() {
             });
         } catch (Exception e) {
-            return Collections.emptyList(); // Bỏ qua nếu lỗi format
+            return Collections.emptyList();
         }
     }
 }
