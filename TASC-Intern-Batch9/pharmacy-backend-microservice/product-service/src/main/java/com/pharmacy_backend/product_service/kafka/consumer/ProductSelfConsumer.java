@@ -18,18 +18,6 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Consumer tự consume PRODUCT_TOPIC để xử lý các event nội bộ của product-service.
- *
- * <p>Cụ thể:
- * <ul>
- *   <li>{@code PRODUCT_OUT_OF_STOCK} — đánh dấu {@code active=false} trong DB khi hết hàng</li>
- *   <li>{@code PRODUCT_INACTIVE} — đảm bảo cache Redis phản ánh trạng thái inactive</li>
- * </ul>
- *
- * <p>Đây là bước cuối cùng của <b>Transactional Outbox Pattern</b>:
- * OutboxCronJob → Kafka → Consumer → DB/Cache update.
- */
 @Component
 @Slf4j
 @RequiredArgsConstructor
@@ -65,9 +53,6 @@ public class ProductSelfConsumer {
         }
     }
 
-    /**
-     * Khi sản phẩm hết hàng: set active=false trong DB và sync quantity cache về 0.
-     */
     private void handleOutOfStock(ProductEvent productEvent) {
         Long productId = productEvent.getProductId();
         log.info("[ProductSelfConsumer] PRODUCT_OUT_OF_STOCK: đánh dấu sản phẩm {} inactive trong DB", productId);
@@ -75,20 +60,15 @@ public class ProductSelfConsumer {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // Chỉ cập nhật nếu thực sự hết hàng (tránh race condition khi đã được nhập thêm hàng)
         if (product.getQuantity() != null && product.getQuantity() == 0 && Boolean.TRUE.equals(product.getActive())) {
             product.setActive(false);
             productRepository.updateProduct(productId, product);
             log.info("[ProductSelfConsumer] Sản phẩm {} đã được đánh dấu inactive trong DB", productId);
         }
 
-        // Sync cache quantity = 0 (active không còn lưu trên Redis)
         stockCacheService.setStock(productId, 0);
     }
 
-    /**
-     * PRODUCT_INACTIVE: active không lưu trên Redis nữa, chỉ log để audit.
-     */
     private void handleProductInactive(ProductEvent productEvent) {
         log.info("[ProductSelfConsumer] PRODUCT_INACTIVE: sản phẩm {} đã inactive trong DB", productEvent.getProductId());
     }

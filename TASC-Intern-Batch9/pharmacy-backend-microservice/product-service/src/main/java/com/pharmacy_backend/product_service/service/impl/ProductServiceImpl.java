@@ -141,10 +141,15 @@ public class ProductServiceImpl implements ProductService {
                     response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
                     if(user != null) {
                         boolean isInWishList;
-                        if(wishlist != null) {
+                        if(!wishlist.isEmpty()) {
                             isInWishList = wishlist.contains(product.getSlug());
                         } else {
                             isInWishList = wishlistRepository.existsByProductAndUser(product, user);
+                            if(isInWishList) {
+                                redisService.addValueToSet(
+                                        String.format("%s:%d", RedisKeyTypeEnum.WISHLIST_USER.getKey(), userId),
+                                        product.getSlug(), RedisKeyTypeEnum.WISHLIST_USER.getDuration());
+                            }
                         }
                         response.setInWishlist(isInWishList);
                     } else {
@@ -223,6 +228,11 @@ public class ProductServiceImpl implements ProductService {
 
                 Boolean isInWishList = wishlistRepository.existsByProductAndUser(product, user);
                 productResponse.setInWishlist(isInWishList);
+                if(isInWishList) {
+                    redisService.addValueToSet(
+                            String.format("%s:%d", RedisKeyTypeEnum.WISHLIST_USER.getKey(), userId),
+                            product.getSlug(), RedisKeyTypeEnum.WISHLIST_USER.getDuration());
+                }
             } else {
                 productResponse.setInWishlist(false);
             }
@@ -528,7 +538,11 @@ public class ProductServiceImpl implements ProductService {
             List<Product> relatedProducts = productRepository.findTop20ByCategoriesInAndIdNotAndActiveTrue(
                     product.getCategories(), product.getId());
             List<ProductResponse> relatedProductResponses = relatedProducts.stream()
-                    .map(productMapper::toProductResponse)
+                    .map(relatedProduct -> {
+                        ProductResponse response = productMapper.toProductResponse(relatedProduct);
+                        response.setThumbnail(AppConfig.getImagePrefix() + response.getThumbnail());
+                        return response;
+                    })
                     .toList();
             List<String> slugsToCache = relatedProductResponses.stream()
                     .map(ProductResponse::getSlug)

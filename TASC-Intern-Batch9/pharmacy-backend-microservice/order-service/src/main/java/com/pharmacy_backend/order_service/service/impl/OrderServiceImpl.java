@@ -14,7 +14,6 @@ import com.pharmacy_backend.common.kafka.event.OrderEvent;
 import com.pharmacy_backend.common.kafka.event.OrderReserveEvent;
 import com.pharmacy_backend.common.kafka.event.base.Event;
 import com.pharmacy_backend.common.security.SecurityUtils;
-import com.pharmacy_backend.common.service.RedisService;
 import com.pharmacy_backend.common.utils.StateUtils;
 import com.pharmacy_backend.order_service.config.AppConfig;
 import com.pharmacy_backend.order_service.dto.request.OrderFilterRequest;
@@ -29,7 +28,6 @@ import com.pharmacy_backend.order_service.service.OrderService;
 import com.pharmacy_backend.order_service.service.PaymentServiceClient;
 import com.pharmacy_backend.order_service.service.ProductServiceClient;
 import com.pharmacy_backend.order_service.specification.OrderSpecification;
-import feign.FeignException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -73,7 +71,6 @@ public class OrderServiceImpl implements OrderService {
     final VoucherRepository voucherRepository;
     final VoucherUsageRepository voucherUsageRepository;
     final UserVoucherRepository userVoucherRepository;
-    final RedisService redisService;
 
     @Value("${order.timeout.order-cancel-minutes}")
     private Integer orderCancelMinutes;
@@ -261,26 +258,23 @@ public class OrderServiceImpl implements OrderService {
                 })
                 .toList();
 
-        ApiResponse<ReserveResponse> reserveResponse = productServiceClient.reserveProduct(reserveRequests);
+        ApiResponse<ReserveResponse> reserveResponse;
         try {
+            reserveResponse = productServiceClient.reserveProduct(reserveRequests);
+        } catch (RuntimeException e) {
+            throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED,
+                    HttpStatus.BAD_REQUEST, "Không thể kết nối đến dịch vụ sản phẩm, vui lòng thử lại sau");
+        }
 
-//            ApiResponse<ReserveResponse> reserveResponse;
-//            try {
-//                reserveResponse = productServiceClient.reserveProduct(
-//                        reserveRequests
-//                );
-//            } catch (RuntimeException e) {
-//                log.error("Lỗi khi gọi service Product để đặt trước sản phẩm: {}", e.getMessage());
-//                throw new BusinessException(ErrorCode.PRODUCT_RESERVATION_FAILED);
-//            }
+        if (reserveResponse.getData() == null || !reserveResponse.getData().isSuccess()) {
+            Object errors = (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null;
+            log.warn("Đặt trước sản phẩm thất bại: {}", errors);
+            throw new BusinessException(ErrorCode.PRODUCT_RESERVATION_FAILED,
+                    HttpStatus.BAD_REQUEST, reserveResponse.getData().getErrors(),
+                    "Đặt trước sản phẩm thất bại");
+        }
 
-//            if (reserveResponse.getStatus() != HttpStatus.CREATED.value()) {
-//                throw new CustomException(ErrorCode.PRODUCT_RESERVATION_FAILED
-//                        , (reserveResponse.getData() != null) ? reserveResponse.getData().getErrors() : null
-//                        , reserveResponse.getMessage()
-//                );
-//            }
-
+        try {
             long totalPrice = 0;
 
             for (ProductCheckResponse productCheckResponse : reserveResponse.getData().getProductCheckResponses()) {
@@ -437,12 +431,10 @@ public class OrderServiceImpl implements OrderService {
             throw ex;
         } catch (RuntimeException e) {
             log.error("Lỗi khi xử lý phương thức thanh toán: {}", e.getMessage());
-            if(order != null) {
-                List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
-                        cartItems);
-                Event<OrderEvent> orderFailedEvent = createRollBackEvent(order, orderDetailEventsFromCart);
-                handleSaveFailedOrder(order, orderFailedEvent);
-            }
+            List<OrderDetailEvent> orderDetailEventsFromCart = OrderService.mapToOrderDetailEventsFromCartItems(
+                    cartItems);
+            Event<OrderEvent> orderFailedEvent = createRollBackEvent(order, orderDetailEventsFromCart);
+            handleSaveFailedOrder(order, orderFailedEvent);
 
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR,
                     HttpStatus.INTERNAL_SERVER_ERROR, "Đã xảy ra lỗi trong quá trình tạo đơn hàng");

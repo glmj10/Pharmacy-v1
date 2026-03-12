@@ -69,12 +69,20 @@ public class PaymentConsumer {
                             .userId(order.getUser().getId())
                             .build();
                     voucherUsageRepository.save(voucherUsage);
-
                     UserVoucher userVoucher = userVoucherRepository.findByUserIdAndVoucherId(
-                            order.getUser().getId(), order.getVoucherId()
+                            voucherUsage.getUserId(), voucherUsage.getVoucherId()
                     );
-                    userVoucher.setIsUsed(true);
-                    userVoucherRepository.save(userVoucher);
+                    if(userVoucher != null) {
+                        userVoucher.setIsUsed(true);
+                        userVoucherRepository.save(userVoucher);
+                    } else {
+                        UserVoucher publicUserVoucher = UserVoucher.builder()
+                                .userId(voucherUsage.getUserId())
+                                .voucherId(voucherUsage.getVoucherId())
+                                .isUsed(true)
+                                .build();
+                        userVoucherRepository.save(publicUserVoucher);
+                    }
                 }
 
                 OrderEvent orderEvent = OrderEvent.builder()

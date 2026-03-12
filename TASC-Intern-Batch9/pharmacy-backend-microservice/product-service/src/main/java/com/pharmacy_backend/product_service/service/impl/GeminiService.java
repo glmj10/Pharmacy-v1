@@ -35,7 +35,6 @@ public class GeminiService {
 
     public List<Double> getEmbedding(String text) {
         try {
-            // Gọi API
             EmbedContentResponse response = client.models.embedContent(
                     embeddingModel,
                     text,
@@ -68,7 +67,6 @@ public class GeminiService {
                     prompt,
                     null
             );
-            // Hàm lấy text trả lời
             return response.text();
         } catch (Exception e) {
             return "Lỗi AI: " + e.getMessage();

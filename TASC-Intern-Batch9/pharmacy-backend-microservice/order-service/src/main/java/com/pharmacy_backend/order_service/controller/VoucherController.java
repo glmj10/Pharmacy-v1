@@ -40,8 +40,9 @@ public class VoucherController {
     @GetMapping("/user/me")
     public ResponseEntity<ApiResponse<PageResponse<List<VoucherResponse>>>> getUserVouchers(@RequestParam(defaultValue = "1") int pageIndex,
                                                                                             @RequestParam(defaultValue = "10") int pageSize,
-                                                                                            @RequestParam(required = false) String type) {
-        ApiResponse<PageResponse<List<VoucherResponse>>> response = voucherService.getUserVouchers(pageIndex, pageSize, type);
+                                                                                            @RequestParam(required = false) String type,
+                                                                                            @RequestParam(required = false) String status) {
+        ApiResponse<PageResponse<List<VoucherResponse>>> response = voucherService.getUserVouchers(pageIndex, pageSize, type, status);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 

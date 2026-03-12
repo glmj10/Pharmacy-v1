@@ -656,7 +656,7 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public List<Product> findAllLimit500() {
-        String sql = "SELECT * FROM products WHERE active = true LIMIT 500";
+        String sql = "SELECT * FROM products WHERE active = true order by id LIMIT 100";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Product.class));
     }
 

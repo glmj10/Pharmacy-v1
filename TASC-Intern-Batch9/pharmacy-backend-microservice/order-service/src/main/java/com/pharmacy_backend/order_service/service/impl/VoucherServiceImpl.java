@@ -78,7 +78,6 @@ public class VoucherServiceImpl implements VoucherService {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
         Page<Voucher> voucherPage;
         try{
-            // Build specification safely depending on provided filters
             Specification<Voucher> specification = null;
             if (request != null) {
                 boolean hasType = request.getType() != null;
@@ -252,7 +251,7 @@ public class VoucherServiceImpl implements VoucherService {
 
     private void handleLuaError(Long result) {
         if (result == -1) throw new CustomException(ErrorCode.VOUCHER_USAGE_LIMIT_REACHED, HttpStatus.BAD_REQUEST);
-        if (result == -2) throw new CustomException(ErrorCode.VOUCHER_ALREADY_CLAIMED, HttpStatus.BAD_REQUEST);
+        if (result == -3) throw new CustomException(ErrorCode.VOUCHER_ALREADY_CLAIMED, HttpStatus.BAD_REQUEST);
         if (result == -4) throw new CustomException(ErrorCode.TOO_MANY_REQUESTS, HttpStatus.TOO_MANY_REQUESTS);
     }
 
@@ -292,7 +291,7 @@ public class VoucherServiceImpl implements VoucherService {
     }
 
     @Override
-    public ApiResponse<PageResponse<List<VoucherResponse>>> getUserVouchers(int pageIndex, int pageSize, String type) {
+    public ApiResponse<PageResponse<List<VoucherResponse>>> getUserVouchers(int pageIndex, int pageSize, String type, String status) {
         if(pageIndex < 0) {
             pageIndex = 1;
         }
@@ -303,9 +302,10 @@ public class VoucherServiceImpl implements VoucherService {
         Pageable pageable = PageRequest.of(pageIndex - 1, pageSize);
         Page<Voucher> voucherPage;
         try{
-            voucherPage = voucherRepository.findUserVouchersByType(
+            voucherPage = voucherRepository.findUserVoucherByTypeAndStatus(
                     SecurityUtils.getCurrentUserId(),
                     (type != null) ? VoucherTypeEnum.valueOf(type) : null,
+                    (status != null) ? VoucherStatusEnum.valueOf(status) : null,
                     pageable);
         } catch (Exception e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR, HttpStatus.INTERNAL_SERVER_ERROR,

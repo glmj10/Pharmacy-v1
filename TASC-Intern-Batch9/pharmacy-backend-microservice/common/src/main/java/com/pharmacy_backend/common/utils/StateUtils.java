@@ -16,6 +16,7 @@ public class StateUtils {
     public static boolean isValidPaymentTransition(PaymentStatusEnum currentStatus, PaymentStatusEnum newStatus) {
         return switch (currentStatus) {
             case PENDING -> newStatus == PaymentStatusEnum.FAILED || newStatus == PaymentStatusEnum.COMPLETED;
+            case COMPLETED -> newStatus == PaymentStatusEnum.COMPLETED;
             default -> false;
         };
     }

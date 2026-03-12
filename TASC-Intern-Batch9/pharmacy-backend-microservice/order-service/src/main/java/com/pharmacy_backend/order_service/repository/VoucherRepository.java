@@ -1,5 +1,6 @@
 package com.pharmacy_backend.order_service.repository;
 
+import com.pharmacy_backend.common.enums.VoucherStatusEnum;
 import com.pharmacy_backend.common.enums.VoucherTypeEnum;
 import com.pharmacy_backend.order_service.entity.Voucher;
 import org.springframework.data.domain.Page;
@@ -35,4 +36,13 @@ public interface VoucherRepository extends JpaRepository<Voucher, Long>, JpaSpec
             Pageable pageable
     );
 
+    @Query("""
+    SELECT v
+    FROM Voucher v
+    LEFT JOIN UserVoucher uv ON v.id = uv.voucherId
+    WHERE uv.userId = :userId
+      AND (:type IS NULL OR v.type = :type)
+      AND (:status IS NULL OR v.status = :status)
+""")
+    Page<Voucher> findUserVoucherByTypeAndStatus(Long userId, VoucherTypeEnum type, VoucherStatusEnum status, Pageable pageable);
 }

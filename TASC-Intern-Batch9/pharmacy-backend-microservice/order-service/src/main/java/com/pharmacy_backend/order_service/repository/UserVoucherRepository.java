@@ -8,8 +8,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 @Repository
@@ -25,7 +23,7 @@ public interface UserVoucherRepository extends JpaRepository<UserVoucher, Long> 
 
     void deleteByUserIdAndVoucherId(Long id, Long voucherId);
 
-    UserVoucher findByUserIdAndVoucherId(Long id, Long voucherId);
+    UserVoucher findByUserIdAndVoucherId(Long userId, Long voucherId);
 
     @Query("SELECT uv.voucherId AS voucherId, uv.isUsed AS used " +
             "FROM UserVoucher uv " +

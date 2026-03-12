@@ -20,5 +20,5 @@ public interface VoucherService {
     ApiResponse<Void> claimVoucher(UserVoucherRequest request);
     void changeVoucherStatus(Long voucherId, String status);
     ApiResponse<PageResponse<List<VoucherResponse>>> getUserVouchers(int pageIndex,
-                                                                 int pageSize, String type);
+                                                                 int pageSize, String type, String status);
 }

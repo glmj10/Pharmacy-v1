@@ -36,7 +36,6 @@ public class VoucherConsumer {
             Event<?> event = objectMapper.readValue(message, new TypeReference<>() {});
             if(event.getEventType().equalsIgnoreCase(EventTypeEnum.VOUCHER_CLAIMED.getName())) {
                 VoucherClaimedEvent voucherClaimedEvent = objectMapper.convertValue(event.getData(), VoucherClaimedEvent.class);
-
                 Voucher voucher = voucherRepository.findById(voucherClaimedEvent.getVoucherId())
                         .orElseThrow();
                 voucher.setUsageLimit(voucher.getUsageLimit() - 1);

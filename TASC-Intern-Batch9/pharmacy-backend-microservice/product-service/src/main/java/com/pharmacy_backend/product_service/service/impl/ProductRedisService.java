@@ -118,7 +118,7 @@ public class ProductRedisService {
     public void cacheRelatedProducts(long productId, List<String> relatedProductSLugs){
         try {
             String key = RedisKeyTypeEnum.RELATED_PRODUCTS.getKey() + ":" + productId;
-            redisTemplate.opsForValue().set(key, relatedProductSLugs, RedisKeyTypeEnum.RELATED_PRODUCTS.getDuration());
+            redisTemplate.opsForValue().set(key, relatedProductSLugs, RedisKeyTypeEnum.RELATED_PRODUCTS.getDuration(), TimeUnit.SECONDS);
             log.debug("Successfully cached related products for key: {}", key);
         } catch (Exception e) {
             log.error("Failed to cache related product for productId: {}, error: {}", productId, e.getMessage());
@@ -201,6 +201,8 @@ public class ProductRedisService {
                     )
                     .orElse(null);
             productResponse.setPromotionEvent(promotionEventMapper.toResponse(promotionEvent));
+            assert promotionEvent != null;
+            productResponse.getPromotionEvent().setThumbnailUrl(AppConfig.getImagePrefix() + promotionEvent.getThumbnailUrl());
         }
         return productResponse;
     }

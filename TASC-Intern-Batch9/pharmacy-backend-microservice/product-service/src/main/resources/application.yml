@@ -52,5 +52,5 @@ genai:
   api:
     key: ${GENAI_API_KEY}
   embedding:
-    model: ${GENAI_EMBEDDING_MODEL:text-embedding-004}
+    model: ${GENAI_EMBEDDING_MODEL:gemini-embedding-001}
 

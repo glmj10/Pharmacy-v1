@@ -44,8 +44,10 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public ApiResponse<ReserveResponse> reserveProduct(List<ReserveRequest> reserveRequestList) {
-        List<ProductItemError> errors      = new ArrayList<>();
-        List<ProductCheckResponse> results = new ArrayList<>();
+        List<ProductItemError>    errors          = new ArrayList<>();
+        List<ProductCheckResponse> results        = new ArrayList<>();
+        // Track sản phẩm đã reserve thành công để rollback nếu cần
+        List<ReserveRequest>      reservedSoFar  = new ArrayList<>();
 
         for (ReserveRequest req : reserveRequestList) {
             Long productId = req.getProductId();
@@ -97,7 +99,7 @@ public class StockServiceImpl implements StockService {
 
             publishStockReservedOutboxEvent(productId, qty);
 
-
+            reservedSoFar.add(req);
             results.add(ProductCheckResponse.builder()
                     .productId(productId)
                     .requestedQuantity(qty)
@@ -106,9 +108,15 @@ public class StockServiceImpl implements StockService {
         }
 
         if (!errors.isEmpty()) {
-            throw new CustomException(
-                    ErrorCode.PRODUCT_RESERVATION_FAILED,
-                    errors,
+            if (!reservedSoFar.isEmpty()) {
+                releaseReserve(reservedSoFar);
+            }
+            return ApiResponse.buildOkResponse(
+                    ReserveResponse.builder()
+                            .success(false)
+                            .errors(errors)
+                            .productCheckResponses(List.of())
+                            .build(),
                     "Lỗi khi đặt chỗ sản phẩm, một số sản phẩm không đủ điều kiện đặt chỗ"
             );
         }
@@ -116,7 +124,7 @@ public class StockServiceImpl implements StockService {
         return ApiResponse.buildCreatedResponse(
                 ReserveResponse.builder()
                         .success(true)
-                        .errors(errors)
+                        .errors(List.of())
                         .productCheckResponses(results)
                         .build(),
                 "Đã đặt chỗ sản phẩm"

@@ -261,7 +261,12 @@ public class CartServiceImpl implements CartService {
             boolean wasSelected = item.isSelected();
 
             if (wasSelected != status) {
-                item.setSelected(status);
+
+                if(item.isOutOfStock()) {
+                    item.setSelected(false);
+                } else {
+                    item.setSelected(status);
+                }
                 cartItemRepository.updateCartItem(item);
             }
         });
