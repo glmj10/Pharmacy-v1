@@ -49,6 +49,17 @@ const Checkout: React.FC = () => {
 
   const [selectedVoucher, setSelectedVoucher] = useState<Voucher | null>(null);
   const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [productErrors, setProductErrors] = useState<Record<number, string>>({});
+
+  const getProductErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+      case 'PRODUCT_OUT_OF_STOCK': return 'Sản phẩm đã hết hàng';
+      case 'INSUFFICIENT_STOCK': return 'Số lượng tồn kho không đủ';
+      case 'PRODUCT_NOT_FOUND': return 'Sản phẩm không tồn tại';
+      case 'PRODUCT_UNAVAILABLE': return 'Sản phẩm tạm ngừng kinh doanh';
+      default: return 'Không thể đặt hàng sản phẩm này';
+    }
+  };
 
   const calculateDiscountAmount = () => {
     if (!selectedVoucher) return 0;
@@ -93,6 +104,7 @@ const Checkout: React.FC = () => {
     }
 
     setIsLoading(true);
+    setProductErrors({});
     try {
       // 1. Chuẩn bị Payload
       const orderPayload: OrderRequest = {
@@ -143,8 +155,18 @@ const Checkout: React.FC = () => {
       }
 
     } catch (error: any) {
-      console.error('Order Error:', error);
-      toast.error('Đặt hàng thất bại', error.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+
+      const errorData = error?.response?.data;
+      if (errorData?.errorCode === 'PRODUCT_RESERVATION_FAILED' && Array.isArray(errorData?.data)) {
+        const errMap: Record<number, string> = {};
+        errorData.data.forEach((item: any) => {
+          errMap[item.productId] = item.errorCode;
+        });
+        setProductErrors(errMap);
+        toast.error('Đặt hàng thất bại', 'Một số sản phẩm không thể đặt hàng. Vui lòng kiểm tra đơn hàng.');
+      } else {
+        toast.error('Đặt hàng thất bại', errorData?.message || 'Có lỗi xảy ra, vui lòng thử lại.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -266,24 +288,45 @@ const Checkout: React.FC = () => {
 
               {/* Danh sách sản phẩm */}
               <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4 mb-6 custom-scrollbar">
-                {checkoutItems.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="w-16 h-16 border rounded-lg bg-gray-50 shrink-0 overflow-hidden">
-                      <AsyncImage
-                        // Ưu tiên lấy URL từ cart service, fallback về uuid từ product service
-                        src={item.product.thumbnailUrl}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 text-sm line-clamp-2 mb-1">{item.product.title}</p>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500">x{item.quantity}</span>
-                        <span className="font-semibold text-slate-700">{item.priceAtAddition.toLocaleString('vi-VN')} đ</span>
+                {checkoutItems.map((item) => {
+                  const errorCode = productErrors[item.product.id];
+                  const hasError = !!errorCode;
+                  return (
+                    <div
+                      key={item.id}
+                      className={cn(
+                        'flex gap-3 rounded-lg p-1 transition-colors',
+                        hasError && 'bg-red-50 border border-red-200 p-2'
+                      )}
+                    >
+                      <div className="w-16 h-16 border rounded-lg bg-gray-50 shrink-0 overflow-hidden">
+                        <AsyncImage
+                          src={item.product.thumbnailUrl}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          'font-medium text-sm line-clamp-2 mb-1',
+                          hasError ? 'text-red-700' : 'text-gray-800'
+                        )}>{item.product.title}</p>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-500">x{item.quantity}</span>
+                          <span className={cn(
+                            'font-semibold',
+                            hasError ? 'text-red-400 line-through' : 'text-slate-700'
+                          )}>{item.priceAtAddition.toLocaleString('vi-VN')} đ</span>
+                        </div>
+                        {hasError && (
+                          <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                            <span className="inline-block w-1.5 h-1.5 bg-red-500 rounded-full shrink-0"></span>
+                            {getProductErrorMessage(errorCode)}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* ===> SECTION CHỌN VOUCHER (MỚI) <=== */}

@@ -79,6 +79,35 @@ export const ENDPOINTS = {
         CREATE: "/blogs",
         UPDATE: (id) => `/blogs/${id}`,
         DELETE: (id) => `/blogs/${id}`,
+    },
+    VOUCHERS: {
+        GET_ALL: "/vouchers",
+        GET_BY_ID: (id) => `/vouchers/${id}`,
+        CREATE: "/vouchers",
+        UPDATE: (id) => `/vouchers/${id}`,
+        DELETE: (id) => `/vouchers/${id}`,
+        GET_USER_VOUCHERS: "/vouchers/user/me",
+        CLAIM: "/vouchers/claim",
+    },
+    PROMOTIONS: {
+        GET_ALL: "/promotions",
+        GET_CURRENT: "/promotions/products/current",
+        CREATE: "/promotions",
+        UPDATE: (id) => `/promotions/${id}`,
+        DELETE: (id) => `/promotions/${id}`,
+        CHANGE_STATUS: (id) => `/promotions/${id}`,
+        GET_ITEMS: (eventId) => `/promotion-items/${eventId}`,
+        CREATE_ITEMS: "/promotion-items",
+        UPDATE_ITEM: (itemId) => `/promotion-items/${itemId}`,
+        DELETE_ITEMS: "/promotion-items",
+    },
+    BANNERS: {
+        GET_ALL: "/banners",
+        GET_ALL_ADMIN: "/banners/all/admin",
+        GET_BY_ID: (id) => `/banners/${id}`,
+        CREATE: "/banners",
+        UPDATE: (id) => `/banners/${id}`,
+        DELETE: (id) => `/banners/${id}`,
     }
 };
 

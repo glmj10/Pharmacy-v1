@@ -285,9 +285,9 @@ const AdminDashboard = () => {
                           justifyContent: 'center'
                         }}
                       >
-                        {product.thumbnailUrl ? (
+                        {product.thumbnail ? (
                           <img
-                            src={product.thumbnailUrl}
+                            src={product.thumbnail}
                             alt={product.title}
                             style={{
                               width: '100%',

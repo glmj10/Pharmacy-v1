@@ -50,14 +50,14 @@ const AppRouter = () => {
       <Route exact path="/500" name="Page 500" element={<Page500 />} />
       <Route exact path="/401" name="Page 401" element={<Page401 />} />
       <Route exact path="/403" name="Page 403" element={<Page403 />} />
-      <Route 
-        path="*" 
-        name="Home" 
+      <Route
+        path="*"
+        name="Home"
         element={
           <ProtectedRoute requiredRoles={['ADMIN', 'STAFF']}>
             <DefaultLayout />
           </ProtectedRoute>
-        } 
+        }
       />
     </Routes>
   );
@@ -79,7 +79,7 @@ const App = () => {
     }
 
     setColorMode(storedTheme)
-  }, []) 
+  }, [])
   return (
     <NotificationProvider>
       <BrowserRouter basename="/admin">

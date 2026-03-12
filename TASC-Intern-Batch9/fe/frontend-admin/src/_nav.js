@@ -10,6 +10,9 @@ import {
   cilBuilding,
   cilEnvelopeClosed,
   cilBug,
+  cilGift,
+  cilCalendar,
+  cilImage,
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
@@ -89,6 +92,24 @@ const _nav = [
     name: 'Thương hiệu',
     to: '/brands',
     icon: <CIcon icon={cilBuilding} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Banner',
+    to: '/banners',
+    icon: <CIcon icon={cilImage} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Voucher',
+    to: '/vouchers',
+    icon: <CIcon icon={cilGift} customClassName="nav-icon" />,
+  },
+  {
+    component: CNavItem,
+    name: 'Khuyến mãi',
+    to: '/promotions',
+    icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />,
   },
   {
     component: CNavTitle,

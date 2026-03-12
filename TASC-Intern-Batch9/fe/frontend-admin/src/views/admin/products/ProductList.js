@@ -59,7 +59,7 @@ import brandService from '../../../services/brand.service'
 
 const ProductList = () => {
   const navigate = useNavigate()
-  
+
   const [searchTerm, setSearchTerm] = useState('')
   const [searchInput, setSearchInput] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -76,9 +76,9 @@ const ProductList = () => {
   const [error, setError] = useState('')
   const [toasts, setToasts] = useState([])
   const [showFilters, setShowFilters] = useState(false)
-  
+
   const [searchDebounce, setSearchDebounce] = useState(null)
-  
+
   const {
     products = [],
     loading = false,
@@ -98,22 +98,22 @@ const ProductList = () => {
     if (searchDebounce) {
       clearTimeout(searchDebounce)
     }
-    
+
     const timeout = setTimeout(() => {
       if (searchInput !== searchTerm) {
         setSearchTerm(searchInput)
-        setCurrentPage(1) 
+        setCurrentPage(1)
         loadProducts(1, searchInput, statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId)
       }
     }, 500)
-    
+
     setSearchDebounce(timeout)
-    
+
     return () => clearTimeout(timeout)
   }, [searchInput])
 
   useEffect(() => {
-    setCurrentPage(1) 
+    setCurrentPage(1)
     loadProducts(1, searchTerm, statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId)
   }, [statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId])
 
@@ -124,41 +124,41 @@ const ProductList = () => {
         pageIndex: page,
         pageSize: pageSize,
       }
-      
+
       if (title && title.trim()) {
         params.title = title.trim()
       }
-      
+
       if (statusF === 'active') {
         params.isActive = true
       } else if (statusF === 'inactive') {
         params.isActive = false
       }
-      
+
       if (sortF === 'price-asc') {
-        params.isAscending = true  
+        params.isAscending = true
       } else if (sortF === 'price-desc') {
-        params.isAscending = false 
+        params.isAscending = false
       }
-      
+
       if (priceFromF && priceFromF.trim()) {
         params.priceFrom = parseFloat(priceFromF.trim())
       }
-      
+
       if (priceToF && priceToF.trim()) {
         params.priceTo = parseFloat(priceToF.trim())
       }
-      
+
       if (categoryIdF && categoryIdF.trim()) {
         params.categoryId = categoryIdF.trim()
       }
-      
+
       if (brandIdF && brandIdF.trim()) {
         params.brandId = brandIdF.trim()
       }
-      
+
       const result = await fetchProducts(params)
-      
+
       if (!result || !result.success) {
         setError('Không thể tải danh sách sản phẩm')
       } else {
@@ -209,7 +209,7 @@ const ProductList = () => {
     setSelectedCategoryId('')
     setSelectedBrandId('')
     setCurrentPage(1)
-    loadProducts(1, '', '', '', '', '', '', '') 
+    loadProducts(1, '', '', '', '', '', '', '')
   }
 
   const handleRefresh = () => {
@@ -276,18 +276,18 @@ const ProductList = () => {
     <>
       <CToaster placement="top-end">
         {toasts.map((toast) => (
-          <CToast 
-            key={toast.id} 
-            autohide={toast.autohide} 
+          <CToast
+            key={toast.id}
+            autohide={toast.autohide}
             delay={toast.delay}
             visible={true}
             color={toast.type === 'error' ? 'danger' : toast.type === 'success' ? 'success' : 'info'}
             onClose={() => removeToast(toast.id)}
           >
             <CToastHeader closeButton>
-              <CIcon 
-                icon={toast.type === 'error' ? cilXCircle : toast.type === 'success' ? cilCheckCircle : cilX} 
-                className="me-2" 
+              <CIcon
+                icon={toast.type === 'error' ? cilXCircle : toast.type === 'success' ? cilCheckCircle : cilX}
+                className="me-2"
               />
               <strong className="me-auto">
                 {toast.type === 'error' ? 'Lỗi' : toast.type === 'success' ? 'Thành công' : 'Thông báo'}
@@ -304,16 +304,16 @@ const ProductList = () => {
             <CCardHeader className="d-flex justify-content-between align-items-center">
               <strong>Quản lý sản phẩm</strong>
               <div className="d-flex gap-2">
-                <CButton 
-                  color="light" 
+                <CButton
+                  color="light"
                   onClick={handleRefresh}
                   disabled={loading}
                 >
                   <CIcon icon={cilReload} className="me-1" />
                   Làm mới
                 </CButton>
-                <CButton 
-                  color="primary" 
+                <CButton
+                  color="primary"
                   onClick={() => navigate('/products/create')}
                 >
                   <CIcon icon={cilPlus} className="me-1" />
@@ -337,9 +337,9 @@ const ProductList = () => {
                           <CIcon icon={cilSearch} />
                         </CButton>
                         {(searchInput || statusFilter || sortOrder || priceFrom || priceTo || selectedCategoryId || selectedBrandId) && (
-                          <CButton 
-                            type="button" 
-                            color="secondary" 
+                          <CButton
+                            type="button"
+                            color="secondary"
                             variant="outline"
                             onClick={handleClearSearch}
                           >
@@ -349,18 +349,18 @@ const ProductList = () => {
                       </CInputGroup>
                     </CCol>
                     <CCol md={4} className="d-flex justify-content-end">                        <CButton
-                          color="light"
-                          onClick={() => setShowFilters(!showFilters)}
-                          className="d-flex align-items-center"
-                        >
-                          <CIcon icon={cilFilter} className="me-1" />
-                          Bộ lọc
-                          {(searchTerm || statusFilter || sortOrder || priceFrom || priceTo || selectedCategoryId || selectedBrandId) && (
-                            <CBadge color="primary" className="ms-1">
-                              {[searchTerm, statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId].filter(Boolean).length}
-                            </CBadge>
-                          )}
-                        </CButton>
+                      color="light"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="d-flex align-items-center"
+                    >
+                      <CIcon icon={cilFilter} className="me-1" />
+                      Bộ lọc
+                      {(searchTerm || statusFilter || sortOrder || priceFrom || priceTo || selectedCategoryId || selectedBrandId) && (
+                        <CBadge color="primary" className="ms-1">
+                          {[searchTerm, statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId].filter(Boolean).length}
+                        </CBadge>
+                      )}
+                    </CButton>
                     </CCol>
                   </CRow>
                 </CForm>
@@ -469,9 +469,9 @@ const ProductList = () => {
                       )}
                       {(priceFrom || priceTo) && (
                         <CBadge color="info" className="px-2 py-1">
-                          Giá: {priceFrom && priceTo ? `${Number(priceFrom).toLocaleString()} - ${Number(priceTo).toLocaleString()}` : 
-                               priceFrom ? `từ ${Number(priceFrom).toLocaleString()}` : 
-                               `đến ${Number(priceTo).toLocaleString()}`} VNĐ
+                          Giá: {priceFrom && priceTo ? `${Number(priceFrom).toLocaleString()} - ${Number(priceTo).toLocaleString()}` :
+                            priceFrom ? `từ ${Number(priceFrom).toLocaleString()}` :
+                              `đến ${Number(priceTo).toLocaleString()}`} VNĐ
                         </CBadge>
                       )}
                       {selectedCategoryId && (
@@ -485,10 +485,10 @@ const ProductList = () => {
                         </CBadge>
                       )}
                     </div>
-                    <CButton 
-                      size="sm" 
-                      color="info" 
-                      variant="outline" 
+                    <CButton
+                      size="sm"
+                      color="info"
+                      variant="outline"
                       onClick={handleClearSearch}
                       className="mt-1"
                     >
@@ -513,7 +513,7 @@ const ProductList = () => {
               {loading ? (
                 <LoadingSpinner text="Đang tải sản phẩm..." />
               ) : !products || products.length === 0 ? (
-                <ProductEmptyState 
+                <ProductEmptyState
                   isSearching={!!searchTerm || !!statusFilter || !!sortOrder}
                   onCreateNew={() => navigate('/products/create')}
                   onRefresh={handleRefresh}
@@ -535,12 +535,12 @@ const ProductList = () => {
                       {products.map((product) => (
                         <CTableRow key={product?.id || Math.random()}>
                           <CTableDataCell className="text-center align-middle">
-                            <div 
-                              style={{ 
-                                width: '80px', 
-                                height: '80px', 
-                                display: 'flex', 
-                                alignItems: 'center', 
+                            <div
+                              style={{
+                                width: '80px',
+                                height: '80px',
+                                display: 'flex',
+                                alignItems: 'center',
                                 justifyContent: 'center',
                                 backgroundColor: '#f8f9fa',
                                 borderRadius: '4px',
@@ -548,9 +548,9 @@ const ProductList = () => {
                                 margin: '0 auto'
                               }}
                             >
-                              {product?.thumbnailUrl || (product?.images && product.images.length > 0 && product.images[0]?.imageUrl) ? (
+                              {product?.thumbnail || (product?.images && product.images.length > 0 && product.images[0]?.imageUrl) ? (
                                 <img
-                                  src={product?.thumbnailUrl || product.images[0]?.imageUrl}
+                                  src={product?.thumbnail || product.images[0]?.imageUrl}
                                   alt={product?.title || 'Product'}
                                   style={{
                                     width: '100%',
@@ -563,9 +563,9 @@ const ProductList = () => {
                                   }}
                                 />
                               ) : null}
-                              <div 
-                                style={{ 
-                                  display: product?.thumbnailUrl || (product?.images && product.images.length > 0) ? 'none' : 'flex',
+                              <div
+                                style={{
+                                  display: product?.thumbnail ? 'none' : 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   width: '100%',
@@ -619,9 +619,9 @@ const ProductList = () => {
                                 <CDropdownItem
                                   onClick={() => handleStatusToggle(product?.id, product?.active)}
                                 >
-                                  <CIcon 
-                                    icon={product?.active ? cilToggleOff : cilToggleOn} 
-                                    className="me-2" 
+                                  <CIcon
+                                    icon={product?.active ? cilToggleOff : cilToggleOn}
+                                    className="me-2"
                                   />
                                   {product?.active ? 'Tạm dừng' : 'Kích hoạt'}
                                 </CDropdownItem>
@@ -639,12 +639,12 @@ const ProductList = () => {
                       ))}
                     </CTableBody>
                   </CTable>
-                  
+
                   {/* Pagination */}
                   {pagination.totalPages > 1 && (
                     <div className="mt-3 d-flex justify-content-between align-items-center">
                       <small className="text-muted">
-                        Trang {pagination.currentPage} / {pagination.totalPages} - 
+                        Trang {pagination.currentPage} / {pagination.totalPages} -
                         Tổng số: {pagination.totalElements || 0} sản phẩm
                       </small>
                       <CPagination aria-label="Page navigation">
@@ -654,21 +654,21 @@ const ProductList = () => {
                         >
                           Trước
                         </CPaginationItem>
-                        
+
                         {/* Page numbers */}
                         {(() => {
                           const totalPages = pagination.totalPages;
                           const currentPage = pagination.currentPage;
                           const maxPagesToShow = 5;
-                          
+
                           let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
                           let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-                          
+
                           // Adjust start page if we're near the end
                           if (endPage - startPage + 1 < maxPagesToShow) {
                             startPage = Math.max(1, endPage - maxPagesToShow + 1);
                           }
-                          
+
                           const pages = [];
                           for (let i = startPage; i <= endPage; i++) {
                             pages.push(
@@ -681,10 +681,10 @@ const ProductList = () => {
                               </CPaginationItem>
                             );
                           }
-                          
+
                           return pages;
                         })()}
-                        
+
                         <CPaginationItem
                           disabled={!pagination.hasNext}
                           onClick={() => pagination.hasNext && loadProducts(pagination.currentPage + 1, searchTerm, statusFilter, sortOrder, priceFrom, priceTo, selectedCategoryId, selectedBrandId)}
@@ -694,7 +694,7 @@ const ProductList = () => {
                       </CPagination>
                     </div>
                   )}
-                  
+
                   {/* Total count for single page */}
                   {pagination.totalPages <= 1 && (
                     <div className="mt-3">
@@ -724,8 +724,8 @@ const ProductList = () => {
           <small className="text-danger">Hành động này không thể hoàn tác.</small>
         </CModalBody>
         <CModalFooter>
-          <CButton 
-            color="secondary" 
+          <CButton
+            color="secondary"
             onClick={() => setDeleteModal({ visible: false, product: null })}
           >
             Hủy

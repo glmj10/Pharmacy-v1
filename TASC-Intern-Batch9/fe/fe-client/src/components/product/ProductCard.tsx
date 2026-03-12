@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Loader2 } from 'lucide-react';
+import { ShoppingCart, Loader2, Heart } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchTotalItems } from '../../store/slices/cartSlice';
 import cartService from '../../api/cartService';
 import { useToast } from '../../context/ToastContext';
+import { useWishlist } from '../../context/WishlistContext';
 import AsyncImage from '../common/AsyncImage';
 import type { Product } from '../../types/product.types';
 
@@ -16,9 +17,31 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { toast } = useToast();
+  const { wishlistIds, toggleWishlist } = useWishlist();
   
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const [isAdding, setIsAdding] = useState(false);
+  const [isTogglingWish, setIsTogglingWish] = useState(false);
+
+  const isWishlisted = wishlistIds.has(product.id);
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      toast.info('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để lưu sản phẩm yêu thích.');
+      navigate('/login');
+      return;
+    }
+    setIsTogglingWish(true);
+    try {
+      await toggleWishlist(product.id);
+    } catch {
+      toast.error('Lỗi', 'Không thể cập nhật danh sách yêu thích.');
+    } finally {
+      setIsTogglingWish(false);
+    }
+  };
 
   // Xử lý thêm vào giỏ
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -74,7 +97,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
         />
         
-        {/* Nút thêm giỏ hàng (Overlay) */}
+        {/* Nút yêu thích (luôn hiển thị góc phải) */}
+        <button
+          onClick={handleToggleWishlist}
+          disabled={isTogglingWish}
+          className={`absolute top-2 right-2 z-10 p-1.5 rounded-full shadow transition ${
+            isWishlisted
+              ? 'bg-red-500 text-white'
+              : 'bg-white/90 text-gray-400 hover:text-red-500'
+          }`}
+          title={isWishlisted ? 'Bỏ yêu thích' : 'Yêu thích'}
+        >
+          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-current' : ''}`} />
+        </button>
+
+      {/* Nút thêm giỏ hàng (Overlay) */}
         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center gap-2">
            <button 
              onClick={handleAddToCart}

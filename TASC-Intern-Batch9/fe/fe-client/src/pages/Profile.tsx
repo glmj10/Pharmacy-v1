@@ -4,7 +4,9 @@ import {
     User, Mail, LogOut, Camera, KeyRound, Edit, MapPin,
     ShieldCheck, Calendar, Package, Clock, CreditCard,
     Eye,
-    Ticket
+    Ticket,
+    Heart,
+    Trash2
 } from 'lucide-react';
 
 // Hooks & Context
@@ -21,6 +23,7 @@ import identityService from '../api/identityService';
 import orderService from '../api/orderService';
 import paymentService from '../api/paymentService';
 import voucherService from '../api/voucherService';
+import wishlistService from '../api/wishlistService';
 import type { OrderResponse } from '../types/order.types';
 
 // Components
@@ -31,6 +34,7 @@ import EditProfileModal from '../components/profile/EditProfileModal';
 import OrderDetailModal from '../components/profile/OrderDetailModal';
 import type { Voucher } from '../types/voucher.types';
 import VoucherCard from '../components/voucher/VoucherCard';
+import type { Product } from '../types/product.types';
 
 const Profile: React.FC = () => {
     const navigate = useNavigate();
@@ -41,6 +45,13 @@ const Profile: React.FC = () => {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [myVouchers, setMyVouchers] = useState<Voucher[]>([]);
     const [vouchersLoading, setVouchersLoading] = useState(false);
+
+    // Wishlist state
+    const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+    const [wishlistLoading, setWishlistLoading] = useState(false);
+    const [wishlistTotalPages, setWishlistTotalPages] = useState(1);
+    const [wishlistPage, setWishlistPage] = useState(1);
+    const [wishlistTotal, setWishlistTotal] = useState(0);
 
     // --- STATE DATA ---
     const [searchParams] = useSearchParams();
@@ -64,8 +75,8 @@ const Profile: React.FC = () => {
     const [orderTotalPages, setOrderTotalPages] = useState(1);
     const [orderTotalElements, setOrderTotalElements] = useState<number | null>(null);
 
-    const [activeTab, setActiveTab] = useState<'info' | 'address' | 'orders' | 'vouchers'>(
-        (tabFromUrl === 'orders' || tabFromUrl === 'address' || tabFromUrl === 'vouchers') ? tabFromUrl : 'info'
+    const [activeTab, setActiveTab] = useState<'info' | 'address' | 'orders' | 'vouchers' | 'wishlist'>(
+        (tabFromUrl === 'orders' || tabFromUrl === 'address' || tabFromUrl === 'vouchers' || tabFromUrl === 'wishlist') ? tabFromUrl : 'info'
     );
     // --- STATE MODALS ---
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -91,12 +102,45 @@ const Profile: React.FC = () => {
     }, [activeTab]);
 
     // Khi click vào nút Tab, ta cũng nên update URL để đồng bộ
-    const handleTabChange = (tab: 'info' | 'address' | 'orders') => {
+    const handleTabChange = (tab: 'info' | 'address' | 'orders' | 'wishlist') => {
         setActiveTab(tab);
         if (tab === 'orders') {
             navigate(`/profile?tab=orders&orderStatus=${orderStatus}&orderPage=${orderPage}`, { replace: true });
         } else {
             navigate(`/profile?tab=${tab}`, { replace: true });
+        }
+    };
+
+    const fetchWishlist = async (page = 1) => {
+        setWishlistLoading(true);
+        try {
+            const res: any = await wishlistService.getMyWishlist(page, 12);
+            const pageData = res.data || res.result;
+            setWishlistItems(pageData?.content || []);
+            setWishlistTotalPages(pageData?.totalPages ?? 1);
+            setWishlistTotal(pageData?.totalElements ?? 0);
+            setWishlistPage(page);
+        } catch (error) {
+            console.error('Failed to fetch wishlist', error);
+        } finally {
+            setWishlistLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'wishlist') {
+            fetchWishlist(wishlistPage);
+        }
+    }, [activeTab]);
+
+    const handleRemoveWishlistItem = async (productId: number) => {
+        try {
+            await wishlistService.removeFromWishlist([productId]);
+            setWishlistItems(prev => prev.filter(p => p.id !== productId));
+            setWishlistTotal(prev => Math.max(0, prev - 1));
+            toast.success('Thành công', 'Đã xóa sản phẩm khỏi danh sách yêu thích.');
+        } catch (error: any) {
+            toast.error('Lỗi', error.response?.data?.message || 'Không thể xóa sản phẩm.');
         }
     };
 
@@ -114,18 +158,15 @@ const Profile: React.FC = () => {
 
     useEffect(() => {
         fetchProfile();
-        // Lấy tổng số đơn hàng cho tab thông tin
         orderService.getMyOrders(1, undefined).then((res: any) => {
             const pageData = res.data || res.result;
             setOrderTotalElements(pageData?.totalElements ?? null);
         }).catch(() => {});
     }, []);
 
-    // 2. Fetch Orders (Chỉ gọi khi switch sang tab Orders)
     const fetchOrders = async (page: number = orderPage) => {
         setOrdersLoading(true);
         try {
-            // Nếu status là 'ALL' thì gửi undefined để lấy tất cả
             const statusParam = orderStatus === 'ALL' ? undefined : orderStatus;
 
             const res: any = await orderService.getMyOrders(page, statusParam);
@@ -146,7 +187,6 @@ const Profile: React.FC = () => {
         }
     }, [activeTab, orderStatus, orderPage]);
 
-    // Reset về trang 1 khi đổi filter, đồng bộ URL
     const handleOrderStatusChange = (status: string) => {
         setOrderStatus(status);
         setOrderPage(1);
@@ -157,8 +197,6 @@ const Profile: React.FC = () => {
         setOrderPage(page);
         navigate(`/profile?tab=orders&orderStatus=${orderStatus}&orderPage=${page}`, { replace: true });
     };
-
-    // --- HANDLERS ---
 
     const handleLogout = () => {
         openModal('warning', 'Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất không?', async () => {
@@ -316,6 +354,7 @@ const Profile: React.FC = () => {
                             { id: 'info', label: 'Thông tin tài khoản', icon: User },
                             { id: 'address', label: 'Sổ địa chỉ', icon: MapPin },
                             { id: 'orders', label: 'Đơn hàng của tôi', icon: Package },
+                            { id: 'wishlist', label: 'Sản phẩm yêu thích', icon: Heart },
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -536,6 +575,100 @@ const Profile: React.FC = () => {
                                             <VoucherCard key={v.id} voucher={v} isOwned={true} />
                                         ))}
                                     </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* 5. Tab Sản phẩm yêu thích */}
+                        {activeTab === 'wishlist' && (
+                            <div className="animate-in fade-in slide-in-from-bottom-4 duration-300 space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-slate-800 border-l-4 border-red-500 pl-3">
+                                        Sản phẩm yêu thích
+                                        {wishlistTotal > 0 && (
+                                            <span className="ml-2 text-sm font-normal text-gray-500">({wishlistTotal} sản phẩm)</span>
+                                        )}
+                                    </h3>
+                                </div>
+
+                                {wishlistLoading ? (
+                                    <div className="text-center py-16">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary mx-auto"></div>
+                                    </div>
+                                ) : wishlistItems.length === 0 ? (
+                                    <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                                        <Heart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-gray-500 font-medium">Bạn chưa có sản phẩm yêu thích nào.</p>
+                                        <Link to="/products" className="text-primary hover:underline mt-2 inline-block text-sm">
+                                            Khám phá sản phẩm ngay
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            {wishlistItems.map((product) => (
+                                                <div key={product.id} className="group relative bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-all">
+                                                    {/* Nút xóa */}
+                                                    <button
+                                                        onClick={() => handleRemoveWishlistItem(product.id)}
+                                                        className="absolute top-2 right-2 z-10 p-1.5 bg-white/90 rounded-full text-red-400 hover:bg-red-500 hover:text-white shadow transition"
+                                                        title="Bỏ yêu thích"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+
+                                                    <Link to={`/products/${product.slug}`} className="block">
+                                                        <div className="aspect-square bg-gray-50 overflow-hidden">
+                                                            <AsyncImage
+                                                                src={product.thumbnail || product.thumbnailUrl}
+                                                                alt={product.title}
+                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                            />
+                                                        </div>
+                                                        <div className="p-3">
+                                                            <h4 className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug mb-2 min-h-[40px]">
+                                                                {product.title}
+                                                            </h4>
+                                                            <div className="flex items-baseline gap-1 flex-wrap">
+                                                                <span className="text-base font-bold text-primary">
+                                                                    {product.priceNew.toLocaleString('vi-VN')} đ
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">/ {product.dosageForm || 'Hộp'}</span>
+                                                            </div>
+                                                            {product.priceOld > product.priceNew && (
+                                                                <p className="text-xs text-gray-400 line-through mt-0.5">
+                                                                    {product.priceOld.toLocaleString('vi-VN')} đ
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </Link>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Pagination */}
+                                        {wishlistTotalPages > 1 && (
+                                            <div className="flex items-center justify-center gap-2 pt-4">
+                                                <button
+                                                    onClick={() => fetchWishlist(Math.max(1, wishlistPage - 1))}
+                                                    disabled={wishlistPage === 1}
+                                                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                >
+                                                    ← Trước
+                                                </button>
+                                                <span className="text-sm text-gray-600">
+                                                    {wishlistPage} / {wishlistTotalPages}
+                                                </span>
+                                                <button
+                                                    onClick={() => fetchWishlist(Math.min(wishlistTotalPages, wishlistPage + 1))}
+                                                    disabled={wishlistPage === wishlistTotalPages}
+                                                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                                >
+                                                    Sau →
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}

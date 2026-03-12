@@ -33,6 +33,7 @@
     "chart.js": "^4.4.7",
     "classnames": "^2.5.1",
     "core-js": "^3.40.0",
+    "css": "^3.0.0",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "prop-types": "^15.8.1",
@@ -44,17 +45,19 @@
     "simplebar-react": "^3.3.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.4.20",
+    "autoprefixer": "^10.4.23",
     "eslint": "^9.20.1",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.3",
     "eslint-plugin-react": "^7.37.4",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^15.15.0",
-    "postcss": "^8.5.2",
+    "postcss": "^8.5.6",
     "prettier": "3.5.1",
     "sass": "^1.85.0",
+    "tailwindcss": "^4.1.18",
     "vite": "^6.1.0"
   }
 }

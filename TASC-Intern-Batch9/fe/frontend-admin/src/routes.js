@@ -13,6 +13,11 @@ const BrandList = React.lazy(() => import('./views/admin/brands/BrandList'))
 const ContactList = React.lazy(() => import('./views/admin/contacts/ContactList'))
 const BlogList = React.lazy(() => import('./views/admin/blogs/BlogList'))
 const BlogForm = React.lazy(() => import('./views/admin/blogs/BlogForm'))
+const VoucherList = React.lazy(() => import('./views/admin/vouchers/VoucherList'))
+const PromotionList = React.lazy(() => import('./views/admin/promotions/PromotionList'))
+const PromotionItemList = React.lazy(() => import('./views/admin/promotions/PromotionItemList'))
+const BannerList = React.lazy(() => import('./views/admin/banners/BannerList'))
+const BannerForm = React.lazy(() => import('./views/admin/banners/BannerForm'))
 
 
 const routes = [
@@ -48,6 +53,18 @@ const routes = [
   { path: '/blogs/list', name: 'Danh sách bài viết', element: BlogList },
   { path: '/blogs/create', name: 'Thêm bài viết', element: BlogForm },
   { path: '/blogs/edit/:id', name: 'Chỉnh sửa bài viết', element: BlogForm },
+  
+  // Voucher Management
+  { path: '/vouchers', name: 'Quản lý Voucher', element: VoucherList },
+  
+  // Promotion Management
+  { path: '/promotions', name: 'Quản lý Khuyến mãi', element: PromotionList, exact: true },
+  { path: '/promotions/:eventId/items', name: 'Sản phẩm khuyến mãi', element: PromotionItemList },
+  
+  // Banner Management
+  { path: '/banners', name: 'Quản lý Banner', element: BannerList, exact: true },
+  { path: '/banners/create', name: 'Thêm Banner', element: BannerForm },
+  { path: '/banners/edit/:id', name: 'Chỉnh sửa Banner', element: BannerForm },
   
 ]
 

@@ -24,9 +24,6 @@ import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -284,7 +281,7 @@ public class ProductServiceImpl implements ProductService {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new CustomException(ErrorCode.BRAND_NOT_FOUND, HttpStatus.NOT_FOUND,
                         "Không tìm thấy thương hiệu với ID: " + request.getBrandId()));
-        Product updatedProduct = productMapper.toProductUpdateFromRequest(request, product);;
+        Product updatedProduct = productMapper.toProductUpdateFromRequest(request, product);
         List<Category> categories = categoryRepository.findAllById(request.getCategoryIds());
         updatedProduct.setBrand(brand);
         updatedProduct.setCategories(categories);

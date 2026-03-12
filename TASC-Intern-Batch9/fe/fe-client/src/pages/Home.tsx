@@ -28,21 +28,34 @@ const Home: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [bannerRes, productRes, blogRes] = await Promise.all([
+        const [bannerResult, productResult, blogResult] = await Promise.allSettled([
           bannerService.getPublicBanners(),
-          productService.getAll({ limit: 10, isAscending: false } as any), 
+          productService.getAll({ limit: 10, isAscending: false } as any),
           blogService.getAllBlogs(1, 4) // Lấy 4 bài viết mới nhất
         ]);
-        const banners = bannerRes.data || (bannerRes as any).result || [];
-        setSliderBanners(banners.filter((b: Banner) => b.type === 'SLIDER'));
-        setSideBanners(banners.filter((b: Banner) => b.type === 'SIDE').slice(0, 2));
 
-        const pData: any = productRes;
-        setNewProducts(pData.data?.content || pData.result?.content || []);
+        if (bannerResult.status === 'fulfilled') {
+          const bannerRes = bannerResult.value;
+          const banners = bannerRes.data || (bannerRes as any).result || [];
+          setSliderBanners(banners.filter((b: Banner) => b.type === 'SLIDER'));
+          setSideBanners(banners.filter((b: Banner) => b.type === 'SIDE').slice(0, 2));
+        } else {
+          console.error("Lỗi tải banner:", bannerResult.reason);
+        }
 
-        // 3. Xử lý Blog
-        const bData: any = blogRes;
-        setLatestBlogs(bData.data?.content || bData.result?.content || []);
+        if (productResult.status === 'fulfilled') {
+          const pData: any = productResult.value;
+          setNewProducts(pData.data?.content || pData.result?.content || []);
+        } else {
+          console.error("Lỗi tải sản phẩm:", productResult.reason);
+        }
+
+        if (blogResult.status === 'fulfilled') {
+          const bData: any = blogResult.value;
+          setLatestBlogs(bData.data?.content || bData.result?.content || []);
+        } else {
+          console.error("Lỗi tải blog:", blogResult.reason);
+        }
 
       } catch (error) {
         console.error("Lỗi tải dữ liệu trang chủ", error);

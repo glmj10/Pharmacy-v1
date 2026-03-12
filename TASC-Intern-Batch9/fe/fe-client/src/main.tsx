@@ -7,15 +7,18 @@ import { store } from './store/store.ts';
 import './index.css';
 import { ModalProvider } from './context/ModalContext.tsx';
 import { ToastProvider } from './context/ToastContext.tsx';
+import { WishlistProvider } from './context/WishlistContext.tsx';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
  <React.StrictMode>
     <Provider store={store}>
       <ToastProvider> 
         <ModalProvider>
-           <BrowserRouter>
-             <App />
-           </BrowserRouter>
+          <WishlistProvider>
+            <BrowserRouter>
+              <App />
+            </BrowserRouter>
+          </WishlistProvider>
         </ModalProvider>
       </ToastProvider>
     </Provider>

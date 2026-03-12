@@ -6,6 +6,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import cartService from '../api/cartService'
 import { fetchTotalItems } from '../store/slices/cartSlice';
 import productService from '../api/productService';
+import { useWishlist } from '../context/WishlistContext';
 import { cn } from '../lib/utils';
 
 import AsyncImage from '../components/common/AsyncImage';
@@ -28,6 +29,8 @@ const ProductDetail: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { wishlistIds, toggleWishlist } = useWishlist();
+  const [isTogglingWish, setIsTogglingWish] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const descriptionRef = useRef<HTMLDivElement>(null);
@@ -155,6 +158,29 @@ const ProductDetail: React.FC = () => {
     }
   };
 
+  const isWishlisted = product ? wishlistIds.has(product.id) : false;
+
+  const handleToggleWishlist = async () => {
+    if (!product) return;
+    if (!isAuthenticated) {
+      toast.info('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để lưu yêu thích.');
+      navigate('/login');
+      return;
+    }
+    setIsTogglingWish(true);
+    try {
+      await toggleWishlist(product.id);
+      toast.success(
+        isWishlisted ? 'Đã bỏ yêu thích' : 'Đã thêm yêu thích',
+        isWishlisted ? 'Sản phẩm đã được xóa khỏi danh sách yêu thích.' : 'Sản phẩm đã được thêm vào danh sách yêu thích.'
+      );
+    } catch {
+      toast.error('Lỗi', 'Không thể cập nhật danh sách yêu thích.');
+    } finally {
+      setIsTogglingWish(false);
+    }
+  };
+
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>;
   if (!product) return <div className="text-center py-20 text-xl text-gray-500">Sản phẩm không tồn tại.</div>;
 
@@ -171,8 +197,16 @@ const ProductDetail: React.FC = () => {
         <div className="space-y-4">
           <div className="aspect-square bg-white border border-gray-200 rounded-xl overflow-hidden flex items-center justify-center relative group">
             <AsyncImage src={selectedImage} alt={product.title} className="w-full h-full object-contain p-4" />
-            <button className={cn("absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:text-red-500 transition", product.inWishlist && "text-red-500 fill-current")}>
-              <Heart className="w-5 h-5" />
+            <button 
+              onClick={handleToggleWishlist}
+              disabled={isTogglingWish}
+              className={cn(
+                "absolute top-4 right-4 p-2 bg-white rounded-full shadow hover:scale-110 transition-all disabled:opacity-60",
+                isWishlisted ? "text-red-500" : "text-gray-400 hover:text-red-500"
+              )}
+              title={isWishlisted ? 'Bỏ yêu thích' : 'Thêm vào danh sách yêu thích'}
+            >
+              <Heart className={cn("w-5 h-5", isWishlisted && "fill-current")} />
             </button>
           </div>
 
@@ -284,9 +318,9 @@ const ProductDetail: React.FC = () => {
             <button onClick={() => handleAddToCart(false)} className="flex-1 py-3.5 border-2 border-primary text-primary font-bold rounded-xl hover:bg-blue-50 transition flex items-center justify-center gap-2">
               <ShoppingCart className="w-5 h-5" /> Thêm vào giỏ
             </button>
-            <button onClick={() => handleAddToCart(true)} className="flex-1 py-3.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg shadow-red-200 transition">
+            {/* <button onClick={() => handleAddToCart(true)} className="flex-1 py-3.5 bg-red-500 text-white font-bold rounded-xl hover:bg-red-600 shadow-lg shadow-red-200 transition">
               Mua ngay
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

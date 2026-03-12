@@ -1,7 +1,5 @@
 package com.project.pharmacy.service.impl;
 
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.pharmacy.dto.response.ProductResponse;
 import com.project.pharmacy.entity.Category;
