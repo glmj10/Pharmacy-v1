@@ -232,8 +232,8 @@ Includes additional business services following the standard layered architectur
 ### Clone Repository
 
 ```bash
-git clone https://github.com/your-username/pharmacy-backend-microservice.git
-cd pharmacy-backend-microservice
+git clone https://github.com/glmj10/Pharmacy-v1.git
+cd pharmacy-v1
 ```
 
 ### Start Infrastructure
