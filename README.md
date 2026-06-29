@@ -1,4 +1,4 @@
-# Pharmacy Backend Microservice
+# Pharmacy Microservice
 
 A cloud-native backend system built with **Spring Boot** and **Spring Cloud** using the **Microservices Architecture** pattern. The system is designed for an online pharmacy platform, providing high scalability, fault isolation, maintainability, and asynchronous communication between services.
 
